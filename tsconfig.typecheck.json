@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false
+  },
+  "include": [
+    "next-env.d.ts",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "e2e/**/*.ts",
+    "lib/**/*.ts",
+    "middleware.ts",
+    "playwright.config.ts",
+    "store/**/*.ts"
+  ],
+  "exclude": [
+    ".next",
+    "node_modules"
+  ]
+}
