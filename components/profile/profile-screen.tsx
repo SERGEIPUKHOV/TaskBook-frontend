@@ -215,7 +215,7 @@ export function ProfileScreen() {
     return () => {
       isCancelled = true;
     };
-  }, [clearSession, initialUser, router, syncUser]);
+  }, [clearSession, router, syncUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleRetry() {
     setIsLoading(true);
