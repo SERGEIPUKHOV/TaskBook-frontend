@@ -82,7 +82,7 @@ export function WeekStatePanel({ week }: WeekStatePanelProps) {
   const ensureMonth = useAppStore((state) => state.ensureMonth);
   const monthLoadStates = useAppStore((state) => state.monthLoadStates);
   const months = useAppStore((state) => state.months);
-  const setDailyMetric = useAppStore((state) => state.setDailyMetric);
+  const setDailyMetrics = useAppStore((state) => state.setDailyMetrics);
   const dayKeys = getWeekDayKeys(week.startDate);
   const dayDates = dayKeys.map((dayKey) => parseISO(dayKey));
   const today = startOfDay(new Date());
@@ -183,14 +183,14 @@ export function WeekStatePanel({ week }: WeekStatePanelProps) {
     }
 
     const monthKey = getMonthKey(date.getFullYear(), date.getMonth() + 1);
+    const valuesToSave: Partial<Record<MetricName, number>> = {};
     metricRows.forEach(({ key }) => {
       const value = colState.draft[key].trim();
-      if (!value) {
-        return;
+      if (value) {
+        valuesToSave[key] = clamp(Number(value), 1, 10);
       }
-
-      setDailyMetric(monthKey, date.getDate(), key, clamp(Number(value), 1, 10));
     });
+    setDailyMetrics(monthKey, date.getDate(), valuesToSave);
 
     setColStates((current) =>
       current.map((state, index) =>
