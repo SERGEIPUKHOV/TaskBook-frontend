@@ -146,7 +146,7 @@ export function DayStateBlock({
               </div>
               <div className="flex justify-end sm:justify-start">
                 <button
-                  className="whitespace-nowrap rounded-[14px] border border-accent bg-accent px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:border-ink hover:bg-ink disabled:pointer-events-none disabled:opacity-35"
+                  className="whitespace-nowrap rounded-[14px] border border-ink bg-ink px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:border-accent hover:bg-accent disabled:pointer-events-none disabled:opacity-35"
                   disabled={!isEditing && disabled}
                   onClick={() => {
                     if (isEditing) {

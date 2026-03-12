@@ -236,7 +236,7 @@ export function Sidebar() {
                       className={cn(
                         "block rounded-2xl border px-3 py-2.5 transition-colors",
                         isActive
-                          ? "border-accent bg-accent text-white"
+                          ? "border-ink bg-ink text-white"
                           : "border-transparent bg-paper/70 text-muted hover:border-line hover:text-ink",
                       )}
                       href={href}
@@ -257,7 +257,7 @@ export function Sidebar() {
                       className={cn(
                         "block rounded-2xl border px-3 py-2.5 transition-colors",
                         isActive
-                          ? "border-accent bg-accent text-white"
+                          ? "border-ink bg-ink text-white"
                           : "border-transparent bg-paper/70 text-muted hover:border-line hover:text-ink",
                       )}
                       href={`/week/${weekItem.year}/${weekItem.week}`}
