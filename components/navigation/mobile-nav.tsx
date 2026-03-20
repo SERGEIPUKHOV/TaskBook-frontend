@@ -4,15 +4,20 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { CalendarIcon, DashboardIcon, DayIcon, UserIcon, WeekIcon } from "@/components/ui/icons";
-import { getWeeksForMonth } from "@/lib/dates";
+import { currentContext, getDayNavHref, getMonthNavHref, getWeekNavHref } from "@/lib/nav-hrefs";
 import { cn } from "@/lib/utils";
+import { useNavStore } from "@/store/nav-store";
 
 export function MobileNav() {
   const pathname = usePathname();
+  const context = currentContext(pathname);
+  const lastDay = useNavStore((state) => state.lastDay);
+  const lastMonth = useNavStore((state) => state.lastMonth);
+  const lastWeek = useNavStore((state) => state.lastWeek);
   const today = new Date();
-  const currentMonth = { year: today.getFullYear(), month: today.getMonth() + 1 };
-  const currentWeek = getWeeksForMonth(currentMonth.year, currentMonth.month)[0];
-  const currentDayHref = `/day/${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+  const monthHref = getMonthNavHref({ context, lastMonth, pathname, today });
+  const weekHref = getWeekNavHref({ context, lastWeek, pathname, today });
+  const dayHref = getDayNavHref({ context, lastDay, pathname, today });
 
   const items = [
     {
@@ -22,19 +27,19 @@ export function MobileNav() {
       active: pathname === "/dashboard",
     },
     {
-      href: `/month/${currentMonth.year}/${currentMonth.month}`,
+      href: monthHref,
       label: "Месяц",
       icon: CalendarIcon,
       active: pathname.startsWith("/month"),
     },
     {
-      href: currentWeek ? `/week/${currentWeek.year}/${currentWeek.week}` : "/dashboard",
+      href: weekHref,
       label: "Неделя",
       icon: WeekIcon,
       active: pathname.startsWith("/week"),
     },
     {
-      href: currentDayHref,
+      href: dayHref,
       label: "День",
       icon: DayIcon,
       active: pathname.startsWith("/day/"),

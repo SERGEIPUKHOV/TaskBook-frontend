@@ -8,6 +8,8 @@ import {
   getDaysInMonth,
   getISOWeek,
   getISOWeekYear,
+  isValid,
+  parseISO,
   startOfISOWeek,
   startOfMonth,
 } from "date-fns";
@@ -155,4 +157,38 @@ export function formatIsoDate(date: Date): string {
 export function isValidCalendarDate(year: number, month: number, day: number): boolean {
   const date = new Date(year, month - 1, day);
   return date.getFullYear() === year && date.getMonth() + 1 === month && date.getDate() === day;
+}
+
+export function getLastDayOfWeekCapped(year: number, week: number, today: Date): Date {
+  const weekEnd = endOfISOWeek(getISOWeekStart(year, week));
+  return new Date((weekEnd > today ? today : weekEnd).getTime());
+}
+
+export function getLastWeekOfMonthCapped(year: number, month: number, today: Date): WeekReference {
+  return getISOWeekReference(getLastDayOfMonthCapped(year, month, today));
+}
+
+export function getLastDayOfMonthCapped(year: number, month: number, today: Date): Date {
+  const monthEnd = endOfMonth(getMonthDate(year, month));
+  return new Date((monthEnd > today ? today : monthEnd).getTime());
+}
+
+export function dayIsInWeek(day: string, weekYear: number, week: number): boolean {
+  const date = parseISO(day);
+
+  if (!isValid(date)) {
+    return false;
+  }
+
+  return getISOWeekYear(date) === weekYear && getISOWeek(date) === week;
+}
+
+export function dayIsInMonth(day: string, year: number, month: number): boolean {
+  const date = parseISO(day);
+
+  if (!isValid(date)) {
+    return false;
+  }
+
+  return date.getFullYear() === year && date.getMonth() + 1 === month;
 }

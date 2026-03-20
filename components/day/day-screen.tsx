@@ -10,6 +10,7 @@ import { DayTaskList } from "@/components/day/day-task-list";
 import { DayStateBlock } from "@/components/ui/day-state-block";
 import { formatIsoDate, getISOWeekReference, getMonthKey, getWeekKey, isValidCalendarDate } from "@/lib/dates";
 import { useAppStore } from "@/store/app-store";
+import { useNavStore } from "@/store/nav-store";
 
 type DayScreenProps = {
   day: number;
@@ -29,6 +30,7 @@ export function DayScreen({ day, month, year }: DayScreenProps) {
   const monthData = useAppStore((state) => state.months[monthKey]);
   const weekData = useAppStore((state) => state.weeks[weekKey]);
   const setDailyMetric = useAppStore((state) => state.setDailyMetric);
+  const setLastDay = useNavStore((state) => state.setLastDay);
   const isFuture = isAfter(startOfDay(targetDate), startOfDay(new Date()));
 
   useEffect(() => {
@@ -38,6 +40,14 @@ export function DayScreen({ day, month, year }: DayScreenProps) {
     ensureWeek(weekRef.year, weekRef.week);
     ensureMonth(year, month);
   }, [ensureMonth, ensureWeek, isValidDate, month, weekRef.week, weekRef.year, year]);
+
+  useEffect(() => {
+    if (!isValidDate) {
+      return;
+    }
+
+    setLastDay(dayKey);
+  }, [dayKey, isValidDate, setLastDay]);
 
   if (!isValidDate) {
     return (

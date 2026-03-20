@@ -7,6 +7,7 @@ import { MonthPlan } from "@/components/month/month-plan";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icons";
 import { formatMonthLabel, getAdjacentMonth, getMonthKey } from "@/lib/dates";
 import { useAppStore } from "@/store/app-store";
+import { useNavStore } from "@/store/nav-store";
 
 type MonthScreenProps = {
   year: number;
@@ -17,10 +18,15 @@ export function MonthScreen({ year, month }: MonthScreenProps) {
   const monthKey = getMonthKey(year, month);
   const ensureMonth = useAppStore((state) => state.ensureMonth);
   const monthData = useAppStore((state) => state.months[monthKey]);
+  const setLastMonth = useNavStore((state) => state.setLastMonth);
 
   useEffect(() => {
     ensureMonth(year, month);
   }, [ensureMonth, month, year]);
+
+  useEffect(() => {
+    setLastMonth({ year, month });
+  }, [month, setLastMonth, year]);
 
   if (!monthData) {
     return <div className="paper-panel h-[640px] animate-pulse rounded-[32px] border border-line bg-paper/60" />;

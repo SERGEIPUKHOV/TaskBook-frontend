@@ -9,13 +9,11 @@ import {
   formatShortDate,
   getAdjacentMonth,
   getAdjacentWeek,
-  getISOWeekReference,
-  getISOWeekStart,
   getMonthDate,
   getWeekDays,
   getWeeksForMonth,
-  type WeekReference,
 } from "@/lib/dates";
+import { currentContext, getDayNavHref, getMonthNavHref, getWeekNavHref } from "@/lib/nav-hrefs";
 import {
   CalendarIcon,
   ChevronLeftIcon,
@@ -28,66 +26,7 @@ import {
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
-
-type NavigationContext = {
-  month: number;
-  weekRef: WeekReference | null;
-  year: number;
-};
-
-function currentContext(pathname: string): NavigationContext {
-  const today = new Date();
-  const defaultMonth = { year: today.getFullYear(), month: today.getMonth() + 1, weekRef: null };
-
-  if (pathname.startsWith("/month/")) {
-    const parts = pathname.split("/");
-    const year = Number(parts[2]);
-    const month = Number(parts[3]);
-
-    if (Number.isFinite(year) && Number.isFinite(month)) {
-      return { year, month, weekRef: null };
-    }
-  }
-
-  if (pathname.startsWith("/week/")) {
-    const parts = pathname.split("/");
-    const year = Number(parts[2]);
-    const week = Number(parts[3]);
-
-    if (Number.isFinite(year) && Number.isFinite(week)) {
-      const weekStart = getISOWeekStart(year, week);
-      return {
-        year: weekStart.getFullYear(),
-        month: weekStart.getMonth() + 1,
-        weekRef: { year, week },
-      };
-    }
-  }
-
-  if (pathname.startsWith("/day/")) {
-    const parts = pathname.split("/");
-    const year = Number(parts[2]);
-    const month = Number(parts[3]);
-    const day = Number(parts[4]);
-
-    if (Number.isFinite(year) && Number.isFinite(month) && Number.isFinite(day)) {
-      const targetDate = new Date(year, month - 1, day);
-      if (
-        targetDate.getFullYear() === year &&
-        targetDate.getMonth() + 1 === month &&
-        targetDate.getDate() === day
-      ) {
-        return {
-          year,
-          month,
-          weekRef: getISOWeekReference(targetDate),
-        };
-      }
-    }
-  }
-
-  return defaultMonth;
-}
+import { useNavStore } from "@/store/nav-store";
 
 function navClassName(isActive: boolean): string {
   return cn(
@@ -125,6 +64,9 @@ export function Sidebar() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const lastDay = useNavStore((state) => state.lastDay);
+  const lastMonth = useNavStore((state) => state.lastMonth);
+  const lastWeek = useNavStore((state) => state.lastWeek);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const context = currentContext(pathname);
   const today = new Date();
@@ -142,12 +84,9 @@ export function Sidebar() {
   const nextMonthHref = getSpreadHref(pathname, nextMonth.year, nextMonth.month);
   const prevWeekDayHref = prevWeekRef ? getDayHref(getWeekDays(prevWeekRef.year, prevWeekRef.week)[0]) : prevMonthHref;
   const nextWeekDayHref = nextWeekRef ? getDayHref(getWeekDays(nextWeekRef.year, nextWeekRef.week)[0]) : nextMonthHref;
-  const todayDayHref = getDayHref(today);
-  const primaryWeekHref = context.weekRef
-    ? `/week/${context.weekRef.year}/${context.weekRef.week}`
-    : weeks[0]
-      ? `/week/${weeks[0].year}/${weeks[0].week}`
-      : "/dashboard";
+  const primaryMonthHref = getMonthNavHref({ context, lastMonth, pathname, today });
+  const primaryDayHref = getDayNavHref({ context, lastDay, pathname, today });
+  const primaryWeekHref = getWeekNavHref({ context, lastWeek, pathname, today });
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -178,17 +117,17 @@ export function Sidebar() {
             <DashboardIcon className="h-5 w-5" />
             <span className="hidden xl:inline">Дашборд</span>
           </Link>
-          <Link className={navClassName(pathname.startsWith("/month/"))} href={`/month/${context.year}/${context.month}`}>
+          <Link className={navClassName(pathname.startsWith("/month/"))} href={primaryMonthHref}>
             <CalendarIcon className="h-5 w-5" />
             <span className="hidden xl:inline">Месяц</span>
           </Link>
-          {weeks[0] && (
+          {primaryWeekHref && (
             <Link className={navClassName(pathname.startsWith("/week/"))} href={primaryWeekHref}>
               <WeekIcon className="h-5 w-5" />
               <span className="hidden xl:inline">Неделя</span>
             </Link>
           )}
-          <Link className={navClassName(pathname.startsWith("/day/"))} href={todayDayHref}>
+          <Link className={navClassName(pathname.startsWith("/day/"))} href={primaryDayHref}>
             <DayIcon className="h-5 w-5" />
             <span className="hidden xl:inline">День</span>
           </Link>

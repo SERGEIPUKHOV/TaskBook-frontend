@@ -10,6 +10,7 @@ import { WeekSummary } from "@/components/week/week-summary";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icons";
 import { formatWeekLabel, getAdjacentWeek, getISOWeekStart, getMonthKey, getWeekKey } from "@/lib/dates";
 import { useAppStore } from "@/store/app-store";
+import { useNavStore } from "@/store/nav-store";
 
 type WeekScreenProps = {
   year: number;
@@ -22,11 +23,16 @@ export function WeekScreen({ year, week }: WeekScreenProps) {
   const habitMonthRef = { year: weekStart.getFullYear(), month: weekStart.getMonth() + 1 };
   const habitMonthKey = getMonthKey(habitMonthRef.year, habitMonthRef.month);
   const ensureWeek = useAppStore((state) => state.ensureWeek);
+  const setLastWeek = useNavStore((state) => state.setLastWeek);
   const weekData = useAppStore((state) => state.weeks[weekKey]);
 
   useEffect(() => {
     ensureWeek(year, week);
   }, [ensureWeek, week, year]);
+
+  useEffect(() => {
+    setLastWeek({ year, week });
+  }, [setLastWeek, week, year]);
 
   if (!weekData) {
     return <div className="paper-panel h-[640px] animate-pulse rounded-[32px] border border-line bg-paper/60" />;
