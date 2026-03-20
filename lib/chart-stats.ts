@@ -1,5 +1,6 @@
 import { getISOWeekReference, getWeekKey } from "@/lib/dates";
 import type { DayChartStats, MonthData, WeekData } from "@/lib/planner-types";
+import { getTaskCellState } from "@/lib/week-tasks";
 import { getWeekDayKeys } from "@/lib/week-tasks";
 
 function toDayKey(year: number, month: number, day: number): string {
@@ -29,27 +30,14 @@ export function computeDayStats(
       const dayIndex = dayKeys.indexOf(dayKey);
 
       if (dayIndex !== -1) {
-        const activeTasks = weekData.tasks.filter((task) => {
-          const startIndex = dayKeys.indexOf(task.startDayKey);
-          if (startIndex === -1 || dayIndex < startIndex) return false;
-          // задача имеет явный статус на этот день
-          if (dayIndex <= startIndex + task.statusTrail.length - 1) return true;
-          // задача в состоянии "ожидает переноса" (следующий день после "moved")
-          const lastStatus = task.statusTrail.at(-1);
-          return dayIndex === startIndex + task.statusTrail.length && lastStatus === "moved";
-        });
+        const dayStatuses = weekData.tasks
+          .map((task) => getTaskCellState(task, dayIndex, dayKeys).status)
+          .filter((status): status is NonNullable<typeof status> => status !== null);
 
-        if (activeTasks.length > 0) {
-          const statuses = activeTasks.map((task) => {
-            const startIndex = dayKeys.indexOf(task.startDayKey);
-            const relativeIndex = dayIndex - startIndex;
-            // явный статус или "planned" для задачи в ожидании переноса
-            return task.statusTrail[relativeIndex] ?? "planned";
-          });
-
-          taskDonePct = Math.round((statuses.filter((status) => status === "done").length / activeTasks.length) * 100);
+        if (dayStatuses.length > 0) {
+          taskDonePct = Math.round((dayStatuses.filter((status) => status === "done").length / dayStatuses.length) * 100);
           taskMovedPct = Math.round(
-            (statuses.filter((status) => status === "moved").length / activeTasks.length) * 100,
+            (dayStatuses.filter((status) => status === "moved").length / dayStatuses.length) * 100,
           );
         }
       }
