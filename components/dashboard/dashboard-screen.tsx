@@ -6,7 +6,7 @@ import { useEffect } from "react";
 
 import { FocusBlock } from "@/components/dashboard/focus-block";
 import { MonthStatesPanel } from "@/components/dashboard/month-states-panel";
-import { getMonthKey, getWeekKey } from "@/lib/dates";
+import { getMonthKey, getWeekKey, getWeeksForMonth } from "@/lib/dates";
 import { useAppStore } from "@/store/app-store";
 import { getLastTaskStatus, isTaskClosed } from "@/lib/week-tasks";
 
@@ -29,10 +29,14 @@ export function DashboardScreen() {
   const ensureWeek = useAppStore((state) => state.ensureWeek);
   const monthData = useAppStore((state) => state.months[monthKey]);
   const weekData = useAppStore((state) => state.weeks[weekKey]);
+  const weeks = useAppStore((state) => state.weeks);
 
   useEffect(() => {
     ensureMonth(monthRef.year, monthRef.month);
     ensureWeek(weekRef.year, weekRef.week);
+    getWeeksForMonth(monthRef.year, monthRef.month).forEach(({ year, week }) => {
+      ensureWeek(year, week);
+    });
   }, [ensureMonth, ensureWeek, monthRef.month, monthRef.year, weekRef.week, weekRef.year]);
 
   if (!monthData || !weekData) {
@@ -77,7 +81,7 @@ export function DashboardScreen() {
         />
       </div>
 
-      <MonthStatesPanel month={monthData} monthKey={monthKey} />
+      <MonthStatesPanel month={monthData} monthKey={monthKey} weeks={weeks} />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,0.78fr)_minmax(0,0.78fr)]">
         <article className="paper-panel rounded-[32px] p-4 sm:p-6">

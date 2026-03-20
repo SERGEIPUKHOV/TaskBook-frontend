@@ -8,6 +8,12 @@ export type DailyState = {
   anxiety: number;
 };
 
+export type DayChartStats = {
+  habitsPct: number | null;
+  taskDonePct: number | null;
+  taskMovedPct: number | null;
+};
+
 export type Habit = {
   id: string;
   name: string;

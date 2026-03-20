@@ -6,13 +6,15 @@ import { useEffect, useState } from "react";
 
 import { AnxietyMetricIcon, HeartMetricIcon, ProductivityMetricIcon } from "@/components/ui/icons";
 import { StateChart } from "@/components/month/state-chart";
-import type { DailyState, MetricName, MonthData } from "@/lib/planner-types";
+import { computeDayStats } from "@/lib/chart-stats";
+import type { DailyState, MetricName, MonthData, WeekData } from "@/lib/planner-types";
 import { clamp, cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
 
 type MonthStatesPanelProps = {
   monthKey: string;
   month: MonthData;
+  weeks?: Record<string, WeekData>;
 };
 
 type DraftValues = Record<MetricName, string>;
@@ -98,7 +100,7 @@ function createDateStates(rows: DateRow[]): DateState[] {
   }));
 }
 
-export function MonthStatesPanel({ monthKey, month }: MonthStatesPanelProps) {
+export function MonthStatesPanel({ monthKey, month, weeks }: MonthStatesPanelProps) {
   const setDailyMetric = useAppStore((state) => state.setDailyMetric);
   const today = startOfDay(new Date());
   const rows: DateRow[] = getVisibleDates(month).map((date) => ({
@@ -106,6 +108,7 @@ export function MonthStatesPanel({ monthKey, month }: MonthStatesPanelProps) {
     date,
     entry: month.dailyStates.find((state) => state.day === date.getDate()) ?? null,
   }));
+  const dayStats = weeks ? computeDayStats(month, weeks) : undefined;
   const [dateStates, setDateStates] = useState<DateState[]>(() => createDateStates(rows));
 
   useEffect(() => {
@@ -199,7 +202,7 @@ export function MonthStatesPanel({ monthKey, month }: MonthStatesPanelProps) {
       </div>
 
       <div className="mt-5">
-        <StateChart month={month} />
+        <StateChart dayStats={dayStats} month={month} />
       </div>
 
       <div className="mt-3 rounded-[20px] border border-line bg-canvas/70 p-3">

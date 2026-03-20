@@ -2,9 +2,10 @@
 
 import dynamic from "next/dynamic";
 
-import type { MonthData } from "@/lib/planner-types";
+import type { DayChartStats, MonthData } from "@/lib/planner-types";
 
 type StateChartProps = {
+  dayStats?: Record<number, DayChartStats>;
   month: MonthData;
   onSelectDay?: (day: number) => void;
 };
@@ -14,7 +15,7 @@ const StateChartImpl = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="h-[320px] animate-pulse rounded-[28px] border border-line bg-canvas/60" />
+      <div className="h-[420px] animate-pulse rounded-[28px] border border-line bg-canvas/60" />
     ),
   },
 );
