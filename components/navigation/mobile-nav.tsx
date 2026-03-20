@@ -15,8 +15,8 @@ export function MobileNav() {
   const lastMonth = useNavStore((state) => state.lastMonth);
   const lastWeek = useNavStore((state) => state.lastWeek);
   const today = new Date();
-  const monthHref = getMonthNavHref({ context, lastMonth, pathname, today });
-  const weekHref = getWeekNavHref({ context, lastWeek, pathname, today });
+  const monthHref = getMonthNavHref({ context, lastDay, lastMonth, lastWeek, pathname, today });
+  const weekHref = getWeekNavHref({ context, lastDay, lastWeek, pathname, today });
   const dayHref = getDayNavHref({ context, lastDay, pathname, today });
 
   const items = [

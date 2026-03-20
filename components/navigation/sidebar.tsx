@@ -84,9 +84,9 @@ export function Sidebar() {
   const nextMonthHref = getSpreadHref(pathname, nextMonth.year, nextMonth.month);
   const prevWeekDayHref = prevWeekRef ? getDayHref(getWeekDays(prevWeekRef.year, prevWeekRef.week)[0]) : prevMonthHref;
   const nextWeekDayHref = nextWeekRef ? getDayHref(getWeekDays(nextWeekRef.year, nextWeekRef.week)[0]) : nextMonthHref;
-  const primaryMonthHref = getMonthNavHref({ context, lastMonth, pathname, today });
+  const primaryMonthHref = getMonthNavHref({ context, lastDay, lastMonth, lastWeek, pathname, today });
   const primaryDayHref = getDayNavHref({ context, lastDay, pathname, today });
-  const primaryWeekHref = getWeekNavHref({ context, lastWeek, pathname, today });
+  const primaryWeekHref = getWeekNavHref({ context, lastDay, lastWeek, pathname, today });
 
   async function handleLogout() {
     setIsLoggingOut(true);

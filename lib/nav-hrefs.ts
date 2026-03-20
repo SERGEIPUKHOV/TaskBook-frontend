@@ -1,9 +1,8 @@
-import { parseISO } from "date-fns";
+import { isValid, parseISO } from "date-fns";
 
 import {
   dayIsInMonth,
   dayIsInWeek,
-  formatIsoDate,
   getDayReference,
   getISOWeekReference,
   getISOWeekStart,
@@ -29,13 +28,16 @@ type DayNavContext = {
 
 type MonthNavContext = {
   context: NavigationContext;
+  lastDay: string | null;
   lastMonth: MonthReference | null;
+  lastWeek: WeekReference | null;
   pathname: string;
   today: Date;
 };
 
 type WeekNavContext = {
   context: NavigationContext;
+  lastDay: string | null;
   lastWeek: WeekReference | null;
   pathname: string;
   today: Date;
@@ -123,8 +125,20 @@ export function currentContext(pathname: string): NavigationContext {
   return defaultMonth;
 }
 
-export function getMonthNavHref({ context, lastMonth, pathname, today }: MonthNavContext): string {
-  if (pathname.startsWith("/day/") || pathname.startsWith("/week/") || pathname.startsWith("/month/")) {
+export function getMonthNavHref({ context, lastDay, lastMonth, pathname, today }: MonthNavContext): string {
+  if (pathname.startsWith("/week/") && context.weekRef) {
+    if (lastDay && dayIsInWeek(lastDay, context.weekRef.year, context.weekRef.week)) {
+      const parsedDay = parseISO(lastDay);
+
+      if (isValid(parsedDay)) {
+        return getMonthHref({ year: parsedDay.getFullYear(), month: parsedDay.getMonth() + 1 });
+      }
+    }
+
+    return getMonthHref({ year: context.year, month: context.month });
+  }
+
+  if (pathname.startsWith("/day/") || pathname.startsWith("/month/")) {
     return getMonthHref({ year: context.year, month: context.month });
   }
 
@@ -135,12 +149,21 @@ export function getMonthNavHref({ context, lastMonth, pathname, today }: MonthNa
   return getMonthHref({ year: today.getFullYear(), month: today.getMonth() + 1 });
 }
 
-export function getWeekNavHref({ context, lastWeek, pathname, today }: WeekNavContext): string {
+export function getWeekNavHref({ context, lastDay, lastWeek, pathname, today }: WeekNavContext): string {
   if (pathname.startsWith("/day/") && context.weekRef) {
     return getWeekHref(context.weekRef);
   }
 
   if (pathname.startsWith("/month/")) {
+    if (
+      lastDay &&
+      lastWeek &&
+      dayIsInMonth(lastDay, context.year, context.month) &&
+      dayIsInWeek(lastDay, lastWeek.year, lastWeek.week)
+    ) {
+      return getWeekHref(lastWeek);
+    }
+
     const targetWeek =
       lastWeek && weekIsInMonth(lastWeek, context.year, context.month)
         ? lastWeek
