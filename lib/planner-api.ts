@@ -1,8 +1,13 @@
+// BLOCK-START: PLANNER_API_MODULE
+// Description: API types и маппинг-функции между backend API responses и frontend доменными типами
+
 import { addDays, format, parseISO } from "date-fns";
 
 import type { DailyState, Habit, MonthData, TaskStatus, WeekData, WeekTask } from "@/lib/planner-types";
 import { getWeekDayKeys } from "@/lib/week-tasks";
 
+// BLOCK-START: PLANNER_API_TYPES
+// Description: Raw API response types — месяц, неделя, задачи, привычки, состояния
 type ApiMonthPlan = {
   id: string;
   year: number;
@@ -80,7 +85,10 @@ export type WeekEntryMeta = {
   gratitudes: Record<string, string | null>;
   keyEvents: Record<string, string | null>;
 };
+// BLOCK-END: PLANNER_API_TYPES
 
+// BLOCK-START: PLANNER_API_MAPPERS
+// Description: Функции маппинга API → доменные типы (month bundle, week bundle, task)
 function dayKeyForMonth(year: number, month: number, day: number): string {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
@@ -221,3 +229,5 @@ export type {
   ApiWeekBundle,
   ApiWeekEntry,
 };
+// BLOCK-END: PLANNER_API_MAPPERS
+// BLOCK-END: PLANNER_API_MODULE
