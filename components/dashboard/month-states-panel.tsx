@@ -281,7 +281,7 @@ export function MonthStatesPanel({ monthKey, month, weeks }: MonthStatesPanelPro
                     <td key={`action-${row.date.toISOString()}`} className="px-2 py-2 text-center">
                       {row.canEdit ? (
                         <button
-                          className="whitespace-nowrap rounded-[14px] border border-ink bg-ink px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:border-accent hover:bg-accent"
+                          className="whitespace-nowrap rounded-[14px] border border-ink bg-ink px-2.5 py-1.5 text-xs font-medium text-canvas transition-colors hover:border-accent hover:bg-accent hover:text-canvas"
                           onClick={() => {
                             if (state?.isEditing) {
                               saveRow(dateIdx);
@@ -380,7 +380,7 @@ export function MonthStatesPanel({ monthKey, month, weeks }: MonthStatesPanelPro
                     <td className="px-3 py-2 text-center">
                       {row.canEdit ? (
                         <button
-                          className="whitespace-nowrap rounded-[14px] border border-ink bg-ink px-4 py-2 text-sm font-medium text-white transition-colors hover:border-accent hover:bg-accent"
+                          className="whitespace-nowrap rounded-[14px] border border-ink bg-ink px-4 py-2 text-sm font-medium text-canvas transition-colors hover:border-accent hover:bg-accent hover:text-canvas"
                           onClick={() => {
                             if (state?.isEditing) {
                               saveRow(dateIdx);

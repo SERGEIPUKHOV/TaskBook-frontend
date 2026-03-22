@@ -63,7 +63,7 @@ export function MobileNav() {
               key={item.href}
               className={cn(
                 "flex min-h-[44px] flex-col items-center justify-center gap-1 rounded-[20px] px-1 py-3 text-[10px] transition-colors",
-                item.active ? "bg-ink text-white" : "text-muted",
+                item.active ? "bg-ink text-canvas" : "text-muted",
               )}
               href={item.href}
             >

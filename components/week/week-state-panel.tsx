@@ -305,7 +305,7 @@ export function WeekStatePanel({ week }: WeekStatePanelProps) {
                   <td key={`action-${dateKey}`} className="px-2 py-3 text-center">
                     {isFuture ? null : (
                       <button
-                        className="whitespace-nowrap rounded-[14px] border border-ink bg-ink px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:border-accent hover:bg-accent"
+                        className="whitespace-nowrap rounded-[14px] border border-ink bg-ink px-2.5 py-1.5 text-xs font-medium text-canvas transition-colors hover:border-accent hover:bg-accent hover:text-canvas"
                         onClick={() => {
                           if (colState?.isEditing) {
                             saveRow(dateIdx, date);

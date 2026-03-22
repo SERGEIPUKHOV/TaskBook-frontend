@@ -57,7 +57,7 @@ function StatusCell({
   const isPlanned = status === "planned";
   const elementClassName = cn(
     "flex h-8 w-8 items-center justify-center rounded-[10px] border text-sm font-semibold transition-colors",
-    status === "done" && "border-ink bg-ink text-white",
+    status === "done" && "border-ink bg-ink text-canvas",
     status === "moved" && "border-accent bg-accent/10 text-accent",
     status === "failed" && "border-danger bg-danger/10 text-danger",
     isPlanned && "border-line bg-paper text-transparent",
@@ -277,7 +277,7 @@ export function TaskGrid({ weekKey, week }: TaskGridProps) {
 
         <div className="mt-5 flex justify-end">
           <button
-            className="rounded-[20px] border border-ink bg-ink px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-accent"
+            className="rounded-[20px] border border-ink bg-ink px-5 py-3 text-sm font-medium text-canvas transition-colors hover:bg-accent hover:text-canvas"
             onClick={() => startTransition(() => addTask(weekKey))}
             type="button"
           >
