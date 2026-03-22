@@ -11,6 +11,8 @@ import { getLastTaskStatus, getTaskCellState, getWeekDayKeys } from "@/lib/week-
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
 
+// BLOCK-START: WEEK_PLANNER_BOARD_MODULE
+// Description: Interactive week planner board with habit tracking, task editing, optimistic UI actions, and delete confirmation flow.
 type WeekPlannerBoardProps = {
   monthKey: string;
   monthNumber: number;
@@ -31,13 +33,18 @@ type TaskDraft = {
   title: string;
 };
 
+// BLOCK-START: WEEK_PLANNER_LAYOUT_CONSTANTS
+// Description: Shared layout dimensions for the week grid and status controls.
 const DAY_COLUMN_WIDTH = 40;
 const PRIORITY_COLUMN_WIDTH = 40;
 const STATUS_BUTTON_SIZE = 32;
 const DAY_SECTION_WIDTH = DAY_COLUMN_WIDTH * 7;
 const ALTERNATING_DAY_INDICES = [0, 2, 4, 6] as const;
 const boardColumns = `repeat(7, ${DAY_COLUMN_WIDTH}px) ${PRIORITY_COLUMN_WIDTH}px 56px 56px minmax(200px, 1fr)`;
+// BLOCK-END: WEEK_PLANNER_LAYOUT_CONSTANTS
 
+// BLOCK-START: WEEK_PLANNER_UI_HELPERS
+// Description: Presentation helpers for textarea sizing, day labels, status symbols, and grid cell classes.
 function syncTextareaHeight(element: HTMLTextAreaElement | null, minHeight = 28) {
   if (!element) {
     return;
@@ -85,7 +92,10 @@ function getDayCellClass(isLastDay: boolean, extra?: string) {
 function getRightColumnClass(extra?: string) {
   return cn("min-h-10 border-r border-line", extra);
 }
+// BLOCK-END: WEEK_PLANNER_UI_HELPERS
 
+// BLOCK-START: WEEK_PLANNER_AUX_COMPONENTS
+// Description: Supporting UI components for legends, dialogs, status cells, habit cells, placeholders, and simple skeletons.
 function StatusLegend() {
   return (
     <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-muted">
@@ -303,7 +313,22 @@ function HabitRow({
     </div>
   );
 }
+// BLOCK-END: WEEK_PLANNER_AUX_COMPONENTS
 
+// BLOCK-START: WEEK_PLANNER_TASK_ROW
+// Description: Editable week task row with status cells, priority, timings, title editing, and delayed persistence.
+/**
+ * function_contracts:
+ *   TaskRow:
+ *     description: "Renders one editable task row and coordinates debounced field persistence with store actions."
+ *     preconditions:
+ *       - "task belongs to weekKey and contains valid startDayKey/statusTrail data"
+ *       - "dayKeys contains seven ISO dates for the visible week"
+ *     postconditions:
+ *       - "User edits are mirrored into local draft state immediately"
+ *       - "Blur events schedule store updates for title, Ti, and Fa fields"
+ *       - "Delete action forwards the current task to the parent callback"
+ */
 function TaskRow({
   dayKeys,
   onDelete,
@@ -471,7 +496,10 @@ function TaskRow({
     </div>
   );
 }
+// BLOCK-END: WEEK_PLANNER_TASK_ROW
 
+// BLOCK-START: WEEK_PLANNER_HABIT_SKELETONS
+// Description: Placeholder rows shown while month habit data is loading.
 function HabitSkeletonRows({ count }: { count: number }) {
   return (
     <div className="relative z-10 space-y-2 px-4 py-3">
@@ -481,7 +509,22 @@ function HabitSkeletonRows({ count }: { count: number }) {
     </div>
   );
 }
+// BLOCK-END: WEEK_PLANNER_HABIT_SKELETONS
 
+// BLOCK-START: WEEK_PLANNER_BOARD_COMPONENT
+// Description: Main week planner board that orchestrates habit loading, task rendering, and destructive action confirmation.
+/**
+ * function_contracts:
+ *   WeekPlannerBoard:
+ *     description: "Renders the full week planner board and wires store-backed interactions for habits and tasks."
+ *     preconditions:
+ *       - "week contains week startDate, tasks, and reflection data for weekKey"
+ *       - "monthKey/monthYear/monthNumber identify the month that owns visible habits"
+ *     postconditions:
+ *       - "Triggers habit fetch when month habits are missing"
+ *       - "Focuses newly created task title when addTask is requested"
+ *       - "Shows delete confirmation dialog before removing a task"
+ */
 export function WeekPlannerBoard({
   monthKey,
   monthNumber,
@@ -713,3 +756,5 @@ export function WeekPlannerBoard({
     </>
   );
 }
+// BLOCK-END: WEEK_PLANNER_BOARD_COMPONENT
+// BLOCK-END: WEEK_PLANNER_BOARD_MODULE

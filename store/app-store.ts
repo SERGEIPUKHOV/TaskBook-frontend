@@ -19,6 +19,8 @@ import type { DailyState, MetricName, MonthData, WeekData } from "@/lib/planner-
 import { cycleTaskAtDay, getWeekDayKeys } from "@/lib/week-tasks";
 import { arrayMove, clamp, createId } from "@/lib/utils";
 
+// BLOCK-START: APP_STORE_MODULE
+// Description: Zustand planner store for month/week loading, optimistic UI mutations, and debounced API persistence.
 type ReflectionSection = "keyEvents" | "gratitudes";
 type HabitLoadStatus = "idle" | "loading" | "ready" | "error";
 type LoadStatus = "idle" | "loading" | "ready" | "error";
@@ -100,10 +102,15 @@ type AppState = {
   updateWeekText: (key: string, field: "focus" | "reward", value: string) => void;
 };
 
+// BLOCK-START: APP_STORE_TIMER_REGISTRY
+// Description: Debounce timer registries used to batch optimistic writes before sending API requests.
 const monthPlanSaveTimers: Record<string, number | undefined> = {};
 const taskSaveTimers: Record<string, number | undefined> = {};
 const weekPatchSaveTimers: Record<string, number | undefined> = {};
+// BLOCK-END: APP_STORE_TIMER_REGISTRY
 
+// BLOCK-START: APP_STORE_META_HELPERS
+// Description: Small helpers for save metadata and habit loading status snapshots.
 function touchSave() {
   return { lastSavedAt: Date.now() };
 }
@@ -111,7 +118,10 @@ function touchSave() {
 function createHabitLoadState(status: HabitLoadStatus, lastKnownCount: number): HabitLoadState {
   return { status, lastKnownCount };
 }
+// BLOCK-END: APP_STORE_META_HELPERS
 
+// BLOCK-START: APP_STORE_KEY_PARSERS
+// Description: Parses serialized month and ISO week keys used across the store caches.
 function parseMonthKey(key: string): { month: number; year: number } | null {
   const match = /^(\d{4})-(\d{2})$/.exec(key);
   if (!match) {
@@ -135,7 +145,10 @@ function parseWeekKey(key: string): { week: number; year: number } | null {
     week: Number(match[2]),
   };
 }
+// BLOCK-END: APP_STORE_KEY_PARSERS
 
+// BLOCK-START: APP_STORE_DATA_MAPPERS
+// Description: Normalizes API payload fragments into store-native task and daily-state shapes.
 function isPersistedId(value: string | null | undefined): value is string {
   return Boolean(value && !value.startsWith("pending:"));
 }
@@ -162,8 +175,24 @@ function toDailyState(entry: DailyStateEntry): DailyState {
     anxiety: entry.anxiety,
   };
 }
+// BLOCK-END: APP_STORE_DATA_MAPPERS
 
 export const useAppStore = create<AppState>((set, get) => {
+  // BLOCK-START: APP_STORE_LOADERS
+  // Description: Loads month and week bundles into local cache while tracking load-state transitions.
+  // BLOCK-START: APP_STORE_LOAD_MONTH
+  /**
+   * function_contracts:
+   *   loadMonth:
+   *     description: "Loads one month bundle into store cache unless it is already ready or loading."
+   *     preconditions:
+   *       - "year/month identify a calendar month"
+   *       - "Month bundle API endpoint is reachable"
+   *     postconditions:
+   *       - "monthLoadStates[key] becomes ready or error"
+   *       - "months[key] is replaced with mapped API data on success"
+   *       - "habitLoadStates[key] reflects status and known habit count"
+   */
   const loadMonth = async (year: number, month: number, force = false) => {
     const key = getMonthKey(year, month);
     const currentStatus = get().monthLoadStates[key];
@@ -219,7 +248,20 @@ export const useAppStore = create<AppState>((set, get) => {
       }));
     }
   };
+  // BLOCK-END: APP_STORE_LOAD_MONTH
 
+  // BLOCK-START: APP_STORE_LOAD_WEEK
+  /**
+   * function_contracts:
+   *   loadWeek:
+   *     description: "Loads one ISO week bundle and entry metadata into store cache unless already loaded."
+   *     preconditions:
+   *       - "year/week identify an ISO week"
+   *       - "Week bundle API endpoint is reachable"
+   *     postconditions:
+   *       - "weekLoadStates[key] becomes ready or error"
+   *       - "weeks[key] and weekEntryMeta[key] are populated on success"
+   */
   const loadWeek = async (year: number, week: number, force = false) => {
     const key = getWeekKey(year, week);
     const currentStatus = get().weekLoadStates[key];
@@ -265,7 +307,23 @@ export const useAppStore = create<AppState>((set, get) => {
       }));
     }
   };
+  // BLOCK-END: APP_STORE_LOAD_WEEK
+  // BLOCK-END: APP_STORE_LOADERS
 
+  // BLOCK-START: APP_STORE_PERSISTENCE
+  // Description: Debounced persistence helpers for month plans, week reflections, tasks, and task ordering.
+  // BLOCK-START: APP_STORE_PERSIST_MONTH_PLAN
+  /**
+   * function_contracts:
+   *   persistMonthPlan:
+   *     description: "Persists optimistic month planning fields for one month key."
+   *     preconditions:
+   *       - "key matches an existing month in store"
+   *       - "parseMonthKey(key) succeeds"
+   *     postconditions:
+   *       - "Sends current month planning payload to the backend when month exists"
+   *       - "Leaves optimistic local state intact if the request fails"
+   */
   const persistMonthPlan = async (key: string) => {
     const month = get().months[key];
     const parsed = parseMonthKey(key);
@@ -280,7 +338,20 @@ export const useAppStore = create<AppState>((set, get) => {
       // Keep optimistic state locally; the next successful fetch will reconcile from the API.
     }
   };
+  // BLOCK-END: APP_STORE_PERSIST_MONTH_PLAN
 
+  // BLOCK-START: APP_STORE_PERSIST_WEEK_PATCH
+  /**
+   * function_contracts:
+   *   persistWeekPatch:
+   *     description: "Persists editable focus and reward fields for one week key."
+   *     preconditions:
+   *       - "key matches an existing week in store"
+   *       - "parseWeekKey(key) succeeds"
+   *     postconditions:
+   *       - "Sends current reflection focus/reward patch to the backend when week exists"
+   *       - "Leaves optimistic local state intact if the request fails"
+   */
   const persistWeekPatch = async (key: string) => {
     const week = get().weeks[key];
     const parsed = parseWeekKey(key);
@@ -298,7 +369,20 @@ export const useAppStore = create<AppState>((set, get) => {
       // Keep optimistic state locally; the next successful fetch will reconcile from the API.
     }
   };
+  // BLOCK-END: APP_STORE_PERSIST_WEEK_PATCH
 
+  // BLOCK-START: APP_STORE_PERSIST_TASK
+  /**
+   * function_contracts:
+   *   persistTask:
+   *     description: "Persists one edited week task to the backend after optimistic local updates."
+   *     preconditions:
+   *       - "key matches an existing week in store"
+   *       - "taskId belongs to a persisted task, not a temp task"
+   *     postconditions:
+   *       - "Sends current task title, timing, priority, and start_day to the backend"
+   *       - "Leaves optimistic local state intact if the request fails"
+   */
   const persistTask = async (key: string, taskId: string) => {
     const week = get().weeks[key];
 
@@ -326,7 +410,20 @@ export const useAppStore = create<AppState>((set, get) => {
       // Keep optimistic state locally; the next successful fetch will reconcile from the API.
     }
   };
+  // BLOCK-END: APP_STORE_PERSIST_TASK
 
+  // BLOCK-START: APP_STORE_SYNC_TASK_ORDER
+  /**
+   * function_contracts:
+   *   syncTaskOrder:
+   *     description: "Persists current task ordering for one week when all tasks have stable server ids."
+   *     preconditions:
+   *       - "key matches an existing week in store"
+   *       - "No task in the week has a temp id"
+   *     postconditions:
+   *       - "Posts task_ids in their current UI order to the backend"
+   *       - "Skips persistence when the key is invalid or temp tasks are still present"
+   */
   const syncTaskOrder = async (key: string) => {
     const parsed = parseWeekKey(key);
     const week = get().weeks[key];
@@ -343,7 +440,11 @@ export const useAppStore = create<AppState>((set, get) => {
       // Keep optimistic state locally; the next successful fetch will reconcile from the API.
     }
   };
+  // BLOCK-END: APP_STORE_SYNC_TASK_ORDER
+  // BLOCK-END: APP_STORE_PERSISTENCE
 
+  // BLOCK-START: APP_STORE_ACTIONS
+  // Description: Public store API consumed by planner screens for loading, editing, and persisting month/week state.
   return {
     habitLoadStates: {},
     monthLoadStates: {},
@@ -352,6 +453,8 @@ export const useAppStore = create<AppState>((set, get) => {
     weekLoadStates: {},
     weeks: {},
     lastSavedAt: null,
+    // BLOCK-START: APP_STORE_BOOTSTRAP_ACTIONS
+    // Description: Entry-point actions that trigger month/week loading for screens.
     ensureMonth: (year, month) => {
       void loadMonth(year, month);
     },
@@ -361,6 +464,10 @@ export const useAppStore = create<AppState>((set, get) => {
     fetchMonthHabits: async (year, month) => {
       await loadMonth(year, month, true);
     },
+    // BLOCK-END: APP_STORE_BOOTSTRAP_ACTIONS
+
+    // BLOCK-START: APP_STORE_MONTH_EDIT_ACTIONS
+    // Description: Month plan, daily metrics, and habit actions with optimistic local updates.
     updateMonthText: (key, field, value) =>
       set((state) => {
         const current = state.months[key];
@@ -643,6 +750,18 @@ export const useAppStore = create<AppState>((set, get) => {
           ...touchSave(),
         };
       }),
+    /**
+     * function_contracts:
+     *   addHabit:
+     *     description: "Creates a new habit for the selected month and propagates it through cached months."
+     *     preconditions:
+     *       - "key matches a loaded month"
+     *       - "name is non-empty after trimming and not duplicated in the current month"
+     *     postconditions:
+     *       - "Returns { ok: true } when the habit is created"
+     *       - "Returns a typed failure reason for empty, duplicate, or missing month cases"
+     *       - "Updates optimistic habit lists and load counters after success"
+     */
     addHabit: async (key, name) => {
       const trimmedName = name.trim();
 
@@ -751,6 +870,10 @@ export const useAppStore = create<AppState>((set, get) => {
           ...touchSave(),
         };
       }),
+    // BLOCK-END: APP_STORE_MONTH_EDIT_ACTIONS
+
+    // BLOCK-START: APP_STORE_WEEK_REFLECTION_ACTIONS
+    // Description: Week reflection text and day-note actions with optimistic metadata tracking.
     updateWeekText: (key, field, value) =>
       set((state) => {
         const current = state.weeks[key];
@@ -779,6 +902,19 @@ export const useAppStore = create<AppState>((set, get) => {
           ...touchSave(),
         };
       }),
+    /**
+     * function_contracts:
+     *   updateWeekDayNote:
+     *     description: "Creates, updates, or deletes one day reflection note and keeps entry ids synchronized."
+     *     preconditions:
+     *       - "key matches a loaded week"
+     *       - "section is one of keyEvents or gratitudes"
+     *       - "dayKey is an ISO date within the visible week"
+     *     postconditions:
+     *       - "Optimistically updates week reflection text"
+     *       - "Creates pending ids for new notes until the backend returns a persisted id"
+     *       - "Deletes or patches existing entries when note content changes"
+     */
     updateWeekDayNote: (key, section, dayKey, value) =>
       set((state) => {
         const current = state.weeks[key];
@@ -879,6 +1015,22 @@ export const useAppStore = create<AppState>((set, get) => {
           ...touchSave(),
         };
       }),
+    // BLOCK-END: APP_STORE_WEEK_REFLECTION_ACTIONS
+
+    // BLOCK-START: APP_STORE_TASK_ACTIONS
+    // Description: Task creation, deletion, editing, status updates, start-day changes, and drag-reorder flows.
+    /**
+     * function_contracts:
+     *   addTask:
+     *     description: "Creates an optimistic temp task for the selected week and reconciles it with backend response."
+     *     preconditions:
+     *       - "key matches a loaded week"
+     *       - "parseWeekKey(key) succeeds"
+     *     postconditions:
+     *       - "Appends a temp task to local state immediately"
+     *       - "Replaces temp task with persisted task on success"
+     *       - "Removes temp task if backend creation fails"
+     */
     addTask: (key) =>
       set((state) => {
         const current = state.weeks[key];
@@ -1028,6 +1180,19 @@ export const useAppStore = create<AppState>((set, get) => {
           ...touchSave(),
         };
       }),
+    /**
+     * function_contracts:
+     *   cycleTaskStatus:
+     *     description: "Cycles one task cell status for a day and mirrors the change to backend task status endpoints."
+     *     preconditions:
+     *       - "key matches a loaded week"
+     *       - "taskId identifies a task in that week"
+     *       - "dayKey belongs to the visible week"
+     *     postconditions:
+     *       - "Updates one task status trail optimistically"
+     *       - "Creates or deletes backend task status entries for persisted tasks"
+     *       - "Marks next week cache idle when Sunday carry-over may change"
+     */
     cycleTaskStatus: (key, taskId, dayKey) =>
       set((state) => {
         const current = state.weeks[key];
@@ -1142,5 +1307,8 @@ export const useAppStore = create<AppState>((set, get) => {
           ...touchSave(),
         };
       }),
+    // BLOCK-END: APP_STORE_TASK_ACTIONS
   };
+  // BLOCK-END: APP_STORE_ACTIONS
 });
+// BLOCK-END: APP_STORE_MODULE
