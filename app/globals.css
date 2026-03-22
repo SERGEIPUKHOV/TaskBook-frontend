@@ -20,14 +20,14 @@
   --canvas: 16 15 14;
   --paper: 26 24 22;
   --ink: 236 232 226;
-  --muted: 148 140 130;
+  --muted: 158 150 140;
   --line: 52 48 44;
-  --accent: 124 180 255;
+  --accent: 134 174 255;
   --success: 72 210 120;
   --danger: 240 100 100;
   --anxiety: 240 100 100;
   --priority: 240 180 40;
-  --ring: 150 190 255;
+  --ring: 158 186 255;
 }
 
 * {
@@ -62,7 +62,7 @@ body {
 
 .dark body {
   background:
-    radial-gradient(circle at top left, rgb(var(--accent) / 0.16), transparent 30%),
+    radial-gradient(circle at top left, rgb(var(--accent) / 0.1), transparent 30%),
     radial-gradient(circle at bottom right, rgb(var(--priority) / 0.14), transparent 28%),
     linear-gradient(180deg, rgb(22 20 18), rgb(var(--canvas)));
 }
@@ -324,6 +324,6 @@ input[type="number"] {
 }
 
 .dark .auth-btn-primary {
-  background: rgb(var(--paper));
-  color: rgb(16 15 14);
+  background: rgb(var(--ink));
+  color: rgb(var(--canvas));
 }
