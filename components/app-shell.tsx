@@ -112,16 +112,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <div className="text-lg font-semibold text-ink">{sectionTitle(pathname)}</div>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <ThemeToggle className="shrink-0" />
+                <ThemeToggle className="shrink-0" savedLabel={showSaved ? "Сохранено" : undefined} />
                 {!isOnline && (
                   <span className="inline-flex items-center gap-2 rounded-full border border-danger/30 bg-danger/10 px-3 py-1.5 text-danger">
                     <SignalIcon className="h-4 w-4" />
                     Оффлайн
-                  </span>
-                )}
-                {showSaved && (
-                  <span className="rounded-full border border-line bg-paper px-3 py-1.5 text-muted">
-                    Сохранено
                   </span>
                 )}
               </div>

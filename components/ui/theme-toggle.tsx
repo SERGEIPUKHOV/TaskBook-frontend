@@ -9,6 +9,7 @@ import { useThemeStore } from "@/store/theme-store";
 
 type ThemeToggleProps = {
   className?: string;
+  savedLabel?: string;
 };
 
 const LABELS: Record<
@@ -32,7 +33,7 @@ const LABELS: Record<
   },
 };
 
-export function ThemeToggle({ className }: ThemeToggleProps) {
+export function ThemeToggle({ className, savedLabel }: ThemeToggleProps) {
   const hideTimerRef = useRef<number | null>(null);
   const fadeTimerRef = useRef<number | null>(null);
   const [activeLabel, setActiveLabel] = useState<ThemePreference | null>(null);
@@ -88,7 +89,9 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
         aria-hidden="true"
         className={cn(
           "pointer-events-none absolute right-[calc(100%+0.625rem)] flex flex-col items-end whitespace-nowrap transition-all duration-200",
-          isLabelVisible ? "translate-x-0 opacity-100" : "translate-x-1 opacity-0",
+          isLabelVisible || (!isLabelVisible && !labelInfo && savedLabel)
+            ? "translate-x-0 opacity-100"
+            : "translate-x-1 opacity-0",
         )}
       >
         {labelInfo ? (
@@ -96,6 +99,8 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
             <span className="text-sm font-medium text-ink">{labelInfo.label}</span>
             <span className="text-xs text-muted">{labelInfo.description}</span>
           </>
+        ) : savedLabel ? (
+          <span className="text-sm text-muted">{savedLabel}</span>
         ) : null}
       </div>
 
@@ -127,7 +132,12 @@ export function ThemeToggle({ className }: ThemeToggleProps) {
           {!isMounted ? <span className="absolute inset-0 rounded-full bg-line/60" /> : null}
         </span>
         {theme === "system" ? (
-          <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border border-paper bg-accent shadow-sm" />
+          <span className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full border border-line bg-paper text-muted shadow-sm">
+            <svg aria-hidden="true" fill="currentColor" viewBox="0 0 16 16" className="h-2.5 w-2.5">
+              <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5ZM7 8a1 1 0 1 1 2 0A1 1 0 0 1 7 8Z" />
+              <path d="M9.5 1h-3l-.5 1.5-1.3.75L3 2.8 1.8 4l.45 1.7L1.5 7v2l.75 1.3L1.8 12 3 13.2l1.7-.45L6 13.5l1.5.5h3l.5-1.5 1.3-.75 1.7.45L15.2 11l-.45-1.7.75-1.3V6l-.75-1.3.45-1.7L14 1.8l-1.7.45L11 1.5 9.5 1Zm-1.5 1h1l.4 1.2.6.35 1.25-.33.7.7-.33 1.25.35.6L13 6.5v1l-1.2.4-.35.6.33 1.25-.7.7-1.25-.33-.6.35L8.5 11.5h-1l-.4-1.2-.6-.35-1.25.33-.7-.7.33-1.25-.35-.6L3 7.5v-1l1.2-.4.35-.6-.33-1.25.7-.7 1.25.33.6-.35L8 2Z" />
+            </svg>
+          </span>
         ) : null}
       </button>
     </div>
