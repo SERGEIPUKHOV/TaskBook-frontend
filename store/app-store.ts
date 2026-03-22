@@ -565,6 +565,8 @@ export const useAppStore = create<AppState>((set, get) => {
           ...touchSave(),
         };
       }),
+    // BLOCK-START: APP_STORE_DAY_SLICE
+    // Description: Daily metric editing actions persisted against month day-state endpoints.
     setDailyMetric: (key, day, metric, value) => {
       const current = get().months[key];
       const parsed = parseMonthKey(key);
@@ -694,6 +696,9 @@ export const useAppStore = create<AppState>((set, get) => {
           });
         });
     },
+    // BLOCK-END: APP_STORE_DAY_SLICE
+    // BLOCK-START: APP_STORE_HABITS_SLICE
+    // Description: Habit loading state and month-scoped habit CRUD/logging actions.
     toggleHabitDay: (key, habitId, dayKey) =>
       set((state) => {
         const current = state.months[key];
@@ -870,8 +875,11 @@ export const useAppStore = create<AppState>((set, get) => {
           ...touchSave(),
         };
       }),
+    // BLOCK-END: APP_STORE_HABITS_SLICE
     // BLOCK-END: APP_STORE_MONTH_EDIT_ACTIONS
 
+    // BLOCK-START: APP_STORE_WEEK_SLICE
+    // Description: Week caches, entry metadata, and week-level reflection actions.
     // BLOCK-START: APP_STORE_WEEK_REFLECTION_ACTIONS
     // Description: Week reflection text and day-note actions with optimistic metadata tracking.
     updateWeekText: (key, field, value) =>
@@ -1016,7 +1024,10 @@ export const useAppStore = create<AppState>((set, get) => {
         };
       }),
     // BLOCK-END: APP_STORE_WEEK_REFLECTION_ACTIONS
+    // BLOCK-END: APP_STORE_WEEK_SLICE
 
+    // BLOCK-START: APP_STORE_TASKS_SLICE
+    // Description: Week task CRUD, ordering, and day-status actions backed by weekly bundles.
     // BLOCK-START: APP_STORE_TASK_ACTIONS
     // Description: Task creation, deletion, editing, status updates, start-day changes, and drag-reorder flows.
     /**
@@ -1308,6 +1319,7 @@ export const useAppStore = create<AppState>((set, get) => {
         };
       }),
     // BLOCK-END: APP_STORE_TASK_ACTIONS
+    // BLOCK-END: APP_STORE_TASKS_SLICE
   };
   // BLOCK-END: APP_STORE_ACTIONS
 });

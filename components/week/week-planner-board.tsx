@@ -596,6 +596,8 @@ export function WeekPlannerBoard({
 
   return (
     <>
+      {/* BLOCK-START: WEEK_PLANNER_BOARD_ROOT */}
+      {/* Description: Root composition of the week planner board, combining header, grids, and add-task affordance. */}
       <div>
         <article className="paper-panel w-full max-w-full rounded-[32px] p-4 sm:p-5">
           <div className="mb-3 text-xs uppercase tracking-[0.2em] text-muted">Привычки и задачи недели</div>
@@ -626,6 +628,8 @@ export function WeekPlannerBoard({
                 ) : null}
               </div>
 
+              {/* BLOCK-START: WEEK_BOARD_HEADER */}
+              {/* Description: Week header grid with weekday labels and links to day pages. */}
               <div
                 className="relative z-10 grid items-stretch border-b border-line/70 text-[11px] text-muted"
                 style={{ gridTemplateColumns: boardColumns }}
@@ -652,6 +656,7 @@ export function WeekPlannerBoard({
                 <div className={getRightColumnClass("flex h-12 items-center justify-center")}>Fa</div>
                 <div className="h-12" />
               </div>
+              {/* BLOCK-END: WEEK_BOARD_HEADER */}
 
               <div className="relative z-10 border-b border-line/70 bg-canvas/80 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
                 Привычки
@@ -697,6 +702,8 @@ export function WeekPlannerBoard({
                 : null}
 
               <div className="relative z-10 h-px bg-line" />
+              {/* BLOCK-START: WEEK_BOARD_TASK_GRID */}
+              {/* Description: Habit rows and task rows rendered in the weekly grid with optimistic interactions. */}
               <div className="relative z-10 border-y border-line/70 bg-canvas/80 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
                 Задачи
               </div>
@@ -723,9 +730,12 @@ export function WeekPlannerBoard({
                   />
                 ))
               )}
+              {/* BLOCK-END: WEEK_BOARD_TASK_GRID */}
             </div>
           </div>
 
+          {/* BLOCK-START: WEEK_BOARD_ADD_TASK */}
+          {/* Description: Inline affordance for appending a new task row and focusing its title field. */}
           <div className="mt-2 flex justify-end">
             <button
               className="rounded-md px-2 py-1 text-sm text-muted transition-colors hover:bg-canvas hover:text-accent"
@@ -738,10 +748,12 @@ export function WeekPlannerBoard({
               + Добавить строку
             </button>
           </div>
+          {/* BLOCK-END: WEEK_BOARD_ADD_TASK */}
         </article>
 
         <StatusLegend />
       </div>
+      {/* BLOCK-END: WEEK_PLANNER_BOARD_ROOT */}
 
       {pendingDelete ? (
         <DeleteDialog
