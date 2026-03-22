@@ -24,7 +24,6 @@ import {
   UserIcon,
   WeekIcon,
 } from "@/components/ui/icons";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
 import { useNavStore } from "@/store/nav-store";
@@ -33,7 +32,7 @@ function navClassName(isActive: boolean): string {
   return cn(
     "flex items-center gap-3 rounded-2xl border px-3 py-3 text-sm transition-colors duration-150",
     isActive
-      ? "border-ink bg-ink text-white shadow-paper"
+      ? "border-ink bg-ink text-canvas shadow-paper"
       : "border-transparent text-muted hover:border-line hover:bg-paper hover:text-ink",
   );
 }
@@ -176,13 +175,13 @@ export function Sidebar() {
                       className={cn(
                         "block rounded-2xl border px-3 py-2.5 transition-colors",
                         isActive
-                          ? "border-ink bg-ink text-white"
+                          ? "border-ink bg-ink text-canvas"
                           : "border-transparent bg-paper/70 text-muted hover:border-line hover:text-ink",
                       )}
                       href={href}
                     >
                       <div className="text-sm font-medium">{formatDayShort(dayDate)}</div>
-                      <div className={cn("text-xs", isActive ? "text-white/80" : "text-muted")}>
+                      <div className={cn("text-xs", isActive ? "text-canvas/80" : "text-muted")}>
                         {formatShortDate(dayDate)}
                       </div>
                     </Link>
@@ -197,13 +196,13 @@ export function Sidebar() {
                       className={cn(
                         "block rounded-2xl border px-3 py-2.5 transition-colors",
                         isActive
-                          ? "border-ink bg-ink text-white"
+                          ? "border-ink bg-ink text-canvas"
                           : "border-transparent bg-paper/70 text-muted hover:border-line hover:text-ink",
                       )}
                       href={`/week/${weekItem.year}/${weekItem.week}`}
                     >
                       <div className="text-sm font-medium">Нед. {index + 1}</div>
-                      <div className={cn("text-xs", isActive ? "text-white/80" : "text-muted")}>
+                      <div className={cn("text-xs", isActive ? "text-canvas/80" : "text-muted")}>
                         {weekItem.label}
                       </div>
                     </Link>
@@ -214,13 +213,6 @@ export function Sidebar() {
 
         <div className="mt-auto">
           <div className="rounded-[28px] border border-line bg-paper/90 p-2.5 shadow-paper xl:p-4">
-            <div className="mb-2 flex items-center justify-center rounded-[20px] border border-line bg-canvas/75 px-2 py-2.5 xl:justify-between xl:px-3">
-              <div className="hidden xl:block">
-                <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted">Тема</div>
-                <div className="text-sm text-ink">Light / Dark / System</div>
-              </div>
-              <ThemeToggle side="top" />
-            </div>
             <div className="hidden text-xs uppercase tracking-[0.2em] text-muted xl:block">Аккаунт</div>
             <div className="mt-2 hidden break-all text-sm font-medium text-ink xl:block">
               {user?.email ?? "Профиль пользователя"}

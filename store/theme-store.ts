@@ -16,6 +16,7 @@ type ThemeState = {
   hasHydrated: boolean;
   resolvedTheme: ResolvedTheme;
   theme: ThemePreference;
+  cycleTheme: () => void;
   markHydrated: () => void;
   setResolvedTheme: (theme: ResolvedTheme) => void;
   setTheme: (theme: ThemePreference) => void;
@@ -64,6 +65,12 @@ export const useThemeStore = create<ThemeState>()(
       toggleTheme: () => {
         const nextTheme = get().resolvedTheme === "dark" ? "light" : "dark";
         get().setTheme(nextTheme);
+      },
+      cycleTheme: () => {
+        const cycle: ThemePreference[] = ["light", "dark", "system"];
+        const currentTheme = get().theme;
+        const nextIndex = (cycle.indexOf(currentTheme) + 1) % cycle.length;
+        get().setTheme(cycle[nextIndex]);
       },
     }),
     {
