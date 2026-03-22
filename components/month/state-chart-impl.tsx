@@ -111,7 +111,7 @@ function renderDot(color: string, onSelectDay?: (day: number) => void) {
         cy={cy}
         fill={color}
         r={3.5}
-        stroke="white"
+        stroke="rgb(var(--paper))"
         strokeWidth={1.5}
         style={{ cursor: onSelectDay ? "pointer" : "default" }}
         onClick={onSelectDay ? () => onSelectDay(payload.day) : undefined}
@@ -191,7 +191,7 @@ export function StateChartImpl({ month, onSelectDay, dayStats }: StateChartProps
       <div ref={chartHostRef} className="w-full" style={{ height: CHART_HEIGHT }}>
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: CHART_MARGIN_TOP, right: 8, left: 8, bottom: 0 }}>
-            <CartesianGrid stroke="rgba(229,229,227,0.6)" vertical={false} strokeDasharray="2 6" />
+            <CartesianGrid stroke="rgb(var(--line) / 0.6)" vertical={false} strokeDasharray="2 6" />
             <XAxis
               dataKey="day"
               axisLine={false}
@@ -212,12 +212,12 @@ export function StateChartImpl({ month, onSelectDay, dayStats }: StateChartProps
               width={Y_AXIS_WIDTH}
             />
             <Tooltip
-              cursor={{ stroke: "rgba(29,78,216,0.15)", strokeWidth: 24 }}
+              cursor={{ stroke: "rgb(var(--accent) / 0.14)", strokeWidth: 24 }}
               contentStyle={{
                 borderRadius: "18px",
-                border: "1px solid rgba(229,229,227,0.9)",
-                background: "rgba(255,255,255,0.94)",
-                boxShadow: "0 18px 40px rgba(15,23,42,0.12)",
+                border: "1px solid rgb(var(--line) / 0.9)",
+                background: "linear-gradient(180deg, rgb(var(--paper) / 0.96), rgb(var(--paper) / 0.88))",
+                boxShadow: "0 18px 40px rgb(0 0 0 / 0.18)",
               }}
               formatter={(value, name) => [value, metricLabels[name as MetricName] ?? name]}
               labelFormatter={(label) =>
@@ -230,7 +230,7 @@ export function StateChartImpl({ month, onSelectDay, dayStats }: StateChartProps
               stroke="rgb(var(--success))"
               strokeWidth={2.5}
               dot={renderDot("rgb(var(--success))", onSelectDay)}
-              activeDot={{ r: 5 }}
+              activeDot={{ r: 5, stroke: "rgb(var(--paper))", strokeWidth: 2 }}
               connectNulls
             />
             <Line
@@ -239,7 +239,7 @@ export function StateChartImpl({ month, onSelectDay, dayStats }: StateChartProps
               stroke="rgb(var(--accent))"
               strokeWidth={2.5}
               dot={renderDot("rgb(var(--accent))", onSelectDay)}
-              activeDot={{ r: 5 }}
+              activeDot={{ r: 5, stroke: "rgb(var(--paper))", strokeWidth: 2 }}
               connectNulls
             />
             <Line
@@ -248,7 +248,7 @@ export function StateChartImpl({ month, onSelectDay, dayStats }: StateChartProps
               stroke="rgb(var(--anxiety))"
               strokeWidth={2.5}
               dot={renderDot("rgb(var(--anxiety))", onSelectDay)}
-              activeDot={{ r: 5 }}
+              activeDot={{ r: 5, stroke: "rgb(var(--paper))", strokeWidth: 2 }}
               connectNulls
             />
             <Customized

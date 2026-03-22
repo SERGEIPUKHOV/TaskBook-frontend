@@ -75,7 +75,7 @@ function ReflectionRow({
           textareaRef.current = element;
           syncTextareaHeight(element);
         }}
-        className="min-h-6 w-full resize-none overflow-hidden border-0 border-b border-transparent bg-transparent px-0 py-0 text-sm leading-6 text-ink outline-none placeholder:text-[#c4c4c0] focus:border-accent"
+        className="min-h-6 w-full resize-none overflow-hidden border-0 border-b border-transparent bg-transparent px-0 py-0 text-sm leading-6 text-ink outline-none placeholder:text-muted/55 focus:border-accent"
         onBlur={() => scheduleSave(draft)}
         onChange={(event) => {
           setDraft(event.target.value);

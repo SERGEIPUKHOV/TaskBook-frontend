@@ -84,7 +84,7 @@ function formatDraftNumber(value: number): string {
 function getDayCellClass(isLastDay: boolean, extra?: string) {
   return cn(
     "min-h-10 border-r border-line",
-    isLastDay && "border-r-2 border-r-[#c4c4c0]",
+    isLastDay && "border-r-2 border-r-line",
     extra,
   );
 }
@@ -192,7 +192,7 @@ function TaskStatusCell({
       <div className={wrapperClassName}>
         <button
           aria-label="Начать задачу с этого дня"
-          className="flex h-8 w-8 items-center justify-center rounded-[10px] text-[#c4c4c0] transition-colors hover:bg-canvas hover:text-muted"
+          className="flex h-8 w-8 items-center justify-center rounded-[10px] text-muted/55 transition-colors hover:bg-canvas hover:text-muted"
           onClick={onMoveStart}
           type="button"
         >
@@ -418,7 +418,7 @@ function TaskRow({
             "flex h-6 w-6 items-center justify-center rounded-full border text-xs transition-colors",
             task.isPriority
               ? "border-priority bg-priority/15 text-priority"
-              : "border-line bg-paper text-[#c4c4c0] hover:border-priority hover:text-priority",
+              : "border-line bg-paper text-muted/55 hover:border-priority hover:text-priority",
           )}
           onClick={() => updateTask(weekKey, task.id, "isPriority", !task.isPriority)}
           type="button"
@@ -429,7 +429,7 @@ function TaskRow({
 
       <div className={getRightColumnClass("flex items-start justify-center px-1 pt-1")}>
         <input
-          className="ti-input h-7 w-full rounded-md border border-transparent bg-transparent px-1 text-center text-sm text-ink outline-none transition-colors placeholder:text-[#c4c4c0] focus:border-line focus:bg-paper"
+          className="ti-input h-7 w-full rounded-md border border-transparent bg-transparent px-1 text-center text-sm text-ink outline-none transition-colors placeholder:text-muted/55 focus:border-line focus:bg-paper"
           inputMode="numeric"
           max={999}
           min={0}
@@ -449,7 +449,7 @@ function TaskRow({
 
       <div className={getRightColumnClass("flex items-start justify-center px-1 pt-1")}>
         <input
-          className="fa-input h-7 w-full rounded-md border border-transparent bg-transparent px-1 text-center text-sm text-ink outline-none transition-colors placeholder:text-[#c4c4c0] focus:border-line focus:bg-paper"
+          className="fa-input h-7 w-full rounded-md border border-transparent bg-transparent px-1 text-center text-sm text-ink outline-none transition-colors placeholder:text-muted/55 focus:border-line focus:bg-paper"
           inputMode="numeric"
           max={999}
           min={0}
@@ -504,7 +504,7 @@ function HabitSkeletonRows({ count }: { count: number }) {
   return (
     <div className="relative z-10 space-y-2 px-4 py-3">
       {Array.from({ length: count }).map((_, index) => (
-        <div key={`habit-skeleton-${index}`} className="h-9 animate-pulse rounded-[8px] bg-[#f0f0ee]" />
+        <div key={`habit-skeleton-${index}`} className="h-9 animate-pulse rounded-[8px] bg-line/50" />
       ))}
     </div>
   );
@@ -612,7 +612,7 @@ export function WeekPlannerBoard({
                     style={{
                       left: `${dayIndex * DAY_COLUMN_WIDTH}px`,
                       width: `${DAY_COLUMN_WIDTH}px`,
-                      backgroundColor: "rgba(76, 161, 84, 0.08)",
+                      backgroundColor: "rgb(var(--success) / 0.09)",
                     }}
                   />
                 ))}
@@ -622,7 +622,7 @@ export function WeekPlannerBoard({
                     style={{
                       left: `${todayColumnIndex * DAY_COLUMN_WIDTH}px`,
                       width: `${DAY_COLUMN_WIDTH}px`,
-                      backgroundColor: "#F0F4FF",
+                      backgroundColor: "rgb(var(--accent) / 0.1)",
                     }}
                   />
                 ) : null}

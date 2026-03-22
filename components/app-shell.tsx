@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { MobileNav } from "@/components/navigation/mobile-nav";
 import { Sidebar } from "@/components/navigation/sidebar";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { SignalIcon } from "@/components/ui/icons";
 import type { ApiError } from "@/lib/auth-types";
 import { isPublicAuthPath } from "@/lib/auth-constants";
@@ -88,7 +89,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [clearSession, hasHydrated, isAuthRoute, syncUser, user]);
 
   if (isAuthRoute) {
-    return <div className="min-h-screen">{children}</div>;
+    return (
+      <div className="relative min-h-screen">
+        <div className="absolute right-4 top-4 z-30 sm:right-6 sm:top-6">
+          <ThemeToggle />
+        </div>
+        {children}
+      </div>
+    );
   }
 
   return (
@@ -104,6 +112,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <div className="text-lg font-semibold text-ink">{sectionTitle(pathname)}</div>
               </div>
               <div className="flex items-center gap-2 text-sm">
+                <ThemeToggle className="shrink-0" />
                 {!isOnline && (
                   <span className="inline-flex items-center gap-2 rounded-full border border-danger/30 bg-danger/10 px-3 py-1.5 text-danger">
                     <SignalIcon className="h-4 w-4" />

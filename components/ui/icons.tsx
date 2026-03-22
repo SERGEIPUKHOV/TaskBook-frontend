@@ -210,6 +210,48 @@ export function SignalIcon({ className }: IconProps) {
   );
 }
 
+export function SunIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={iconClassName(className)}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2.5v2.5" />
+      <path d="M12 19v2.5" />
+      <path d="m5.2 5.2 1.8 1.8" />
+      <path d="m17 17 1.8 1.8" />
+      <path d="M2.5 12H5" />
+      <path d="M19 12h2.5" />
+      <path d="m5.2 18.8 1.8-1.8" />
+      <path d="m17 7 1.8-1.8" />
+    </svg>
+  );
+}
+
+export function MoonIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={iconClassName(className)}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M20 15.2A8.5 8.5 0 1 1 8.8 4a7.2 7.2 0 0 0 11.2 11.2Z" />
+    </svg>
+  );
+}
+
 export function UserIcon({ className }: IconProps) {
   return (
     <svg

@@ -44,7 +44,7 @@ function SummaryCard({
       <div className="mt-5">
         <textarea
           ref={textareaRef}
-          className="min-h-16 w-full resize-none overflow-hidden border-0 border-b border-transparent bg-transparent px-0 py-0 text-sm leading-7 text-ink outline-none placeholder:text-[#c4c4c0] focus:border-accent"
+          className="min-h-16 w-full resize-none overflow-hidden border-0 border-b border-transparent bg-transparent px-0 py-0 text-sm leading-7 text-ink outline-none placeholder:text-muted/55 focus:border-accent"
           onBlur={onBlur}
           onChange={(event) => {
             onChange(event.target.value);

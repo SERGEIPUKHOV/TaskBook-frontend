@@ -24,6 +24,7 @@ import {
   UserIcon,
   WeekIcon,
 } from "@/components/ui/icons";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth-store";
 import { useNavStore } from "@/store/nav-store";
@@ -213,6 +214,13 @@ export function Sidebar() {
 
         <div className="mt-auto">
           <div className="rounded-[28px] border border-line bg-paper/90 p-2.5 shadow-paper xl:p-4">
+            <div className="mb-2 flex items-center justify-center rounded-[20px] border border-line bg-canvas/75 px-2 py-2.5 xl:justify-between xl:px-3">
+              <div className="hidden xl:block">
+                <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted">Тема</div>
+                <div className="text-sm text-ink">Light / Dark / System</div>
+              </div>
+              <ThemeToggle side="top" />
+            </div>
             <div className="hidden text-xs uppercase tracking-[0.2em] text-muted xl:block">Аккаунт</div>
             <div className="mt-2 hidden break-all text-sm font-medium text-ink xl:block">
               {user?.email ?? "Профиль пользователя"}

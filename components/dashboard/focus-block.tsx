@@ -18,7 +18,7 @@ export function FocusBlock({ detail, emptyText, text, title }: FocusBlockProps) 
       <div
         className={cn(
           "mt-2 text-2xl font-semibold leading-snug text-ink",
-          trimmedText.length === 0 && "text-[#c4c4c0]",
+          trimmedText.length === 0 && "text-muted/55",
         )}
       >
         {trimmedText || emptyText}
