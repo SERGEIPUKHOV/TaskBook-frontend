@@ -58,7 +58,7 @@ export function DayTaskList({ dayKey, week, weekKey }: DayTaskListProps) {
     if (dayIndex === -1) {
       return false;
     }
-    return getTaskCellState(task, dayIndex, dayKeys).variant !== "hidden";
+    return getTaskCellState(task, dayIndex, dayKeys).variant === "normal";
   });
 
   return (
