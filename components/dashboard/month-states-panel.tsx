@@ -101,7 +101,7 @@ function createDateStates(rows: DateRow[]): DateState[] {
 }
 
 export function MonthStatesPanel({ monthKey, month, weeks }: MonthStatesPanelProps) {
-  const setDailyMetric = useAppStore((state) => state.setDailyMetric);
+  const setDailyMetrics = useAppStore((state) => state.setDailyMetrics);
   const today = startOfDay(new Date());
   const rows: DateRow[] = getVisibleDates(month).map((date) => ({
     canEdit: isSameDay(date, today) || isSameDay(date, subDays(today, 1)),
@@ -175,15 +175,14 @@ export function MonthStatesPanel({ monthKey, month, weeks }: MonthStatesPanelPro
       return;
     }
 
+    const valuesToSave: Partial<Record<MetricName, number>> = {};
     metricColumns.forEach(({ key }) => {
       const nextValue = state.draft[key].trim();
-
-      if (!nextValue) {
-        return;
+      if (nextValue) {
+        valuesToSave[key] = clamp(Number(nextValue), 1, 10);
       }
-
-      setDailyMetric(monthKey, row.date.getDate(), key, clamp(Number(nextValue), 1, 10));
     });
+    setDailyMetrics(monthKey, row.date.getDate(), valuesToSave);
 
     setDateStates((current) =>
       current.map((item, index) =>
