@@ -150,10 +150,10 @@ function ListSection({
         </div>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex flex-col gap-2 sm:flex-row">
         <input
           ref={newItemInputRef}
-          className="field-base h-10 flex-1 px-3 text-sm"
+          className="field-base flex-1 px-3 py-2 text-sm leading-5"
           onChange={(event) => setNewItemText(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Enter") {

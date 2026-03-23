@@ -79,7 +79,7 @@ export type WeeksSlice = {
 };
 
 export type TasksSlice = {
-  addTask: (key: string) => void;
+  addTask: (key: string, title?: string) => void;
   cycleTaskStatus: (key: string, taskId: string, dayKey: string) => void;
   deleteTask: (key: string, taskId: string) => void;
   moveTask: (key: string, activeId: string, targetId: string) => void;

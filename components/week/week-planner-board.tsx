@@ -138,7 +138,7 @@ function DeleteDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 px-4 backdrop-blur-sm">
       <div className="paper-panel w-full max-w-md rounded-[32px] p-6">
         <div className="text-xs uppercase tracking-[0.2em] text-danger">Удаление задачи</div>
-        <h3 className="mt-3 text-2xl font-semibold text-ink">{state.taskTitle || "Пустая задача"}</h3>
+        <h3 className="mt-3 break-all text-2xl font-semibold text-ink">{state.taskTitle || "Пустая задача"}</h3>
         <p className="mt-3 text-sm leading-7 text-muted">
           Это действие нельзя отменить. Кнопка подтверждения станет активной после обратного отсчёта.
         </p>
@@ -181,7 +181,7 @@ function TaskStatusCell({
   onMoveStart: (() => void) | null;
   state: ReturnType<typeof getTaskCellState>;
 }) {
-  const wrapperClassName = getDayCellClass(isLastDay, "flex items-start justify-center pt-1");
+  const wrapperClassName = getDayCellClass(isLastDay, "flex items-center justify-center");
 
   if (state.variant === "hidden") {
     if (!onMoveStart) {
@@ -412,7 +412,7 @@ function TaskRow({
         />
       ))}
 
-      <div className={getRightColumnClass("flex items-start justify-center pt-1.5")}>
+      <div className={getRightColumnClass("flex items-center justify-center")}>
         <button
           className={cn(
             "flex h-6 w-6 items-center justify-center rounded-full border text-xs transition-colors",
@@ -427,7 +427,7 @@ function TaskRow({
         </button>
       </div>
 
-      <div className={getRightColumnClass("flex items-start justify-center px-1 pt-1")}>
+      <div className={getRightColumnClass("flex items-center justify-center px-1")}>
         <input
           className="ti-input h-7 w-full rounded-md border border-transparent bg-transparent px-1 text-center text-sm text-ink outline-none transition-colors placeholder:text-muted/55 focus:border-line focus:bg-paper"
           inputMode="numeric"
@@ -447,7 +447,7 @@ function TaskRow({
         />
       </div>
 
-      <div className={getRightColumnClass("flex items-start justify-center px-1 pt-1")}>
+      <div className={getRightColumnClass("flex items-center justify-center px-1")}>
         <input
           className="fa-input h-7 w-full rounded-md border border-transparent bg-transparent px-1 text-center text-sm text-ink outline-none transition-colors placeholder:text-muted/55 focus:border-line focus:bg-paper"
           inputMode="numeric"
@@ -467,18 +467,18 @@ function TaskRow({
         />
       </div>
 
-      <div className="flex min-h-10 items-start gap-2 px-2 py-1">
+      <div className="flex min-h-10 items-center gap-2 px-2 py-1.5">
         <textarea
           ref={(element) => {
             textareaRef.current = element;
             registerInput(task.id, element);
-            syncTextareaHeight(element, 32);
+            syncTextareaHeight(element, 36);
           }}
-          className="min-h-8 w-full resize-none overflow-hidden border-0 border-b border-transparent bg-transparent px-0 py-0 text-sm leading-7 text-ink outline-none placeholder:text-muted/60 focus:border-accent"
+          className="field-base w-full resize-none overflow-hidden px-3 py-2 text-sm leading-5 text-ink outline-none placeholder:text-muted/60"
           onBlur={() => scheduleSave("title", draft.title)}
           onChange={(event) => {
             setDraft((current) => ({ ...current, title: event.target.value }));
-            syncTextareaHeight(event.currentTarget, 32);
+            syncTextareaHeight(event.currentTarget, 36);
           }}
           placeholder="Новая задача..."
           rows={1}
@@ -538,6 +538,8 @@ export function WeekPlannerBoard({
   const habitLoadState = useAppStore((state) => state.habitLoadStates[monthKey]);
   const month = useAppStore((state) => state.months[monthKey]);
   const [pendingDelete, setPendingDelete] = useState<PendingDeleteState | null>(null);
+  const [newTaskText, setNewTaskText] = useState("");
+  const newTaskInputRef = useRef<HTMLInputElement | null>(null);
   const shouldFocusNewTaskRef = useRef(false);
   const previousTaskCountRef = useRef(week.tasks.length);
   const titleInputRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
@@ -708,47 +710,101 @@ export function WeekPlannerBoard({
                 Задачи
               </div>
 
-              {week.tasks.length === 0 ? (
-                <div className="relative z-10 px-4 py-4 text-sm text-muted">Задач на эту неделю пока нет.</div>
-              ) : (
-                week.tasks.map((task) => (
-                  <TaskRow
-                    key={task.id}
-                    dayKeys={dayKeys}
-                    onDelete={(currentTask) =>
-                      setPendingDelete({
-                        countdown: 5,
-                        taskId: currentTask.id,
-                        taskTitle: currentTask.title,
-                      })
-                    }
-                    registerInput={(taskId, element) => {
-                      titleInputRefs.current[taskId] = element;
+              {week.tasks.map((task) => (
+                <TaskRow
+                  key={task.id}
+                  dayKeys={dayKeys}
+                  onDelete={(currentTask) =>
+                    setPendingDelete({
+                      countdown: 5,
+                      taskId: currentTask.id,
+                      taskTitle: currentTask.title,
+                    })
+                  }
+                  registerInput={(taskId, element) => {
+                    titleInputRefs.current[taskId] = element;
+                  }}
+                  task={task}
+                  weekKey={weekKey}
+                />
+              ))}
+
+              {/* BLOCK-START: WEEK_BOARD_ADD_TASK */}
+              {/* Description: Grid-aligned add-task row (desktop only). Hidden on mobile — mobile form is outside the scroll container. */}
+              <div
+                className="relative z-10 hidden items-stretch border-t border-line/40 sm:grid"
+                style={{ gridTemplateColumns: boardColumns }}
+              >
+                {dayKeys.map((dayKey, i) => (
+                  <div key={`add-${dayKey}`} className={getDayCellClass(i === dayKeys.length - 1)} />
+                ))}
+                <PlaceholderCell />
+                <PlaceholderCell />
+                <PlaceholderCell />
+                <div className="flex min-h-10 items-center gap-2 px-2 py-1.5">
+                  <input
+                    ref={newTaskInputRef}
+                    className="field-base flex-1 px-3 py-2 text-sm leading-5"
+                    maxLength={200}
+                    onChange={(event) => setNewTaskText(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        const title = newTaskText.trim();
+                        if (!title) return;
+                        setNewTaskText("");
+                        startTransition(() => addTask(weekKey, title));
+                        window.requestAnimationFrame(() => newTaskInputRef.current?.focus());
+                      }
                     }}
-                    task={task}
-                    weekKey={weekKey}
+                    placeholder="Новая задача..."
+                    value={newTaskText}
                   />
-                ))
-              )}
+                  <button
+                    className="flex-shrink-0 rounded-[18px] border border-line bg-paper px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
+                    onClick={() => {
+                      const title = newTaskText.trim();
+                      if (!title) return;
+                      setNewTaskText("");
+                      startTransition(() => addTask(weekKey, title));
+                      window.requestAnimationFrame(() => newTaskInputRef.current?.focus());
+                    }}
+                    type="button"
+                  >
+                    + Добавить задачу
+                  </button>
+                </div>
+              </div>
+              {/* BLOCK-END: WEEK_BOARD_ADD_TASK */}
               {/* BLOCK-END: WEEK_BOARD_TASK_GRID */}
             </div>
           </div>
 
-          {/* BLOCK-START: WEEK_BOARD_ADD_TASK */}
-          {/* Description: Inline affordance for appending a new task row and focusing its title field. */}
-          <div className="mt-2 flex justify-end">
+          {/* Mobile add-task form — outside the horizontal scroll container */}
+          <form
+            className="mt-3 flex flex-col gap-2 sm:hidden"
+            onSubmit={(event) => {
+              event.preventDefault();
+              const title = newTaskText.trim();
+              if (!title) return;
+              setNewTaskText("");
+              startTransition(() => addTask(weekKey, title));
+            }}
+          >
+            <input
+              className="field-base flex-1 px-3 py-2 text-sm leading-5"
+              maxLength={200}
+              onChange={(event) => setNewTaskText(event.target.value)}
+              placeholder="Новая задача..."
+              value={newTaskText}
+            />
             <button
               className="rounded-[18px] border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
-              onClick={() => {
-                shouldFocusNewTaskRef.current = true;
-                startTransition(() => addTask(weekKey));
-              }}
-              type="button"
+              type="submit"
             >
-              + Добавить строку
+              + Добавить задачу
             </button>
-          </div>
-          {/* BLOCK-END: WEEK_BOARD_ADD_TASK */}
+          </form>
         </article>
 
         <StatusLegend />

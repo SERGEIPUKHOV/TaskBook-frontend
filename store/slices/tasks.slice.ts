@@ -57,7 +57,7 @@ async function syncTaskOrder(get: Parameters<AppSliceCreator<TasksSlice>>[1], ke
 // BLOCK-START: TASKS_SLICE_MODULE
 // Description: Week task CRUD, ordering, and day-status actions backed by weekly bundles.
 export const createTasksSlice: AppSliceCreator<TasksSlice> = (set, get) => ({
-  addTask: (key) =>
+  addTask: (key, title = "") =>
     set((state) => {
       const current = state.weeks[key];
       const parsed = parseWeekKey(key);
@@ -69,7 +69,7 @@ export const createTasksSlice: AppSliceCreator<TasksSlice> = (set, get) => ({
       const tempId = createId(`temp-task-${key}`);
       const tempTask = {
         id: tempId,
-        title: "",
+        title,
         ti: 0,
         fa: 0,
         isPriority: false,
@@ -84,7 +84,7 @@ export const createTasksSlice: AppSliceCreator<TasksSlice> = (set, get) => ({
           start_day: 1,
           time_actual: 0,
           time_planned: 0,
-          title: "",
+          title,
         })
         .then((task) => {
           set((innerState) => {

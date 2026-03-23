@@ -229,7 +229,7 @@ export function MonthHabitList({ habits, monthKey }: MonthHabitListProps) {
           <div className="flex flex-col gap-2 sm:flex-row">
             <input
               ref={newHabitInputRef}
-              className="field-base h-10 flex-1 px-3 text-sm disabled:cursor-not-allowed disabled:opacity-60"
+              className="field-base flex-1 px-3 py-2 text-sm leading-5 disabled:cursor-not-allowed disabled:opacity-60"
               disabled={isAdding}
               maxLength={100}
               onChange={(event) => {
