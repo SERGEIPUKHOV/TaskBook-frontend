@@ -48,7 +48,7 @@ export function WeekScreen({ year, week }: WeekScreenProps) {
           <div className="text-xs uppercase tracking-[0.22em] text-muted">Недельный разворот</div>
           <h1 className="mt-1 text-2xl font-semibold text-ink">
             Неделя {getWeekNumberInMonth(year, week)}{" "}
-            <span className="text-lg font-normal text-muted">{formatWeekDateRange(year, week)}</span>
+            <span className="font-normal text-muted">{formatWeekDateRange(year, week)}</span>
           </h1>
         </div>
 
