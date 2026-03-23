@@ -129,7 +129,12 @@ export function formatMonthLabel(year: number, month: number): string {
 export function formatWeekLabel(year: number, week: number): string {
   const start = getISOWeekStart(year, week);
   const end = addDays(start, 6);
-  return `Неделя ${week} • ${format(start, "d MMM", { locale: ru })} - ${format(end, "d MMM", {
+  const monthYear = start.getFullYear();
+  const monthMonth = start.getMonth() + 1;
+  const monthWeeks = getWeeksForMonth(monthYear, monthMonth);
+  const weekIndex = monthWeeks.findIndex((w) => w.year === year && w.week === week);
+  const weekWithinMonth = weekIndex >= 0 ? weekIndex + 1 : week;
+  return `Неделя ${weekWithinMonth} • ${format(start, "d MMM", { locale: ru })} - ${format(end, "d MMM", {
     locale: ru,
   })}`;
 }

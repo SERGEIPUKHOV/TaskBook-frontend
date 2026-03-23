@@ -738,7 +738,7 @@ export function WeekPlannerBoard({
           {/* Description: Inline affordance for appending a new task row and focusing its title field. */}
           <div className="mt-2 flex justify-end">
             <button
-              className="rounded-md px-2 py-1 text-sm text-muted transition-colors hover:bg-canvas hover:text-accent"
+              className="rounded-[18px] border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
               onClick={() => {
                 shouldFocusNewTaskRef.current = true;
                 startTransition(() => addTask(weekKey));
