@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import { MonthHabitList } from "@/components/month/month-habit-list";
 import type { MonthData } from "@/lib/planner-types";
@@ -82,7 +82,8 @@ function ListSection({
   const deleteMonthListItem = useAppStore((state) => state.deleteMonthListItem);
   const updateMonthListItem = useAppStore((state) => state.updateMonthListItem);
   const inputRefs = useRef<Record<number, HTMLTextAreaElement | null>>({});
-  const previousLengthRef = useRef(values.length);
+  const newItemInputRef = useRef<HTMLInputElement | null>(null);
+  const [newItemText, setNewItemText] = useState("");
 
   useEffect(() => {
     function resync() {
@@ -93,69 +94,84 @@ function ListSection({
     return () => window.removeEventListener("resize", resync);
   }, []);
 
-  useEffect(() => {
-    if (values.length <= previousLengthRef.current) {
-      previousLengthRef.current = values.length;
+  function handleAdd() {
+    const trimmed = newItemText.trim();
+    if (!trimmed) {
       return;
     }
 
-    const newIndex = values.length - 1;
-    const frame = window.requestAnimationFrame(() => {
-      inputRefs.current[newIndex]?.focus();
-      inputRefs.current[newIndex]?.select();
+    addMonthListItem(monthKey, field);
+    updateMonthListItem(monthKey, field, values.length, trimmed);
+    setNewItemText("");
+    window.requestAnimationFrame(() => {
+      newItemInputRef.current?.focus();
     });
-
-    previousLengthRef.current = values.length;
-    return () => window.cancelAnimationFrame(frame);
-  }, [values.length]);
+  }
 
   return (
     <Section title={title}>
-      <div className="space-y-2">
-        {values.map((value, index) => (
-          <label
-            key={`${field}-${index}`}
-            className="grid grid-cols-[20px_minmax(0,1fr)_28px] items-center gap-3"
-          >
-            <span className="text-sm text-muted">{index + 1}.</span>
-            <textarea
-              ref={(element) => {
-                inputRefs.current[index] = element;
-                syncTextareaHeight(element);
-              }}
-              className="min-h-[36px] w-full resize-none overflow-hidden rounded-xl border border-transparent bg-transparent px-2 py-2 text-sm leading-5 text-ink outline-none transition-colors placeholder:text-muted/60 focus:border-accent focus:bg-paper/80"
-              onChange={(event) => {
-                updateMonthListItem(monthKey, field, index, event.target.value);
-                syncTextareaHeight(event.currentTarget);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                }
-              }}
-              placeholder={`${placeholder} ${index + 1}`}
-              rows={1}
-              value={value}
-            />
-            <button
-              aria-label={`Удалить пункт ${index + 1}`}
-              className="flex h-7 w-7 items-center justify-center rounded-full border border-line text-muted transition-colors hover:border-danger hover:text-danger"
-              onClick={() => deleteMonthListItem(monthKey, field, index)}
-              type="button"
+      {values.length > 0 && (
+        <div className="mb-2 space-y-2 border-b border-line/80 pb-3">
+          {values.map((value, index) => (
+            <label
+              key={`${field}-${index}`}
+              className="grid grid-cols-[20px_minmax(0,1fr)_28px] items-center gap-3"
             >
-              ×
-            </button>
-          </label>
-        ))}
-      </div>
+              <span className="text-sm text-muted">{index + 1}.</span>
+              <textarea
+                ref={(element) => {
+                  inputRefs.current[index] = element;
+                  syncTextareaHeight(element);
+                }}
+                className="min-h-[36px] w-full resize-none overflow-hidden rounded-xl border border-transparent bg-transparent px-2 py-2 text-sm leading-5 text-ink outline-none transition-colors placeholder:text-muted/60 focus:border-accent focus:bg-paper/80"
+                onChange={(event) => {
+                  updateMonthListItem(monthKey, field, index, event.target.value);
+                  syncTextareaHeight(event.currentTarget);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                  }
+                }}
+                placeholder={`${placeholder} ${index + 1}`}
+                rows={1}
+                value={value}
+              />
+              <button
+                aria-label={`Удалить пункт ${index + 1}`}
+                className="flex h-7 w-7 items-center justify-center rounded-full border border-line text-muted transition-colors hover:border-danger hover:text-danger"
+                onClick={() => deleteMonthListItem(monthKey, field, index)}
+                type="button"
+              >
+                ×
+              </button>
+            </label>
+          ))}
+        </div>
+      )}
 
-      <button
-        className="mt-3 text-sm text-muted transition-colors hover:text-accent"
-        onClick={() => addMonthListItem(monthKey, field)}
-        type="button"
-      >
-        + Добавить пункт
-      </button>
+      <div className="flex gap-2">
+        <input
+          ref={newItemInputRef}
+          className="field-base h-10 flex-1 px-3 text-sm"
+          onChange={(event) => setNewItemText(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              handleAdd();
+            }
+          }}
+          placeholder={placeholder + "..."}
+          value={newItemText}
+        />
+        <button
+          className="rounded-[18px] border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
+          onClick={handleAdd}
+          type="button"
+        >
+          + Добавить пункт
+        </button>
+      </div>
     </Section>
   );
 }
