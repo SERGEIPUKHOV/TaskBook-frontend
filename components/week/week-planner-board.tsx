@@ -605,7 +605,7 @@ export function WeekPlannerBoard({
           <div className="overflow-x-auto [-webkit-overflow-scrolling:touch]">
             <div className="relative w-full min-w-[680px] rounded-[24px] border border-line bg-paper/80">
               <div className="pointer-events-none absolute inset-y-0 left-0 z-0" style={{ width: `${DAY_SECTION_WIDTH}px` }}>
-                {ALTERNATING_DAY_INDICES.map((dayIndex) => (
+                {ALTERNATING_DAY_INDICES.filter((i) => i !== todayColumnIndex).map((dayIndex) => (
                   <div
                     key={`alt-day-${dayIndex}`}
                     className="absolute inset-y-0"
