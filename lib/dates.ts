@@ -126,17 +126,26 @@ export function formatMonthLabel(year: number, month: number): string {
   return capitalize(format(getMonthDate(year, month), "LLLL yyyy", { locale: ru }));
 }
 
-export function formatWeekLabel(year: number, week: number): string {
+export function getWeekNumberInMonth(year: number, week: number): number {
+  const start = getISOWeekStart(year, week);
+  const monthWeeks = getWeeksForMonth(start.getFullYear(), start.getMonth() + 1);
+  const index = monthWeeks.findIndex((w) => w.year === year && w.week === week);
+  return index >= 0 ? index + 1 : week;
+}
+
+export function formatWeekDateRange(year: number, week: number): string {
   const start = getISOWeekStart(year, week);
   const end = addDays(start, 6);
-  const monthYear = start.getFullYear();
-  const monthMonth = start.getMonth() + 1;
-  const monthWeeks = getWeeksForMonth(monthYear, monthMonth);
-  const weekIndex = monthWeeks.findIndex((w) => w.year === year && w.week === week);
-  const weekWithinMonth = weekIndex >= 0 ? weekIndex + 1 : week;
-  return `Неделя ${weekWithinMonth} • ${format(start, "d MMM", { locale: ru })} - ${format(end, "d MMM", {
-    locale: ru,
-  })}`;
+  const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+  if (sameMonth) {
+    return `${format(start, "d", { locale: ru })}–${format(end, "d LLLL yyyy", { locale: ru })}`;
+  }
+  return `${format(start, "d MMM", { locale: ru })} – ${format(end, "d MMM yyyy", { locale: ru })}`;
+}
+
+export function formatWeekLabel(year: number, week: number): string {
+  const weekWithinMonth = getWeekNumberInMonth(year, week);
+  return `Неделя ${weekWithinMonth} · ${formatWeekDateRange(year, week)}`;
 }
 
 export function formatDayShort(date: Date): string {
