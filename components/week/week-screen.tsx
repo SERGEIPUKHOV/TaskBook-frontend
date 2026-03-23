@@ -46,10 +46,10 @@ export function WeekScreen({ year, week }: WeekScreenProps) {
       <header className="flex flex-col gap-3 rounded-[32px] border border-line bg-paper/70 px-4 py-4 shadow-paper sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-5">
         <div>
           <div className="text-xs uppercase tracking-[0.22em] text-muted">Недельный разворот</div>
-          <h1 className="mt-1 text-2xl font-semibold text-ink">
-            Неделя {getWeekNumberInMonth(year, week)}{" "}
-            <span className="font-normal text-muted">{formatWeekDateRange(year, week)}</span>
-          </h1>
+          <h1 className="mt-1 text-2xl font-semibold text-ink">{formatWeekDateRange(year, week)}</h1>
+          <div className="mt-1 text-sm font-medium text-muted">
+            Неделя {getWeekNumberInMonth(year, week)}
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
