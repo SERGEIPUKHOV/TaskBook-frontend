@@ -511,6 +511,105 @@ function HabitSkeletonRows({ count }: { count: number }) {
 }
 // BLOCK-END: WEEK_PLANNER_HABIT_SKELETONS
 
+// BLOCK-START: WEEK_PLANNER_STATE_ROW
+// Description: Single metric row (health/productivity/anxiety) with 7 day inputs and autosave via onBlur.
+const stateMetrics: Array<{ key: "health" | "productivity" | "anxiety"; label: string }> = [
+  { key: "health", label: "Самочувствие" },
+  { key: "productivity", label: "Продуктивность" },
+  { key: "anxiety", label: "Тревожность" },
+];
+
+function StateRow({
+  dailyStates,
+  dayKeys,
+  metricKey,
+  label,
+  monthKey,
+}: {
+  dailyStates: Array<{ day: number; health: number; productivity: number; anxiety: number }>;
+  dayKeys: string[];
+  metricKey: "health" | "productivity" | "anxiety";
+  label: string;
+  monthKey: string;
+}) {
+  const setDailyMetric = useAppStore((state) => state.setDailyMetric);
+  const [drafts, setDrafts] = useState<Record<string, string>>(() => {
+    const result: Record<string, string> = {};
+    dayKeys.forEach((dayKey) => {
+      const dayNum = parseISO(dayKey).getDate();
+      const entry = dailyStates.find((s) => s.day === dayNum);
+      result[dayKey] = entry && entry[metricKey] > 0 ? String(entry[metricKey]) : "";
+    });
+    return result;
+  });
+
+  useEffect(() => {
+    setDrafts(() => {
+      const result: Record<string, string> = {};
+      dayKeys.forEach((dayKey) => {
+        const dayNum = parseISO(dayKey).getDate();
+        const entry = dailyStates.find((s) => s.day === dayNum);
+        result[dayKey] = entry && entry[metricKey] > 0 ? String(entry[metricKey]) : "";
+      });
+      return result;
+    });
+  }, [dailyStates, dayKeys, metricKey]);
+
+  function commit(dayKey: string) {
+    const raw = drafts[dayKey]?.trim() ?? "";
+    const parsed = Number(raw);
+    const dayNum = parseISO(dayKey).getDate();
+
+    if (!raw || !Number.isInteger(parsed) || parsed < 1 || parsed > 10) {
+      const entry = dailyStates.find((s) => s.day === dayNum);
+      setDrafts((current) => ({
+        ...current,
+        [dayKey]: entry && entry[metricKey] > 0 ? String(entry[metricKey]) : "",
+      }));
+      return;
+    }
+
+    void setDailyMetric(monthKey, dayNum, metricKey, parsed);
+  }
+
+  return (
+    <div
+      className="relative z-10 grid items-center border-b border-line/40 last:border-b-0"
+      style={{ gridTemplateColumns: boardColumns }}
+    >
+      {dayKeys.map((dayKey, dayIndex) => (
+        <div
+          key={dayKey}
+          className={getDayCellClass(dayIndex === dayKeys.length - 1, "flex items-center justify-center py-1.5")}
+        >
+          <input
+            className="field-base h-7 w-8 rounded-lg px-0 text-center text-xs"
+            inputMode="numeric"
+            max={10}
+            min={1}
+            onBlur={() => commit(dayKey)}
+            onChange={(event) => setDrafts((current) => ({ ...current, [dayKey]: event.target.value }))}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                event.currentTarget.blur();
+              }
+            }}
+            placeholder="—"
+            type="number"
+            value={drafts[dayKey] ?? ""}
+          />
+        </div>
+      ))}
+      <div className={getRightColumnClass("flex items-center justify-center py-1.5")} />
+      <div className={getRightColumnClass("flex items-center justify-center py-1.5")} />
+      <div className={getRightColumnClass("flex items-center justify-center py-1.5")} />
+      <div className="flex items-center px-3 py-1.5 text-xs text-muted">{label}</div>
+    </div>
+  );
+}
+// BLOCK-END: WEEK_PLANNER_STATE_ROW
+
 // BLOCK-START: WEEK_PLANNER_BOARD_COMPONENT
 // Description: Main week planner board that orchestrates habit loading, task rendering, and destructive action confirmation.
 /**
@@ -659,6 +758,21 @@ export function WeekPlannerBoard({
                 <div className="h-12" />
               </div>
               {/* BLOCK-END: WEEK_BOARD_HEADER */}
+
+              {/* States section */}
+              <div className="relative z-10 border-b border-line/70 bg-canvas/80 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
+                Состояния
+              </div>
+              {stateMetrics.map(({ key, label }) => (
+                <StateRow
+                  key={key}
+                  dailyStates={month?.dailyStates ?? []}
+                  dayKeys={dayKeys}
+                  metricKey={key}
+                  label={label}
+                  monthKey={monthKey}
+                />
+              ))}
 
               <div className="relative z-10 border-b border-line/70 bg-canvas/80 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
                 Привычки
