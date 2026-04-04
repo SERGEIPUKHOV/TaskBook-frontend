@@ -154,21 +154,23 @@ export function DashboardScreen() {
       ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,0.78fr)_minmax(0,0.78fr)]">
-        <article className="paper-panel rounded-[32px] p-4 sm:p-6">
-          <div className="text-xs uppercase tracking-[0.16em] text-muted">Прогресс недели</div>
-          <div className="mt-2 text-2xl font-semibold text-ink">
-            {progressRatio(completedTasks, viewWeekData.tasks.length || 1)}%
-          </div>
-          <div className="mt-3 h-2 rounded-full bg-line">
-            <div
-              className="h-2 rounded-full bg-ink transition-[width] duration-300"
-              style={{ width: `${progressRatio(completedTasks, viewWeekData.tasks.length || 1)}%` }}
-            />
-          </div>
-          <div className="mt-3 text-sm text-muted">
-            {completedTasks} задач завершено, {carryOverTasks} осталось открытыми.
-          </div>
-        </article>
+        {isCurrentMonth ? (
+          <article className="paper-panel rounded-[32px] p-4 sm:p-6">
+            <div className="text-xs uppercase tracking-[0.16em] text-muted">Прогресс недели</div>
+            <div className="mt-2 text-2xl font-semibold text-ink">
+              {progressRatio(completedTasks, viewWeekData.tasks.length || 1)}%
+            </div>
+            <div className="mt-3 h-2 rounded-full bg-line">
+              <div
+                className="h-2 rounded-full bg-ink transition-[width] duration-300"
+                style={{ width: `${progressRatio(completedTasks, viewWeekData.tasks.length || 1)}%` }}
+              />
+            </div>
+            <div className="mt-3 text-sm text-muted">
+              {completedTasks} задач завершено, {carryOverTasks} осталось открытыми.
+            </div>
+          </article>
+        ) : null}
 
         <article className="paper-panel rounded-[32px] p-4 sm:p-6">
           <div className="text-xs uppercase tracking-[0.16em] text-muted">Привычки месяца</div>
