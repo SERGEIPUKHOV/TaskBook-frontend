@@ -229,6 +229,7 @@ input[type="number"] {
 
 .auth-input {
   width: 100%;
+  font-size: 1rem;
   min-height: 2.625rem;
   border: 1px solid rgba(var(--line), 0.95);
   border-radius: 0.875rem;

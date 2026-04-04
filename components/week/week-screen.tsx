@@ -1,5 +1,6 @@
 "use client";
 
+import { addDays } from "date-fns";
 import Link from "next/link";
 import { useEffect } from "react";
 
@@ -17,18 +18,28 @@ type WeekScreenProps = {
   week: number;
 };
 
+const SHOW_WEEK_STATE_PANEL = false;
+
 export function WeekScreen({ year, week }: WeekScreenProps) {
   const weekKey = getWeekKey(year, week);
   const weekStart = getISOWeekStart(year, week);
   const habitMonthRef = { year: weekStart.getFullYear(), month: weekStart.getMonth() + 1 };
+  const endDate = addDays(weekStart, 6);
+  const endMonthRef = { year: endDate.getFullYear(), month: endDate.getMonth() + 1 };
+  const isCrossMonth = endMonthRef.year !== habitMonthRef.year || endMonthRef.month !== habitMonthRef.month;
   const habitMonthKey = getMonthKey(habitMonthRef.year, habitMonthRef.month);
+  const ensureMonth = useAppStore((state) => state.ensureMonth);
   const ensureWeek = useAppStore((state) => state.ensureWeek);
   const setLastWeek = useNavStore((state) => state.setLastWeek);
   const weekData = useAppStore((state) => state.weeks[weekKey]);
 
   useEffect(() => {
     ensureWeek(year, week);
-  }, [ensureWeek, week, year]);
+    ensureMonth(habitMonthRef.year, habitMonthRef.month);
+    if (isCrossMonth) {
+      ensureMonth(endMonthRef.year, endMonthRef.month);
+    }
+  }, [ensureMonth, ensureWeek, endMonthRef.month, endMonthRef.year, habitMonthRef.month, habitMonthRef.year, isCrossMonth, week, year]);
 
   useEffect(() => {
     setLastWeek({ year, week });
@@ -84,7 +95,7 @@ export function WeekScreen({ year, week }: WeekScreenProps) {
         week={weekData}
         weekKey={weekKey}
       />
-      <WeekStatePanel week={weekData} />
+      {SHOW_WEEK_STATE_PANEL ? <WeekStatePanel week={weekData} /> : null}
       <WeekReflection week={weekData} weekKey={weekKey} />
     </div>
   );

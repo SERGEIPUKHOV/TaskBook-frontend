@@ -6,10 +6,12 @@ import { ru } from "date-fns/locale";
 import { startTransition, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import type { TaskStatus, WeekData, WeekTask } from "@/lib/planner-types";
+import type { MetricName, MonthData, TaskStatus, WeekData, WeekTask } from "@/lib/planner-types";
+import { getMonthKey } from "@/lib/dates";
 import { getLastTaskStatus, getTaskCellState, getWeekDayKeys } from "@/lib/week-tasks";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
+import { AnxietyMetricIcon, HeartMetricIcon, ProductivityMetricIcon } from "@/components/ui/icons";
 
 // BLOCK-START: WEEK_PLANNER_BOARD_MODULE
 // Description: Interactive week planner board with habit tracking, task editing, optimistic UI actions, and delete confirmation flow.
@@ -371,6 +373,15 @@ function TaskRow({
     syncTextareaHeight(textareaRef.current, 32);
   }, [draft.title]);
 
+  useEffect(() => {
+    function handleResize() {
+      syncTextareaHeight(textareaRef.current, 32);
+    }
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   useEffect(
     () => () => {
       Object.values(saveTimersRef.current).forEach((timer) => {
@@ -513,32 +524,43 @@ function HabitSkeletonRows({ count }: { count: number }) {
 
 // BLOCK-START: WEEK_PLANNER_STATE_ROW
 // Description: Single metric row (health/productivity/anxiety) with 7 day inputs and autosave via onBlur.
-const stateMetrics: Array<{ key: "health" | "productivity" | "anxiety"; label: string }> = [
-  { key: "health", label: "Самочувствие" },
-  { key: "productivity", label: "Продуктивность" },
-  { key: "anxiety", label: "Тревожность" },
+const stateMetrics: Array<{
+  key: "health" | "productivity" | "anxiety";
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}> = [
+  { key: "health", label: "Самочувствие", icon: HeartMetricIcon },
+  { key: "productivity", label: "Продуктивность", icon: ProductivityMetricIcon },
+  { key: "anxiety", label: "Тревожность", icon: AnxietyMetricIcon },
 ];
 
+type MonthStateMap = Record<string, MonthData | undefined>;
+
+function getDraftValue(months: MonthStateMap, dayKey: string, metricKey: MetricName): string {
+  const date = parseISO(dayKey);
+  const monthKey = getMonthKey(date.getFullYear(), date.getMonth() + 1);
+  const entry = months[monthKey]?.dailyStates.find((state) => state.day === date.getDate());
+  return entry && entry[metricKey] > 0 ? String(entry[metricKey]) : "";
+}
+
 function StateRow({
-  dailyStates,
   dayKeys,
+  icon: Icon,
   metricKey,
   label,
-  monthKey,
+  months,
 }: {
-  dailyStates: Array<{ day: number; health: number; productivity: number; anxiety: number }>;
   dayKeys: string[];
+  icon: React.ComponentType<{ className?: string }>;
   metricKey: "health" | "productivity" | "anxiety";
   label: string;
-  monthKey: string;
+  months: MonthStateMap;
 }) {
   const setDailyMetric = useAppStore((state) => state.setDailyMetric);
   const [drafts, setDrafts] = useState<Record<string, string>>(() => {
     const result: Record<string, string> = {};
     dayKeys.forEach((dayKey) => {
-      const dayNum = parseISO(dayKey).getDate();
-      const entry = dailyStates.find((s) => s.day === dayNum);
-      result[dayKey] = entry && entry[metricKey] > 0 ? String(entry[metricKey]) : "";
+      result[dayKey] = getDraftValue(months, dayKey, metricKey);
     });
     return result;
   });
@@ -547,24 +569,23 @@ function StateRow({
     setDrafts(() => {
       const result: Record<string, string> = {};
       dayKeys.forEach((dayKey) => {
-        const dayNum = parseISO(dayKey).getDate();
-        const entry = dailyStates.find((s) => s.day === dayNum);
-        result[dayKey] = entry && entry[metricKey] > 0 ? String(entry[metricKey]) : "";
+        result[dayKey] = getDraftValue(months, dayKey, metricKey);
       });
       return result;
     });
-  }, [dailyStates, dayKeys, metricKey]);
+  }, [dayKeys, metricKey, months]);
 
   function commit(dayKey: string) {
     const raw = drafts[dayKey]?.trim() ?? "";
     const parsed = Number(raw);
-    const dayNum = parseISO(dayKey).getDate();
+    const date = parseISO(dayKey);
+    const monthKey = getMonthKey(date.getFullYear(), date.getMonth() + 1);
+    const dayNum = date.getDate();
 
     if (!raw || !Number.isInteger(parsed) || parsed < 1 || parsed > 10) {
-      const entry = dailyStates.find((s) => s.day === dayNum);
       setDrafts((current) => ({
         ...current,
-        [dayKey]: entry && entry[metricKey] > 0 ? String(entry[metricKey]) : "",
+        [dayKey]: getDraftValue(months, dayKey, metricKey),
       }));
       return;
     }
@@ -577,34 +598,42 @@ function StateRow({
       className="relative z-10 grid items-center border-b border-line/40 last:border-b-0"
       style={{ gridTemplateColumns: boardColumns }}
     >
-      {dayKeys.map((dayKey, dayIndex) => (
-        <div
-          key={dayKey}
-          className={getDayCellClass(dayIndex === dayKeys.length - 1, "flex items-center justify-center py-1.5")}
-        >
-          <input
-            className="field-base h-7 w-8 rounded-lg px-0 text-center text-xs"
-            inputMode="numeric"
-            max={10}
-            min={1}
-            onBlur={() => commit(dayKey)}
-            onChange={(event) => setDrafts((current) => ({ ...current, [dayKey]: event.target.value }))}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                event.currentTarget.blur();
-              }
-            }}
-            placeholder="—"
-            type="number"
-            value={drafts[dayKey] ?? ""}
-          />
-        </div>
-      ))}
+      {dayKeys.map((dayKey, dayIndex) => {
+        const isFuture = isAfter(startOfDay(parseISO(dayKey)), startOfDay(new Date()));
+
+        return (
+          <div
+            key={dayKey}
+            className={getDayCellClass(dayIndex === dayKeys.length - 1, "flex items-center justify-center py-1.5")}
+          >
+            <input
+              className={cn("field-base h-7 w-8 rounded-lg px-0 text-center text-xs", isFuture && "pointer-events-none opacity-35")}
+              disabled={isFuture}
+              inputMode="numeric"
+              max={10}
+              min={1}
+              onBlur={() => commit(dayKey)}
+              onChange={(event) => setDrafts((current) => ({ ...current, [dayKey]: event.target.value }))}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  event.currentTarget.blur();
+                }
+              }}
+              placeholder="—"
+              type="number"
+              value={drafts[dayKey] ?? ""}
+            />
+          </div>
+        );
+      })}
       <div className={getRightColumnClass("flex items-center justify-center py-1.5")} />
       <div className={getRightColumnClass("flex items-center justify-center py-1.5")} />
       <div className={getRightColumnClass("flex items-center justify-center py-1.5")} />
-      <div className="flex items-center px-3 py-1.5 text-xs text-muted">{label}</div>
+      <div className="flex min-h-10 items-center gap-2 px-3 py-1.5 text-sm text-ink">
+        <Icon className="h-4 w-4 shrink-0 text-muted" />
+        <span className="truncate">{label}</span>
+      </div>
     </div>
   );
 }
@@ -635,7 +664,8 @@ export function WeekPlannerBoard({
   const deleteTask = useAppStore((state) => state.deleteTask);
   const fetchMonthHabits = useAppStore((state) => state.fetchMonthHabits);
   const habitLoadState = useAppStore((state) => state.habitLoadStates[monthKey]);
-  const month = useAppStore((state) => state.months[monthKey]);
+  const months = useAppStore((state) => state.months);
+  const month = months[monthKey];
   const [pendingDelete, setPendingDelete] = useState<PendingDeleteState | null>(null);
   const [newTaskText, setNewTaskText] = useState("");
   const newTaskInputRef = useRef<HTMLInputElement | null>(null);
@@ -761,16 +791,16 @@ export function WeekPlannerBoard({
 
               {/* States section */}
               <div className="relative z-10 border-b border-line/70 bg-canvas/80 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-                Состояния
+                Состояние
               </div>
-              {stateMetrics.map(({ key, label }) => (
+              {stateMetrics.map(({ key, label, icon }) => (
                 <StateRow
                   key={key}
-                  dailyStates={month?.dailyStates ?? []}
                   dayKeys={dayKeys}
+                  icon={icon}
                   metricKey={key}
                   label={label}
-                  monthKey={monthKey}
+                  months={months}
                 />
               ))}
 

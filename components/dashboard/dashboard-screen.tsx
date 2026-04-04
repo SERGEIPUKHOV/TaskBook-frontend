@@ -10,6 +10,9 @@ import { getMonthKey, getWeekKey, getWeeksForMonth } from "@/lib/dates";
 import { useAppStore } from "@/store/app-store";
 import { getLastTaskStatus, isTaskClosed } from "@/lib/week-tasks";
 
+const SHOW_MONTH_STATES_PANEL = true;
+const SHOW_DASHBOARD_TRANSITIONS = false;
+
 function progressRatio(done: number, total: number): number {
   if (total === 0) {
     return 0;
@@ -81,7 +84,9 @@ export function DashboardScreen() {
         />
       </div>
 
-      <MonthStatesPanel month={monthData} monthKey={monthKey} weeks={weeks} />
+      {SHOW_MONTH_STATES_PANEL ? (
+        <MonthStatesPanel month={monthData} monthKey={monthKey} weeks={weeks} />
+      ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,0.78fr)_minmax(0,0.78fr)]">
         <article className="paper-panel rounded-[32px] p-4 sm:p-6">
@@ -115,24 +120,26 @@ export function DashboardScreen() {
         </article>
       </section>
 
-      <article className="paper-panel rounded-[32px] p-4 sm:p-6">
-        <div className="text-xs uppercase tracking-[0.2em] text-muted">Переходы</div>
-        <div className="mt-1 text-lg font-semibold text-ink">Открыть рабочие развороты</div>
-        <div className="mt-5 grid gap-3">
-          <Link
-            className="rounded-[24px] border border-line bg-canvas/80 px-4 py-4 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
-            href={`/week/${weekRef.year}/${weekRef.week}`}
-          >
-            Открыть текущую неделю
-          </Link>
-          <Link
-            className="rounded-[24px] border border-line bg-canvas/80 px-4 py-4 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
-            href={`/month/${monthRef.year}/${monthRef.month}`}
-          >
-            Открыть текущий месяц
-          </Link>
-        </div>
-      </article>
+      {SHOW_DASHBOARD_TRANSITIONS ? (
+        <article className="paper-panel rounded-[32px] p-4 sm:p-6">
+          <div className="text-xs uppercase tracking-[0.2em] text-muted">Переходы</div>
+          <div className="mt-1 text-lg font-semibold text-ink">Открыть рабочие развороты</div>
+          <div className="mt-5 grid gap-3">
+            <Link
+              className="rounded-[24px] border border-line bg-canvas/80 px-4 py-4 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
+              href={`/week/${weekRef.year}/${weekRef.week}`}
+            >
+              Открыть текущую неделю
+            </Link>
+            <Link
+              className="rounded-[24px] border border-line bg-canvas/80 px-4 py-4 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
+              href={`/month/${monthRef.year}/${monthRef.month}`}
+            >
+              Открыть текущий месяц
+            </Link>
+          </div>
+        </article>
+      ) : null}
     </div>
   );
 }

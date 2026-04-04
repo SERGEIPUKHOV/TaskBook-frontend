@@ -48,6 +48,15 @@ function ReflectionRow({
     syncTextareaHeight(textareaRef.current);
   }, [draft]);
 
+  useEffect(() => {
+    function handleResize() {
+      syncTextareaHeight(textareaRef.current);
+    }
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   useEffect(
     () => () => {
       if (saveTimerRef.current) {
@@ -68,14 +77,14 @@ function ReflectionRow({
   }
 
   return (
-    <label className="flex min-h-10 items-start gap-3 border-b border-line/45 py-2 last:border-b-0">
-      <span className="w-[130px] flex-shrink-0 pt-1 text-sm text-muted">{formatDayStamp(parseISO(dayKey))}</span>
+    <label className="grid grid-cols-[56px_minmax(0,1fr)] items-center gap-3">
+      <span className="text-sm text-muted">{formatDayStamp(parseISO(dayKey))}</span>
       <textarea
         ref={(element) => {
           textareaRef.current = element;
           syncTextareaHeight(element);
         }}
-        className="min-h-6 w-full resize-none overflow-hidden border-0 border-b border-transparent bg-transparent px-0 py-0 text-sm leading-6 text-ink outline-none placeholder:text-muted/55 focus:border-accent"
+        className="min-h-[36px] w-full resize-none overflow-hidden rounded-xl border border-transparent bg-transparent px-2 py-2 text-sm leading-5 text-ink outline-none transition-colors placeholder:text-muted/60 focus:border-accent focus:bg-paper/80"
         onBlur={() => scheduleSave(draft)}
         onChange={(event) => {
           setDraft(event.target.value);
@@ -105,7 +114,7 @@ function ReflectionCard({
   return (
     <article className="paper-panel rounded-[32px] p-6">
       <div className="text-xs uppercase tracking-[0.2em] text-muted">{title}</div>
-      <div className="mt-5">
+      <div className="space-y-1.5 border-y border-line/80 py-3 mt-3">
         {dayKeys.map((dayKey) => (
           <ReflectionRow
             key={`${section}-${dayKey}`}

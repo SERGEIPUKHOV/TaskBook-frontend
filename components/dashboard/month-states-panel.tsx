@@ -100,6 +100,8 @@ function createDateStates(rows: DateRow[]): DateState[] {
   }));
 }
 
+const SHOW_STATE_INPUT = false;
+
 export function MonthStatesPanel({ monthKey, month, weeks }: MonthStatesPanelProps) {
   const setDailyMetrics = useAppStore((state) => state.setDailyMetrics);
   const today = startOfDay(new Date());
@@ -204,6 +206,7 @@ export function MonthStatesPanel({ monthKey, month, weeks }: MonthStatesPanelPro
         <StateChart dayStats={dayStats} month={month} />
       </div>
 
+      {SHOW_STATE_INPUT && (
       <div className="mt-3 rounded-[20px] border border-line bg-canvas/70 p-3">
         <div className="overflow-x-auto">
           <table className="w-full border-separate border-spacing-0 rounded-[16px] border border-line bg-paper/90 sm:hidden">
@@ -415,6 +418,7 @@ export function MonthStatesPanel({ monthKey, month, weeks }: MonthStatesPanelPro
           </table>
         </div>
       </div>
+      )}
     </article>
   );
 }

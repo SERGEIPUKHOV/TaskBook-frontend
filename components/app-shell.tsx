@@ -90,7 +90,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (isAuthRoute) {
     return (
-      <div className="relative min-h-screen">
+      <div className="relative min-h-screen overflow-x-hidden">
         <div className="absolute right-4 top-4 z-30 sm:right-6 sm:top-6">
           <ThemeToggle />
         </div>
