@@ -4,7 +4,7 @@ import { format, isSameMonth, isSameDay, startOfDay, subDays } from "date-fns";
 import { ru } from "date-fns/locale";
 import { useEffect, useState } from "react";
 
-import { AnxietyMetricIcon, ChevronLeftIcon, ChevronRightIcon, HeartMetricIcon, ProductivityMetricIcon } from "@/components/ui/icons";
+import { AnxietyMetricIcon, HeartMetricIcon, ProductivityMetricIcon } from "@/components/ui/icons";
 import { StateChart } from "@/components/month/state-chart";
 import { computeDayStats } from "@/lib/chart-stats";
 import type { DailyState, MetricName, MonthData, WeekData } from "@/lib/planner-types";
@@ -13,10 +13,7 @@ import { useAppStore } from "@/store/app-store";
 
 type MonthStatesPanelProps = {
   monthKey: string;
-  monthLabel: string;
   month: MonthData;
-  onNext: () => void;
-  onPrev: () => void;
   weeks?: Record<string, WeekData>;
 };
 
@@ -105,7 +102,7 @@ function createDateStates(rows: DateRow[]): DateState[] {
 
 const SHOW_STATE_INPUT = false;
 
-export function MonthStatesPanel({ monthKey, month, monthLabel, onNext, onPrev, weeks }: MonthStatesPanelProps) {
+export function MonthStatesPanel({ monthKey, month, weeks }: MonthStatesPanelProps) {
   const setDailyMetrics = useAppStore((state) => state.setDailyMetrics);
   const today = startOfDay(new Date());
   const rows: DateRow[] = getVisibleDates(month).map((date) => ({
@@ -200,29 +197,9 @@ export function MonthStatesPanel({ monthKey, month, monthLabel, onNext, onPrev, 
 
   return (
     <article className="paper-panel rounded-[32px] p-4 sm:p-6">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <div className="text-xs uppercase tracking-[0.2em] text-muted">Состояния месяца</div>
-          <h2 className="mt-1 text-lg font-semibold text-ink">{monthLabel}</h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            aria-label="Предыдущий месяц"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-paper transition-colors hover:border-accent hover:text-accent"
-            onClick={onPrev}
-            type="button"
-          >
-            <ChevronLeftIcon className="h-4 w-4" />
-          </button>
-          <button
-            aria-label="Следующий месяц"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-paper transition-colors hover:border-accent hover:text-accent"
-            onClick={onNext}
-            type="button"
-          >
-            <ChevronRightIcon className="h-4 w-4" />
-          </button>
-        </div>
+      <div>
+        <div className="text-xs uppercase tracking-[0.2em] text-muted">Состояния месяца</div>
+        <h2 className="mt-1 text-lg font-semibold text-ink">График и состояния</h2>
       </div>
 
       <div className="mt-5">
