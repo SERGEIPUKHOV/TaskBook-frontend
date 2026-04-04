@@ -30,7 +30,7 @@ import { useNavStore } from "@/store/nav-store";
 
 function navClassName(isActive: boolean): string {
   return cn(
-    "flex items-center gap-3 rounded-2xl border px-3 py-3 text-sm transition-colors duration-150",
+    "flex items-center justify-center gap-3 rounded-2xl border px-3 py-3 text-sm transition-colors duration-150 md:px-3.5 md:py-3.5 xl:justify-start xl:px-3 xl:py-3",
     isActive
       ? "border-ink bg-ink text-canvas shadow-paper"
       : "border-transparent text-muted hover:border-line hover:bg-paper hover:text-ink",
@@ -102,9 +102,9 @@ export function Sidebar() {
   return (
     <aside className="sticky top-0 hidden h-screen w-24 shrink-0 border-r border-line/70 bg-paper/70 px-3 py-5 backdrop-blur-xl md:flex xl:w-64 xl:px-5">
       <div className="flex w-full flex-col">
-        <div className="mb-8 flex items-center gap-3 px-2">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-line bg-paper shadow-paper">
-            <CalendarIcon className="h-5 w-5 text-accent" />
+        <div className="mb-8 flex items-center justify-center gap-3 px-0 xl:justify-start xl:px-2">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-line bg-paper shadow-paper md:h-12 md:w-12 xl:h-11 xl:w-11">
+            <CalendarIcon className="h-5 w-5 text-accent md:h-6 md:w-6 xl:h-5 xl:w-5" />
           </div>
           <div className="hidden xl:block">
             <div className="text-xs uppercase tracking-[0.24em] text-muted">Planner</div>
@@ -112,23 +112,23 @@ export function Sidebar() {
           </div>
         </div>
 
-        <nav className="space-y-2">
+        <nav className="space-y-2 md:flex-1 xl:flex-none">
           <Link className={navClassName(pathname === "/dashboard")} href="/dashboard">
-            <DashboardIcon className="h-5 w-5" />
+            <DashboardIcon className="h-5 w-5 md:h-6 md:w-6 xl:h-5 xl:w-5" />
             <span className="hidden xl:inline">Дашборд</span>
           </Link>
           <Link className={navClassName(pathname.startsWith("/month/"))} href={primaryMonthHref}>
-            <CalendarIcon className="h-5 w-5" />
+            <CalendarIcon className="h-5 w-5 md:h-6 md:w-6 xl:h-5 xl:w-5" />
             <span className="hidden xl:inline">Месяц</span>
           </Link>
           {primaryWeekHref && (
             <Link className={navClassName(pathname.startsWith("/week/"))} href={primaryWeekHref}>
-              <WeekIcon className="h-5 w-5" />
+              <WeekIcon className="h-5 w-5 md:h-6 md:w-6 xl:h-5 xl:w-5" />
               <span className="hidden xl:inline">Неделя</span>
             </Link>
           )}
           <Link className={navClassName(pathname.startsWith("/day/"))} href={primaryDayHref}>
-            <DayIcon className="h-5 w-5" />
+            <DayIcon className="h-5 w-5 md:h-6 md:w-6 xl:h-5 xl:w-5" />
             <span className="hidden xl:inline">День</span>
           </Link>
         </nav>
@@ -219,12 +219,12 @@ export function Sidebar() {
             </div>
             <div className="space-y-2 xl:mt-4">
               <Link className={navClassName(pathname === "/profile")} href="/profile">
-                <UserIcon className="h-5 w-5" />
+                <UserIcon className="h-5 w-5 md:h-6 md:w-6 xl:h-5 xl:w-5" />
                 <span className="hidden xl:inline">Профиль</span>
               </Link>
               <button
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-sm transition-colors duration-150",
+                  "flex w-full items-center justify-center gap-3 rounded-2xl border px-3 py-3 text-sm transition-colors duration-150 md:px-3.5 md:py-3.5 xl:justify-start xl:px-3 xl:py-3",
                   isLoggingOut
                     ? "cursor-not-allowed border-line bg-canvas text-muted"
                     : "border-transparent text-muted hover:border-line hover:bg-paper hover:text-ink",
@@ -235,7 +235,7 @@ export function Sidebar() {
                 }}
                 type="button"
               >
-                <LogOutIcon className="h-5 w-5" />
+                <LogOutIcon className="h-5 w-5 md:h-6 md:w-6 xl:h-5 xl:w-5" />
                 <span className="hidden xl:inline">{isLoggingOut ? "Выходим..." : "Выйти"}</span>
               </button>
             </div>
