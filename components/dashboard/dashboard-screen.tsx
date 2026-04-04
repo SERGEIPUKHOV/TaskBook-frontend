@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { format, getISOWeek, getISOWeekYear } from "date-fns";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { FocusBlock } from "@/components/dashboard/focus-block";
 import { MonthStatesPanel } from "@/components/dashboard/month-states-panel";
-import { getMonthKey, getWeekKey, getWeeksForMonth } from "@/lib/dates";
+import { formatMonthLabel, getAdjacentMonth, getMonthKey, getWeekKey, getWeeksForMonth } from "@/lib/dates";
 import { useAppStore } from "@/store/app-store";
 import { getLastTaskStatus, isTaskClosed } from "@/lib/week-tasks";
 
@@ -23,24 +23,32 @@ function progressRatio(done: number, total: number): number {
 
 export function DashboardScreen() {
   const today = new Date();
+  const [viewOffset, setViewOffset] = useState(0);
   const monthRef = { year: today.getFullYear(), month: today.getMonth() + 1 };
   const weekRef = { year: getISOWeekYear(today), week: getISOWeek(today) };
   const monthKey = getMonthKey(monthRef.year, monthRef.month);
   const weekKey = getWeekKey(weekRef.year, weekRef.week);
+  const viewMonthRef = getAdjacentMonth(monthRef.year, monthRef.month, viewOffset);
+  const viewMonthKey = getMonthKey(viewMonthRef.year, viewMonthRef.month);
 
   const ensureMonth = useAppStore((state) => state.ensureMonth);
   const ensureWeek = useAppStore((state) => state.ensureWeek);
   const monthData = useAppStore((state) => state.months[monthKey]);
+  const viewMonthData = useAppStore((state) => state.months[viewMonthKey]);
   const weekData = useAppStore((state) => state.weeks[weekKey]);
   const weeks = useAppStore((state) => state.weeks);
+  const viewMonthLabel = formatMonthLabel(viewMonthRef.year, viewMonthRef.month);
 
   useEffect(() => {
     ensureMonth(monthRef.year, monthRef.month);
+    if (viewOffset !== 0) {
+      ensureMonth(viewMonthRef.year, viewMonthRef.month);
+    }
     ensureWeek(weekRef.year, weekRef.week);
     getWeeksForMonth(monthRef.year, monthRef.month).forEach(({ year, week }) => {
       ensureWeek(year, week);
     });
-  }, [ensureMonth, ensureWeek, monthRef.month, monthRef.year, weekRef.week, weekRef.year]);
+  }, [ensureMonth, ensureWeek, monthRef.month, monthRef.year, viewMonthRef.month, viewMonthRef.year, viewOffset, weekRef.week, weekRef.year]);
 
   if (!monthData || !weekData) {
     return (
@@ -85,7 +93,14 @@ export function DashboardScreen() {
       </div>
 
       {SHOW_MONTH_STATES_PANEL ? (
-        <MonthStatesPanel month={monthData} monthKey={monthKey} weeks={weeks} />
+        <MonthStatesPanel
+          month={viewMonthData ?? monthData}
+          monthKey={viewMonthKey}
+          monthLabel={viewMonthLabel}
+          onNext={() => setViewOffset((offset) => offset + 1)}
+          onPrev={() => setViewOffset((offset) => offset - 1)}
+          weeks={viewOffset === 0 ? weeks : undefined}
+        />
       ) : null}
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-[minmax(0,0.78fr)_minmax(0,0.78fr)]">
