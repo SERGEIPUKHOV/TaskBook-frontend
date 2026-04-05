@@ -23,6 +23,12 @@ export function DayNavigator({ date, weekRef }: DayNavigatorProps) {
       <div>
         <div className="text-xs uppercase tracking-[0.22em] text-muted">Дневной разворот</div>
         <h1 className="mt-1 text-2xl font-semibold text-ink">{formatLongDayLabel(date)}</h1>
+        <Link
+          className="mt-2 inline-flex text-sm font-medium text-accent transition-colors hover:text-ink"
+          href={`/week/${weekRef.year}/${weekRef.week}`}
+        >
+          Неделя {weekRef.week}
+        </Link>
       </div>
 
       <div className="flex items-center gap-2">
@@ -33,21 +39,14 @@ export function DayNavigator({ date, weekRef }: DayNavigatorProps) {
         >
           <ChevronLeftIcon className="h-5 w-5" />
         </Link>
-        {isCurrentDay ? (
-          <Link
-            className="rounded-[22px] border border-line bg-paper px-4 py-3 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
-            href={`/week/${weekRef.year}/${weekRef.week}`}
-          >
-            Неделя {weekRef.week}
-          </Link>
-        ) : (
+        {!isCurrentDay ? (
           <Link
             className="rounded-[22px] border border-line bg-paper px-4 py-3 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
             href={`/day/${todayRef.year}/${todayRef.month}/${todayRef.day}`}
           >
             Сегодня
           </Link>
-        )}
+        ) : null}
         <Link
           aria-label="Следующий день"
           className="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-paper transition-colors hover:border-accent hover:text-accent"

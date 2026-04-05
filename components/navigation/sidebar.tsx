@@ -101,7 +101,7 @@ export function Sidebar() {
 
   return (
     <aside className="sticky top-0 hidden h-screen w-24 shrink-0 border-r border-line/70 bg-paper/70 px-3 py-5 backdrop-blur-xl md:flex xl:w-64 xl:px-5">
-      <div className="flex w-full flex-col">
+      <div className="flex h-full w-full flex-col">
         <div className="mb-8 flex items-center justify-center gap-3 px-0 xl:justify-start xl:px-2">
           <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-line bg-paper shadow-paper md:h-12 md:w-12 xl:h-11 xl:w-11">
             <CalendarIcon className="h-5 w-5 text-accent md:h-6 md:w-6 xl:h-5 xl:w-5" />
@@ -112,7 +112,7 @@ export function Sidebar() {
           </div>
         </div>
 
-        <nav className="space-y-2 md:flex-1 xl:flex-none">
+        <nav className="space-y-2">
           <Link className={navClassName(pathname === "/dashboard")} href="/dashboard">
             <DashboardIcon className="h-5 w-5 md:h-6 md:w-6 xl:h-5 xl:w-5" />
             <span className="hidden xl:inline">Дашборд</span>
