@@ -153,6 +153,8 @@ export function ProfileCalendarIntegrations({
   const [showCalendarPicker, setShowCalendarPicker] = useState(false);
   const [selectedGoogleCalendarIds, setSelectedGoogleCalendarIds] = useState<string[]>([]);
   const [applePending, setApplePending] = useState(false);
+  const [showApplePicker, setShowApplePicker] = useState(false);
+  const [appleSyncPending, setAppleSyncPending] = useState<Record<string, boolean>>({});
   const [appleLabel, setAppleLabel] = useState("");
   const [appleUrl, setAppleUrl] = useState("");
   const [screenError, setScreenError] = useState<string | null>(null);
@@ -164,6 +166,7 @@ export function ProfileCalendarIntegrations({
   const syncAllGoogleCalendars = useAppStore((state) => state.syncAllGoogleCalendars);
   const disconnectGoogleCalendarAccount = useAppStore((state) => state.disconnectGoogleCalendarAccount);
   const connectAppleCalendar = useAppStore((state) => state.connectAppleCalendar);
+  const syncCalendarConnection = useAppStore((state) => state.syncCalendarConnection);
   const deleteCalendarConnection = useAppStore((state) => state.deleteCalendarConnection);
   const calendarConnections = useAppStore((state) => state.calendarConnections);
   const calendarConnectionsStatus = useAppStore((state) => state.calendarConnectionsStatus);
@@ -279,10 +282,23 @@ export function ProfileCalendarIntegrations({
       await connectAppleCalendar(appleUrl.trim(), appleLabel.trim());
       setAppleLabel("");
       setAppleUrl("");
+      setShowApplePicker(false);
     } catch (error) {
       setScreenError(error instanceof Error ? error.message : "Не удалось подключить Apple ICS feed");
     } finally {
       setApplePending(false);
+    }
+  }
+
+  async function handleAppleSyncConnection(connectionId: string) {
+    setScreenError(null);
+    setAppleSyncPending((current) => ({ ...current, [connectionId]: true }));
+    try {
+      await syncCalendarConnection(connectionId);
+    } catch (error) {
+      setScreenError(error instanceof Error ? error.message : "Не удалось синхронизировать Apple Calendar");
+    } finally {
+      setAppleSyncPending((current) => ({ ...current, [connectionId]: false }));
     }
   }
 
@@ -307,6 +323,18 @@ export function ProfileCalendarIntegrations({
   function handleCloseCalendarPicker() {
     setSelectedGoogleCalendarIds(savedGoogleCalendarIds);
     setShowCalendarPicker(false);
+  }
+
+  function handleOpenApplePicker() {
+    setScreenError(null);
+    setShowApplePicker(true);
+  }
+
+  function handleCloseApplePicker() {
+    setScreenError(null);
+    setAppleLabel("");
+    setAppleUrl("");
+    setShowApplePicker(false);
   }
 
   return (
@@ -382,8 +410,75 @@ export function ProfileCalendarIntegrations({
           title="Apple Calendar / ICS"
         >
           <div className="space-y-4">
+            <button
+              className="w-full rounded-[18px] border border-line bg-paper px-4 py-3 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
+              onClick={handleOpenApplePicker}
+              type="button"
+            >
+              {appleConnections.length > 0 ? "Переподключить Apple Calendar" : "Подключить Apple Calendar"}
+            </button>
+
+            {calendarConnectionsStatus === "loading" ? (
+              <div className="rounded-[20px] border border-dashed border-line bg-paper/50 px-4 py-4 text-sm leading-6 text-muted">
+                Загружаем подключения...
+              </div>
+            ) : null}
+
+            {appleConnections.length > 0 ? (
+              <div className="space-y-2">
+                {appleConnections.map((connection) => (
+                  <div
+                    key={connection.id}
+                    className="rounded-[24px] border border-line bg-paper/70 px-4 py-4 text-sm leading-6 text-muted"
+                  >
+                    <div className="text-sm font-semibold text-ink">{connection.accountLabel || "ICS feed"}</div>
+                    <div className="mt-1">
+                      {connection.lastError ? (
+                        <span className="text-danger">{connection.lastError}</span>
+                      ) : connection.lastSyncedAt ? (
+                        `Последняя синхронизация: ${formatConnectionDate(connection.lastSyncedAt)}`
+                      ) : (
+                        "Синк ещё не запускался"
+                      )}
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        className="rounded-[18px] border border-line bg-canvas px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
+                        disabled={appleSyncPending[connection.id]}
+                        onClick={() => {
+                          void handleAppleSyncConnection(connection.id);
+                        }}
+                        type="button"
+                      >
+                        {appleSyncPending[connection.id] ? "Синхронизируем..." : "Синхронизировать"}
+                      </button>
+                      <button
+                        className="rounded-[18px] border border-line bg-canvas px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-danger hover:text-danger disabled:cursor-wait disabled:opacity-60"
+                        onClick={() => {
+                          void handleDelete(connection.id);
+                        }}
+                        type="button"
+                      >
+                        Удалить
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </ProviderCard>
+      </div>
+
+      {showApplePicker ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 px-4 backdrop-blur-sm">
+          <div className="paper-panel max-h-[80vh] w-full max-w-md overflow-y-auto rounded-[32px] p-6">
+            <div className="text-lg font-semibold text-ink">
+              {appleConnections.length > 0 ? "Переподключить Apple Calendar" : "Подключить Apple Calendar"}
+            </div>
             <form
-              className="space-y-3"
+              id="apple-calendar-form"
+              className="mt-4 space-y-3"
               onSubmit={(event) => {
                 void handleAppleConnect(event);
               }}
@@ -400,52 +495,27 @@ export function ProfileCalendarIntegrations({
                 placeholder="Вставьте https://.../calendar.ics"
                 value={appleUrl}
               />
+            </form>
+            <div className="mt-6 flex items-center justify-end gap-3">
               <button
-                className="w-full rounded-[18px] border border-line bg-paper px-4 py-3 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
+                className="rounded-[18px] border border-line bg-paper px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:text-ink"
+                onClick={handleCloseApplePicker}
+                type="button"
+              >
+                Отмена
+              </button>
+              <button
+                className="rounded-[18px] border border-line bg-canvas px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
                 disabled={applePending}
+                form="apple-calendar-form"
                 type="submit"
               >
-                {applePending ? "Подключаем ICS..." : "Добавить ICS feed"}
+                {applePending ? "Подключаем ICS..." : "Добавить"}
               </button>
-            </form>
-
-            {calendarConnectionsStatus === "loading" ? (
-              <div className="rounded-[20px] border border-dashed border-line bg-paper/50 px-4 py-4 text-sm leading-6 text-muted">
-                Загружаем подключения...
-              </div>
-            ) : null}
-
-            {appleConnections.length > 0 ? (
-              <div className="space-y-2">
-                {appleConnections.map((connection) => (
-                  <div
-                    key={connection.id}
-                    className="flex flex-col gap-3 rounded-[20px] border border-line bg-paper/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="min-w-0">
-                      <div className="text-sm font-medium text-ink">{connection.accountLabel || "ICS feed"}</div>
-                      {connection.lastError ? (
-                        <div className="mt-1 text-sm leading-6 text-danger">{connection.lastError}</div>
-                      ) : connection.lastSyncedAt ? (
-                        <div className="mt-1 text-xs leading-5 text-muted">{`Синк: ${formatConnectionDate(connection.lastSyncedAt)}`}</div>
-                      ) : null}
-                    </div>
-                    <button
-                      className="rounded-[16px] border border-line bg-canvas px-3.5 py-2 text-sm font-medium text-ink transition-colors hover:border-danger hover:text-danger"
-                      onClick={() => {
-                        void handleDelete(connection.id);
-                      }}
-                      type="button"
-                    >
-                      Удалить
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : null}
+            </div>
           </div>
-        </ProviderCard>
-      </div>
+        </div>
+      ) : null}
 
       {showCalendarPicker ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 px-4 backdrop-blur-sm">
