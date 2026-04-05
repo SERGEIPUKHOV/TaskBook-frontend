@@ -307,6 +307,31 @@ export function EyeIcon({ className }: IconProps) {
   );
 }
 
+export function CalendarSyncIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={iconClassName(className)}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="3" y="4" width="18" height="18" rx="3" />
+      <path d="M3 9h18" />
+      <path d="M8 2v3" />
+      <path d="M16 2v3" />
+      <path d="M9 12.5h1" />
+      <path d="M9 16.5h1" />
+      <path d="M12.5 12.5H13" />
+      <path d="M15 14a3 3 0 1 0 3 3" />
+      <path d="m18 14 1.5-1.5L21 14" />
+    </svg>
+  );
+}
+
 export function EyeOffIcon({ className }: IconProps) {
   return (
     <svg
