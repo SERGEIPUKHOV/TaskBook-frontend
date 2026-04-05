@@ -16,7 +16,6 @@ import {
 import { currentContext, getDayNavHref, getMonthNavHref, getWeekNavHref } from "@/lib/nav-hrefs";
 import {
   CalendarIcon,
-  CalendarSyncIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   DayIcon,
@@ -131,10 +130,6 @@ export function Sidebar() {
           <Link className={navClassName(pathname.startsWith("/day/"))} href={primaryDayHref}>
             <DayIcon className="h-5 w-5 md:h-6 md:w-6 xl:h-5 xl:w-5" />
             <span className="hidden xl:inline">День</span>
-          </Link>
-          <Link className={navClassName(pathname.startsWith("/calendar"))} href="/calendar">
-            <CalendarSyncIcon className="h-5 w-5 md:h-6 md:w-6 xl:h-5 xl:w-5" />
-            <span className="hidden xl:inline">Календарь</span>
           </Link>
         </nav>
 
