@@ -25,6 +25,10 @@ function sectionTitle(pathname: string): string {
     return "День";
   }
 
+  if (pathname.startsWith("/calendar")) {
+    return "Календарь";
+  }
+
   if (pathname.startsWith("/week")) {
     return "Недельный разворот";
   }
