@@ -375,20 +375,6 @@ export function ProfileScreen({
         </div>
       </Section>
 
-      <Section title="Интеграции календаря">
-        <div className="space-y-5">
-          <div className="max-w-3xl text-sm leading-6 text-muted">
-            Подключайте и настраивайте внешние календари здесь. Все события после синка продолжают попадать в day/week,
-            а раздел <span className="font-medium text-ink">Календарь</span> остаётся быстрым превью ближайших событий.
-          </div>
-          <ProfileCalendarIntegrations
-            googleMessage={googleMessage}
-            googleProvider={googleProvider}
-            googleStatus={googleStatus}
-          />
-        </div>
-      </Section>
-
       <Section title="Смена пароля">
         <form className="space-y-5" onSubmit={handleChangePassword}>
           <AuthPasswordField
@@ -462,6 +448,14 @@ export function ProfileScreen({
             {isLoggingOut ? "Выходим..." : "Выйти"}
           </button>
         </div>
+      </Section>
+
+      <Section title="Интеграции календаря">
+        <ProfileCalendarIntegrations
+          googleMessage={googleMessage}
+          googleProvider={googleProvider}
+          googleStatus={googleStatus}
+        />
       </Section>
 
       <Section title="Опасная зона" tone="danger">

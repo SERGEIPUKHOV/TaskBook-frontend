@@ -2,11 +2,10 @@
 
 import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
-import { useEffect, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
 
 import { CalendarSyncIcon } from "@/components/ui/icons";
 import type { CalendarConnection } from "@/lib/planner-types";
-import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
 
 type ProfileCalendarIntegrationsProps = {
@@ -14,20 +13,6 @@ type ProfileCalendarIntegrationsProps = {
   googleProvider?: string | null;
   googleStatus?: string | null;
 };
-
-function providerLabel(provider: CalendarConnection["provider"]): string {
-  return provider === "google" ? "Google Calendar" : "Apple Calendar";
-}
-
-function statusLabel(connection: CalendarConnection): string {
-  return connection.status === "error" ? "Ошибка синка" : "Подключено";
-}
-
-function statusClassName(connection: CalendarConnection): string {
-  return connection.status === "error"
-    ? "border-danger/30 bg-danger/10 text-danger"
-    : "border-accent/30 bg-accent/10 text-accent";
-}
 
 function formatConnectionDate(value: string | null): string | null {
   if (!value) {
@@ -50,31 +35,104 @@ function accessRoleLabel(accessRole: string | null): string | null {
   return accessRole;
 }
 
+function GoogleLogo() {
+  return (
+    <svg aria-hidden="true" className="h-6 w-6 shrink-0" viewBox="0 0 24 24">
+      <path
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+        fill="#4285F4"
+      />
+      <path
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+        fill="#34A853"
+      />
+      <path
+        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+        fill="#FBBC05"
+      />
+      <path
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+        fill="#EA4335"
+      />
+    </svg>
+  );
+}
+
 function ProviderCard({
-  description,
-  title,
   children,
+  icon,
+  title,
 }: {
-  description: string;
-  title: string;
   children: ReactNode;
+  icon: ReactNode;
+  title: string;
 }) {
   return (
     <article className="rounded-[28px] border border-line bg-canvas/50 p-5 sm:p-6">
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-line bg-paper text-ink shadow-paper">
-        <CalendarSyncIcon className="h-6 w-6" />
-      </div>
-      <div className="mt-4">
+      <div className="flex items-center gap-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-line bg-paper text-ink shadow-paper">
+          {icon}
+        </div>
         <div className="text-base font-semibold text-ink">{title}</div>
-        <div className="mt-1 text-sm leading-6 text-muted">{description}</div>
       </div>
       <div className="mt-5">{children}</div>
     </article>
   );
 }
 
+function GoogleCalendarOptionList({
+  onToggle,
+  options,
+  selectedIds,
+}: {
+  onToggle: (calendarId: string, checked: boolean) => void;
+  options: Array<{
+    accessRole: string | null;
+    id: string;
+    primary: boolean;
+    summary: string;
+  }>;
+  selectedIds: Set<string>;
+}) {
+  return (
+    <div className="space-y-2">
+      {options.map((option) => {
+        const checked = selectedIds.has(option.id);
+        return (
+          <label
+            key={option.id}
+            className="flex cursor-pointer items-start gap-3 rounded-[20px] border border-line bg-canvas/70 px-4 py-3 transition-colors hover:border-accent/40"
+          >
+            <input
+              checked={checked}
+              className="mt-1 h-4 w-4 rounded border-line text-accent focus:ring-accent"
+              onChange={(event) => onToggle(option.id, event.target.checked)}
+              type="checkbox"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="text-sm font-semibold text-ink">{option.summary}</div>
+                {option.primary ? (
+                  <span className="rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-[11px] font-medium text-accent">
+                    primary
+                  </span>
+                ) : null}
+                {accessRoleLabel(option.accessRole) ? (
+                  <span className="rounded-full border border-line bg-paper px-2.5 py-1 text-[11px] font-medium text-muted">
+                    {accessRoleLabel(option.accessRole)}
+                  </span>
+                ) : null}
+              </div>
+              <div className="mt-1 break-all text-xs leading-5 text-muted">{option.id}</div>
+            </div>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
 export function ProfileCalendarIntegrations({
-  googleMessage = null,
   googleProvider = null,
   googleStatus = null,
 }: ProfileCalendarIntegrationsProps) {
@@ -82,6 +140,7 @@ export function ProfileCalendarIntegrations({
   const [googleSelectionPending, setGoogleSelectionPending] = useState(false);
   const [googleSyncPending, setGoogleSyncPending] = useState(false);
   const [googleDisconnectPending, setGoogleDisconnectPending] = useState(false);
+  const [showCalendarPicker, setShowCalendarPicker] = useState(false);
   const [selectedGoogleCalendarIds, setSelectedGoogleCalendarIds] = useState<string[]>([]);
   const [applePending, setApplePending] = useState(false);
   const [appleLabel, setAppleLabel] = useState("");
@@ -95,7 +154,6 @@ export function ProfileCalendarIntegrations({
   const syncAllGoogleCalendars = useAppStore((state) => state.syncAllGoogleCalendars);
   const disconnectGoogleCalendarAccount = useAppStore((state) => state.disconnectGoogleCalendarAccount);
   const connectAppleCalendar = useAppStore((state) => state.connectAppleCalendar);
-  const syncCalendarConnection = useAppStore((state) => state.syncCalendarConnection);
   const deleteCalendarConnection = useAppStore((state) => state.deleteCalendarConnection);
   const calendarConnections = useAppStore((state) => state.calendarConnections);
   const calendarConnectionsStatus = useAppStore((state) => state.calendarConnectionsStatus);
@@ -123,6 +181,7 @@ export function ProfileCalendarIntegrations({
   }, [fetchCalendarConnections, fetchGoogleCalendarOptions, googleProvider, googleStatus]);
 
   const googleConnections = calendarConnections.filter((connection) => connection.provider === "google");
+  const appleConnections = calendarConnections.filter((connection) => connection.provider === "apple");
   const latestGoogleSync = googleConnections.reduce<string | null>((latest, connection) => {
     if (!connection.lastSyncedAt) {
       return latest;
@@ -132,12 +191,15 @@ export function ProfileCalendarIntegrations({
     }
     return latest;
   }, null);
+  const savedGoogleCalendarIds = useMemo(
+    () => googleCalendarOptions.filter((option) => option.selected).map((option) => option.id),
+    [googleCalendarOptions],
+  );
   const selectedGoogleSet = new Set(selectedGoogleCalendarIds);
-  const savedGoogleSet = new Set(googleCalendarOptions.filter((option) => option.selected).map((option) => option.id));
+  const savedGoogleSet = new Set(savedGoogleCalendarIds);
   const googleSelectionChanged =
     selectedGoogleSet.size !== savedGoogleSet.size ||
     [...selectedGoogleSet].some((calendarId) => !savedGoogleSet.has(calendarId));
-  const bannerTone = googleStatus === "error" ? "danger" : "success";
 
   async function handleGoogleConnect() {
     if (typeof window === "undefined") {
@@ -160,6 +222,7 @@ export function ProfileCalendarIntegrations({
     setGoogleSelectionPending(true);
     try {
       await saveGoogleCalendarSelections(selectedGoogleCalendarIds);
+      setShowCalendarPicker(false);
     } catch (error) {
       setScreenError(error instanceof Error ? error.message : "Не удалось сохранить выбор Google calendars");
     } finally {
@@ -185,6 +248,7 @@ export function ProfileCalendarIntegrations({
     try {
       await disconnectGoogleCalendarAccount();
       setSelectedGoogleCalendarIds([]);
+      setShowCalendarPicker(false);
     } catch (error) {
       setScreenError(error instanceof Error ? error.message : "Не удалось отключить Google Calendar");
     } finally {
@@ -212,15 +276,6 @@ export function ProfileCalendarIntegrations({
     }
   }
 
-  async function handleSync(connectionId: string) {
-    setScreenError(null);
-    try {
-      await syncCalendarConnection(connectionId);
-    } catch (error) {
-      setScreenError(error instanceof Error ? error.message : "Не удалось синхронизировать календарь");
-    }
-  }
-
   async function handleDelete(connectionId: string) {
     setScreenError(null);
     try {
@@ -230,21 +285,22 @@ export function ProfileCalendarIntegrations({
     }
   }
 
+  function handleCalendarToggle(calendarId: string, checked: boolean) {
+    setSelectedGoogleCalendarIds((current) => {
+      if (checked) {
+        return [...current, calendarId];
+      }
+      return current.filter((id) => id !== calendarId);
+    });
+  }
+
+  function handleCloseCalendarPicker() {
+    setSelectedGoogleCalendarIds(savedGoogleCalendarIds);
+    setShowCalendarPicker(false);
+  }
+
   return (
     <div className="space-y-5">
-      {googleProvider === "google" && googleStatus ? (
-        <div
-          className={cn(
-            "rounded-[24px] border px-4 py-4 text-sm leading-6",
-            bannerTone === "danger" ? "border-danger/30 bg-danger/10 text-danger" : "border-accent/30 bg-accent/10 text-accent",
-          )}
-        >
-          {googleStatus === "connected"
-            ? "Google Calendar успешно подключён. Теперь можно выбрать, какие именно календари синхронизировать."
-            : googleMessage || "Google Calendar не удалось подключить. Проверь настройки OAuth и повтори попытку."}
-        </div>
-      ) : null}
-
       {screenError ? (
         <div className="rounded-[24px] border border-danger/30 bg-danger/10 px-4 py-4 text-sm leading-6 text-danger">
           {screenError}
@@ -252,10 +308,7 @@ export function ProfileCalendarIntegrations({
       ) : null}
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <ProviderCard
-          description="Read-only подключение через Google OAuth. После авторизации можно выбрать несколько календарей этого аккаунта и держать их в авто-синке."
-          title="Google Calendar"
-        >
+        <ProviderCard icon={<GoogleLogo />} title="Google Calendar">
           <div className="space-y-4">
             <button
               className="w-full rounded-[18px] border border-line bg-paper px-4 py-3 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
@@ -275,6 +328,14 @@ export function ProfileCalendarIntegrations({
                   {latestGoogleSync ? `Последняя синхронизация: ${formatConnectionDate(latestGoogleSync)}` : "Синк ещё не запускался"}
                 </div>
                 <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    className="rounded-[18px] border border-line bg-canvas px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
+                    disabled={googleCalendarOptionsStatus === "loading"}
+                    onClick={() => setShowCalendarPicker(true)}
+                    type="button"
+                  >
+                    {`Выбрать календари${savedGoogleCalendarIds.length > 0 ? ` (${savedGoogleCalendarIds.length})` : ""}`}
+                  </button>
                   <button
                     className="rounded-[18px] border border-line bg-canvas px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
                     disabled={googleSyncPending || googleConnections.length === 0}
@@ -298,178 +359,120 @@ export function ProfileCalendarIntegrations({
                 </div>
               </div>
             ) : null}
+          </div>
+        </ProviderCard>
 
-            {googleCalendarConnected ? (
-              <div className="space-y-3 rounded-[24px] border border-line bg-paper/50 px-4 py-4">
-                <div>
-                  <div className="text-xs uppercase tracking-[0.18em] text-muted">Выбор календарей</div>
-                  <div className="mt-2 text-sm leading-6 text-muted">
-                    Отметьте один или несколько календарей этого аккаунта. Именно они будут попадать в day/week и обновляться автоматически каждые 5 минут.
-                  </div>
-                </div>
+        <ProviderCard icon={<CalendarSyncIcon className="h-6 w-6" />} title="Apple Calendar / ICS">
+          <div className="space-y-4">
+            <form
+              className="space-y-3"
+              onSubmit={(event) => {
+                void handleAppleConnect(event);
+              }}
+            >
+              <input
+                className="w-full rounded-[18px] border border-line bg-paper px-4 py-3 text-sm text-ink outline-none transition-colors placeholder:text-muted/60 focus:border-accent"
+                onChange={(event) => setAppleLabel(event.target.value)}
+                placeholder="Подпись подключения, например Команда"
+                value={appleLabel}
+              />
+              <textarea
+                className="min-h-28 w-full rounded-[18px] border border-line bg-paper px-4 py-3 text-sm leading-6 text-ink outline-none transition-colors placeholder:text-muted/60 focus:border-accent"
+                onChange={(event) => setAppleUrl(event.target.value)}
+                placeholder="Вставьте https://.../calendar.ics"
+                value={appleUrl}
+              />
+              <button
+                className="w-full rounded-[18px] border border-line bg-paper px-4 py-3 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
+                disabled={applePending}
+                type="submit"
+              >
+                {applePending ? "Подключаем ICS..." : "Добавить ICS feed"}
+              </button>
+            </form>
 
-                {googleCalendarOptionsStatus === "loading" ? (
-                  <div className="space-y-2">
-                    <div className="h-14 animate-pulse rounded-[18px] border border-line bg-canvas/60" />
-                    <div className="h-14 animate-pulse rounded-[18px] border border-line bg-canvas/60" />
-                  </div>
-                ) : googleCalendarOptions.length > 0 ? (
-                  <div className="space-y-2">
-                    {googleCalendarOptions.map((option) => {
-                      const checked = selectedGoogleSet.has(option.id);
-                      return (
-                        <label
-                          key={option.id}
-                          className="flex cursor-pointer items-start gap-3 rounded-[20px] border border-line bg-canvas/70 px-4 py-3 transition-colors hover:border-accent/40"
-                        >
-                          <input
-                            checked={checked}
-                            className="mt-1 h-4 w-4 rounded border-line text-accent focus:ring-accent"
-                            onChange={(event) => {
-                              setSelectedGoogleCalendarIds((current) => {
-                                if (event.target.checked) {
-                                  return [...current, option.id];
-                                }
-                                return current.filter((calendarId) => calendarId !== option.id);
-                              });
-                            }}
-                            type="checkbox"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <div className="text-sm font-semibold text-ink">{option.summary}</div>
-                              {option.primary ? (
-                                <span className="rounded-full border border-accent/30 bg-accent/10 px-2.5 py-1 text-[11px] font-medium text-accent">
-                                  primary
-                                </span>
-                              ) : null}
-                              {accessRoleLabel(option.accessRole) ? (
-                                <span className="rounded-full border border-line bg-paper px-2.5 py-1 text-[11px] font-medium text-muted">
-                                  {accessRoleLabel(option.accessRole)}
-                                </span>
-                              ) : null}
-                            </div>
-                            <div className="mt-1 break-all text-xs leading-5 text-muted">{option.id}</div>
-                          </div>
-                        </label>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="rounded-[18px] border border-dashed border-line bg-canvas/50 px-4 py-4 text-sm leading-6 text-muted">
-                    Не удалось получить список календарей или в аккаунте нет доступных календарей для чтения.
-                  </div>
-                )}
-
-                <button
-                  className="w-full rounded-[18px] border border-line bg-paper px-4 py-3 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
-                  disabled={googleSelectionPending || !googleSelectionChanged}
-                  onClick={() => {
-                    void handleSaveGoogleSelections();
-                  }}
-                  type="button"
-                >
-                  {googleSelectionPending ? "Сохраняем выбор..." : "Сохранить выбор календарей"}
-                </button>
+            {calendarConnectionsStatus === "loading" ? (
+              <div className="rounded-[20px] border border-dashed border-line bg-paper/50 px-4 py-4 text-sm leading-6 text-muted">
+                Загружаем подключения...
               </div>
             ) : null}
-          </div>
-        </ProviderCard>
 
-        <ProviderCard
-          description="Read-only импорт по ICS URL. Подходит для опубликованных календарей Apple и любых совместимых подписок."
-          title="Apple Calendar / ICS"
-        >
-          <form
-            className="space-y-3"
-            onSubmit={(event) => {
-              void handleAppleConnect(event);
-            }}
-          >
-            <input
-              className="w-full rounded-[18px] border border-line bg-paper px-4 py-3 text-sm text-ink outline-none transition-colors placeholder:text-muted/60 focus:border-accent"
-              onChange={(event) => setAppleLabel(event.target.value)}
-              placeholder="Подпись подключения, например Команда"
-              value={appleLabel}
-            />
-            <textarea
-              className="min-h-28 w-full rounded-[18px] border border-line bg-paper px-4 py-3 text-sm leading-6 text-ink outline-none transition-colors placeholder:text-muted/60 focus:border-accent"
-              onChange={(event) => setAppleUrl(event.target.value)}
-              placeholder="Вставьте https://.../calendar.ics"
-              value={appleUrl}
-            />
-            <button
-              className="w-full rounded-[18px] border border-line bg-paper px-4 py-3 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
-              disabled={applePending}
-              type="submit"
-            >
-              {applePending ? "Подключаем ICS..." : "Добавить ICS feed"}
-            </button>
-          </form>
-        </ProviderCard>
-      </div>
-
-      <section className="rounded-[28px] border border-line bg-canvas/50 p-5 sm:p-6">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <div className="text-xs uppercase tracking-[0.22em] text-muted">Подключения</div>
-            <h2 className="mt-2 text-xl font-semibold text-ink">Источники календаря</h2>
-          </div>
-          <div className="text-sm text-muted">
-            {calendarConnectionsStatus === "loading" ? "Загружаем подключения..." : `${calendarConnections.length} активных источника`}
-          </div>
-        </div>
-
-        <div className="mt-5 space-y-3">
-          {calendarConnections.length > 0 ? (
-            calendarConnections.map((connection) => (
-              <article key={connection.id} className="rounded-[24px] border border-line bg-paper/70 px-4 py-4">
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <div className="text-sm font-semibold text-ink">{connection.accountLabel || providerLabel(connection.provider)}</div>
-                      <span className={cn("rounded-full border px-2.5 py-1 text-[11px] font-medium", statusClassName(connection))}>
-                        {statusLabel(connection)}
-                      </span>
+            {appleConnections.length > 0 ? (
+              <div className="space-y-2">
+                {appleConnections.map((connection) => (
+                  <div
+                    key={connection.id}
+                    className="flex flex-col gap-3 rounded-[20px] border border-line bg-paper/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-ink">{connection.accountLabel || "ICS feed"}</div>
+                      {connection.lastError ? (
+                        <div className="mt-1 text-sm leading-6 text-danger">{connection.lastError}</div>
+                      ) : connection.lastSyncedAt ? (
+                        <div className="mt-1 text-xs leading-5 text-muted">{`Синк: ${formatConnectionDate(connection.lastSyncedAt)}`}</div>
+                      ) : null}
                     </div>
-                    <div className="mt-2 text-sm leading-6 text-muted">
-                      Провайдер: {providerLabel(connection.provider)}
-                      {connection.provider === "google" && connection.providerAccountLabel ? ` · Аккаунт: ${connection.providerAccountLabel}` : ""}
-                      {connection.lastSyncedAt ? ` · Синк: ${formatConnectionDate(connection.lastSyncedAt)}` : " · Синк ещё не запускался"}
-                    </div>
-                    {connection.lastError ? <div className="mt-2 text-sm leading-6 text-danger">{connection.lastError}</div> : null}
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
                     <button
-                      className="rounded-[18px] border border-line bg-canvas px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
-                      onClick={() => {
-                        void handleSync(connection.id);
-                      }}
-                      type="button"
-                    >
-                      Синхронизировать
-                    </button>
-                    <button
-                      className="rounded-[18px] border border-line bg-canvas px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-danger hover:text-danger"
+                      className="rounded-[16px] border border-line bg-canvas px-3.5 py-2 text-sm font-medium text-ink transition-colors hover:border-danger hover:text-danger"
                       onClick={() => {
                         void handleDelete(connection.id);
                       }}
                       type="button"
                     >
-                      Отключить
+                      Удалить
                     </button>
                   </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </ProviderCard>
+      </div>
+
+      {showCalendarPicker ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 px-4 backdrop-blur-sm">
+          <div className="paper-panel max-h-[80vh] w-full max-w-md overflow-y-auto rounded-[32px] p-6">
+            <div className="text-lg font-semibold text-ink">Выбор календарей</div>
+            <div className="mt-4">
+              {googleCalendarOptionsStatus === "loading" ? (
+                <div className="space-y-2">
+                  <div className="h-14 animate-pulse rounded-[18px] border border-line bg-canvas/60" />
+                  <div className="h-14 animate-pulse rounded-[18px] border border-line bg-canvas/60" />
                 </div>
-              </article>
-            ))
-          ) : (
-            <div className="rounded-[24px] border border-dashed border-line bg-paper/50 px-4 py-6 text-sm leading-6 text-muted">
-              Пока нет ни одного подключённого календаря. Начните с Google OAuth или добавьте Apple/ICS feed.
+              ) : googleCalendarOptions.length > 0 ? (
+                <GoogleCalendarOptionList
+                  onToggle={handleCalendarToggle}
+                  options={googleCalendarOptions}
+                  selectedIds={selectedGoogleSet}
+                />
+              ) : (
+                <div className="rounded-[18px] border border-dashed border-line bg-canvas/50 px-4 py-4 text-sm leading-6 text-muted">
+                  Не удалось получить список календарей или в аккаунте нет доступных календарей для чтения.
+                </div>
+              )}
             </div>
-          )}
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                className="rounded-[18px] border border-line bg-paper px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:text-ink"
+                onClick={handleCloseCalendarPicker}
+                type="button"
+              >
+                Отмена
+              </button>
+              <button
+                className="rounded-[18px] border border-line bg-canvas px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
+                disabled={googleSelectionPending || !googleSelectionChanged}
+                onClick={() => {
+                  void handleSaveGoogleSelections();
+                }}
+                type="button"
+              >
+                {googleSelectionPending ? "Сохраняем..." : "Сохранить"}
+              </button>
+            </div>
+          </div>
         </div>
-      </section>
+      ) : null}
     </div>
   );
 }
