@@ -3,7 +3,18 @@
 
 import { addDays, format, parseISO } from "date-fns";
 
-import type { DailyState, Habit, MonthData, TaskStatus, WeekData, WeekTask } from "@/lib/planner-types";
+import type {
+  CalendarConnection,
+  CalendarEvent,
+  CalendarRangeData,
+  GoogleCalendarOptionsState,
+  DailyState,
+  Habit,
+  MonthData,
+  TaskStatus,
+  WeekData,
+  WeekTask,
+} from "@/lib/planner-types";
 import { getWeekDayKeys } from "@/lib/week-tasks";
 
 // BLOCK-START: PLANNER_API_TYPES
@@ -79,6 +90,62 @@ type ApiWeekBundle = {
   tasks: ApiTask[];
   key_events: Record<string, ApiWeekEntry | null>;
   gratitudes: Record<string, ApiWeekEntry | null>;
+};
+
+type ApiCalendarConnection = {
+  id: string;
+  provider: CalendarConnection["provider"];
+  status: CalendarConnection["status"];
+  external_account_id: string;
+  account_label: string | null;
+  provider_account_label: string | null;
+  last_synced_at: string | null;
+  last_error: string | null;
+  token_expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+type ApiGoogleCalendarOption = {
+  id: string;
+  summary: string;
+  access_role: string | null;
+  primary: boolean;
+  selected: boolean;
+};
+
+type ApiGoogleCalendarOptions = {
+  connected: boolean;
+  provider_account_label: string | null;
+  options: ApiGoogleCalendarOption[];
+};
+
+type ApiCalendarEvent = {
+  id: string;
+  connection_id: string;
+  provider: CalendarEvent["provider"];
+  account_label: string | null;
+  external_event_id: string;
+  external_calendar_id: string | null;
+  title: string;
+  description: string | null;
+  location: string | null;
+  starts_at: string;
+  ends_at: string;
+  source_timezone: string | null;
+  is_all_day: boolean;
+  status: CalendarEvent["status"];
+};
+
+type ApiCalendarEventsRange = {
+  date_from: string;
+  date_to: string;
+  events: ApiCalendarEvent[];
+};
+
+type ApiGoogleAuthSession = {
+  authorize_url: string;
+  state_expires_in: number;
 };
 
 export type WeekEntryMeta = {
@@ -219,7 +286,69 @@ export function createEmptyWeekEntryMeta(weekStartDate: string): WeekEntryMeta {
   };
 }
 
+export function mapApiCalendarConnection(entry: ApiCalendarConnection): CalendarConnection {
+  return {
+    id: entry.id,
+    provider: entry.provider,
+    status: entry.status,
+    externalAccountId: entry.external_account_id,
+    accountLabel: entry.account_label,
+    providerAccountLabel: entry.provider_account_label,
+    lastSyncedAt: entry.last_synced_at,
+    lastError: entry.last_error,
+    tokenExpiresAt: entry.token_expires_at,
+    createdAt: entry.created_at,
+    updatedAt: entry.updated_at,
+  };
+}
+
+export function mapApiGoogleCalendarOptions(entry: ApiGoogleCalendarOptions): GoogleCalendarOptionsState {
+  return {
+    connected: entry.connected,
+    providerAccountLabel: entry.provider_account_label,
+    options: entry.options.map((option) => ({
+      id: option.id,
+      summary: option.summary,
+      accessRole: option.access_role,
+      primary: option.primary,
+      selected: option.selected,
+    })),
+  };
+}
+
+export function mapApiCalendarEvent(entry: ApiCalendarEvent): CalendarEvent {
+  return {
+    id: entry.id,
+    connectionId: entry.connection_id,
+    provider: entry.provider,
+    accountLabel: entry.account_label,
+    externalEventId: entry.external_event_id,
+    externalCalendarId: entry.external_calendar_id,
+    title: entry.title,
+    description: entry.description,
+    location: entry.location,
+    startsAt: entry.starts_at,
+    endsAt: entry.ends_at,
+    sourceTimezone: entry.source_timezone,
+    isAllDay: entry.is_all_day,
+    status: entry.status,
+  };
+}
+
+export function mapApiCalendarEventsRange(entry: ApiCalendarEventsRange): CalendarRangeData {
+  return {
+    dateFrom: entry.date_from,
+    dateTo: entry.date_to,
+    events: entry.events.map(mapApiCalendarEvent),
+  };
+}
+
 export type {
+  ApiCalendarConnection,
+  ApiCalendarEvent,
+  ApiCalendarEventsRange,
+  ApiGoogleCalendarOptions,
+  ApiGoogleAuthSession,
   ApiHabit,
   ApiHabitGrid,
   ApiMonthBundle,

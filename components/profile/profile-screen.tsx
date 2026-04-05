@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { AuthBanner, AuthPasswordField } from "@/components/auth/auth-fields";
+import { ProfileCalendarIntegrations } from "@/components/profile/profile-calendar-integrations";
 import { api } from "@/lib/api";
 import type { ApiError, AuthUser } from "@/lib/auth-types";
 import { PASSWORD_MIN_LENGTH } from "@/lib/auth-validation";
@@ -19,6 +20,12 @@ type ChangePasswordErrors = {
 };
 
 type DeleteStep = "confirm" | "warning" | null;
+
+type ProfileScreenProps = {
+  googleMessage?: string | null;
+  googleProvider?: string | null;
+  googleStatus?: string | null;
+};
 
 function Section({
   children,
@@ -51,7 +58,7 @@ function Section({
 
 function ProfileSkeleton() {
   return (
-    <div className="mx-auto max-w-[720px] space-y-4">
+    <div className="mx-auto max-w-[980px] space-y-4">
       {Array.from({ length: 3 }, (_, index) => (
         <div key={`profile-skeleton-${index}`} className="paper-panel rounded-[30px] p-6">
           <div className="h-3 w-24 animate-pulse rounded bg-line/60" />
@@ -152,7 +159,11 @@ function DeleteAccountModal({
   );
 }
 
-export function ProfileScreen() {
+export function ProfileScreen({
+  googleMessage = null,
+  googleProvider = null,
+  googleStatus = null,
+}: ProfileScreenProps) {
   const router = useRouter();
   const clearSession = useAuthStore((state) => state.clearSession);
   const logout = useAuthStore((state) => state.logout);
@@ -334,7 +345,7 @@ export function ProfileScreen() {
   }
 
   return (
-    <div className="mx-auto max-w-[720px] space-y-4">
+    <div className="mx-auto max-w-[980px] space-y-4">
       {loadError ? (
         <AuthBanner>
           {loadError}{" "}
@@ -361,6 +372,20 @@ export function ProfileScreen() {
               {user ? format(new Date(user.created_at), "d MMMM yyyy", { locale: ru }) : "—"}
             </span>
           </div>
+        </div>
+      </Section>
+
+      <Section title="Интеграции календаря">
+        <div className="space-y-5">
+          <div className="max-w-3xl text-sm leading-6 text-muted">
+            Подключайте и настраивайте внешние календари здесь. Все события после синка продолжают попадать в day/week,
+            а раздел <span className="font-medium text-ink">Календарь</span> остаётся быстрым превью ближайших событий.
+          </div>
+          <ProfileCalendarIntegrations
+            googleMessage={googleMessage}
+            googleProvider={googleProvider}
+            googleStatus={googleStatus}
+          />
         </div>
       </Section>
 

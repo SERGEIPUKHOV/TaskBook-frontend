@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 
+import { createCalendarSlice } from "@/store/slices/calendar.slice";
 import { createDaysSlice } from "@/store/slices/days.slice";
 import { createHabitsSlice } from "@/store/slices/habits.slice";
 import { createMonthsSlice } from "@/store/slices/months.slice";
@@ -29,6 +30,7 @@ export const useAppStore = create<AppStore>()((...args) => ({
   // Description: Task actions remain reachable through the root barrel export.
   ...createTasksSlice(...args),
   // BLOCK-END: APP_STORE_TASKS_SLICE
+  ...createCalendarSlice(...args),
   ...createMonthsSlice(...args),
 }));
 // BLOCK-END: APP_STORE_MODULE

@@ -48,6 +48,19 @@ function buildTask(overrides: Partial<WeekTask> = {}): WeekTask {
 function createStore(initialWeek: WeekData) {
   const weekKey = "2026-W11";
   const noopAsync = async () => ({ ok: true as const });
+  const noopCalendarConnect = async () => ({
+    accountLabel: null,
+    createdAt: "",
+    externalAccountId: "",
+    id: "",
+    lastError: null,
+    lastSyncedAt: null,
+    provider: "google" as const,
+    providerAccountLabel: null,
+    status: "active" as const,
+    tokenExpiresAt: null,
+    updatedAt: "",
+  });
   const noopPromise = async () => {};
   const noop = () => {};
 
@@ -74,6 +87,24 @@ function createStore(initialWeek: WeekData) {
     ensureWeek: noop,
     updateWeekDayNote: noop,
     updateWeekText: noop,
+    calendarConnections: [],
+    calendarConnectionsStatus: "idle",
+    googleCalendarOptions: [],
+    googleCalendarOptionsStatus: "idle",
+    googleCalendarConnected: false,
+    googleCalendarAccountLabel: null,
+    calendarRangeLoadStates: {},
+    calendarRanges: {},
+    connectAppleCalendar: noopCalendarConnect,
+    disconnectGoogleCalendarAccount: noopPromise,
+    deleteCalendarConnection: noopPromise,
+    ensureCalendarRange: noopPromise,
+    fetchCalendarConnections: noopPromise,
+    fetchGoogleCalendarOptions: noopPromise,
+    saveGoogleCalendarSelections: noopPromise,
+    startGoogleCalendarConnect: async () => "",
+    syncCalendarConnection: noopPromise,
+    syncAllGoogleCalendars: noopPromise,
     ...createTasksSlice(...args),
   }));
 

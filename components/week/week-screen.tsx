@@ -4,13 +4,23 @@ import { addDays } from "date-fns";
 import Link from "next/link";
 import { useEffect } from "react";
 
+import { CalendarEventsPanel } from "@/components/calendar/calendar-events-panel";
 import { WeekPlannerBoard } from "@/components/week/week-planner-board";
 import { WeekReflection } from "@/components/week/week-reflection";
 import { WeekStatePanel } from "@/components/week/week-state-panel";
 import { WeekSummary } from "@/components/week/week-summary";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icons";
-import { formatWeekDateRange, getAdjacentWeek, getISOWeekStart, getMonthKey, getWeekKey, getWeekNumberInMonth } from "@/lib/dates";
+import {
+  formatIsoDate,
+  formatWeekDateRange,
+  getAdjacentWeek,
+  getISOWeekStart,
+  getMonthKey,
+  getWeekKey,
+  getWeekNumberInMonth,
+} from "@/lib/dates";
 import { useAppStore } from "@/store/app-store";
+import { getCalendarRangeKey } from "@/store/slices/shared";
 import { useNavStore } from "@/store/nav-store";
 
 type WeekScreenProps = {
@@ -30,8 +40,14 @@ export function WeekScreen({ year, week }: WeekScreenProps) {
   const habitMonthKey = getMonthKey(habitMonthRef.year, habitMonthRef.month);
   const ensureMonth = useAppStore((state) => state.ensureMonth);
   const ensureWeek = useAppStore((state) => state.ensureWeek);
+  const ensureCalendarRange = useAppStore((state) => state.ensureCalendarRange);
   const setLastWeek = useNavStore((state) => state.setLastWeek);
   const weekData = useAppStore((state) => state.weeks[weekKey]);
+  const weekDateFrom = formatIsoDate(weekStart);
+  const weekDateTo = formatIsoDate(endDate);
+  const calendarRangeKey = getCalendarRangeKey(weekDateFrom, weekDateTo);
+  const weekCalendarEvents = useAppStore((state) => state.calendarRanges[calendarRangeKey]?.events ?? []);
+  const weekCalendarStatus = useAppStore((state) => state.calendarRangeLoadStates[calendarRangeKey] ?? "idle");
 
   useEffect(() => {
     ensureWeek(year, week);
@@ -39,7 +55,21 @@ export function WeekScreen({ year, week }: WeekScreenProps) {
     if (isCrossMonth) {
       ensureMonth(endMonthRef.year, endMonthRef.month);
     }
-  }, [ensureMonth, ensureWeek, endMonthRef.month, endMonthRef.year, habitMonthRef.month, habitMonthRef.year, isCrossMonth, week, year]);
+    void ensureCalendarRange(weekDateFrom, weekDateTo);
+  }, [
+    endMonthRef.month,
+    endMonthRef.year,
+    ensureCalendarRange,
+    ensureMonth,
+    ensureWeek,
+    habitMonthRef.month,
+    habitMonthRef.year,
+    isCrossMonth,
+    week,
+    weekDateFrom,
+    weekDateTo,
+    year,
+  ]);
 
   useEffect(() => {
     setLastWeek({ year, week });
@@ -88,6 +118,13 @@ export function WeekScreen({ year, week }: WeekScreenProps) {
       </header>
 
       <WeekSummary week={weekData} weekKey={weekKey} />
+      <CalendarEventsPanel
+        emptyMessage="На эту неделю внешние события пока не подтянулись."
+        events={weekCalendarEvents}
+        isLoading={weekCalendarStatus === "loading" && weekCalendarEvents.length === 0}
+        kicker="Календарь"
+        title="События недели"
+      />
       <WeekPlannerBoard
         monthKey={habitMonthKey}
         monthNumber={habitMonthRef.month}

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { CalendarIcon, DashboardIcon, DayIcon, UserIcon, WeekIcon } from "@/components/ui/icons";
+import { CalendarIcon, CalendarSyncIcon, DashboardIcon, DayIcon, UserIcon, WeekIcon } from "@/components/ui/icons";
 import { currentContext, getDayNavHref, getMonthNavHref, getWeekNavHref } from "@/lib/nav-hrefs";
 import { cn } from "@/lib/utils";
 import { useNavStore } from "@/store/nav-store";
@@ -45,6 +45,12 @@ export function MobileNav() {
       active: pathname.startsWith("/day/"),
     },
     {
+      href: "/calendar",
+      label: "Календ.",
+      icon: CalendarSyncIcon,
+      active: pathname.startsWith("/calendar"),
+    },
+    {
       href: "/profile",
       label: "Профиль",
       icon: UserIcon,
@@ -54,7 +60,7 @@ export function MobileNav() {
 
   return (
     <nav className="fixed inset-x-4 bottom-4 z-40 md:hidden">
-      <div className="grid grid-cols-5 rounded-[28px] border border-line bg-paper/95 p-2 shadow-paper backdrop-blur-xl">
+      <div className="grid grid-cols-6 rounded-[28px] border border-line bg-paper/95 p-2 shadow-paper backdrop-blur-xl">
         {items.map((item) => {
           const Icon = item.icon;
 

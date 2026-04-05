@@ -1,7 +1,15 @@
 import type { StateCreator } from "zustand";
 
 import type { WeekEntryMeta } from "@/lib/planner-api";
-import type { DailyState, MetricName, MonthData, WeekData } from "@/lib/planner-types";
+import type {
+  CalendarConnection,
+  GoogleCalendarOptionsState,
+  CalendarRangeData,
+  DailyState,
+  MetricName,
+  MonthData,
+  WeekData,
+} from "@/lib/planner-types";
 
 export type ReflectionSection = "keyEvents" | "gratitudes";
 export type HabitLoadStatus = "idle" | "loading" | "ready" | "error";
@@ -60,6 +68,27 @@ export type DaysSlice = {
   setDailyMetrics: (key: string, day: number, values: Partial<Record<MetricName, number>>) => void;
 };
 
+export type CalendarSlice = {
+  calendarConnections: CalendarConnection[];
+  calendarConnectionsStatus: LoadStatus;
+  googleCalendarOptions: GoogleCalendarOptionsState["options"];
+  googleCalendarOptionsStatus: LoadStatus;
+  googleCalendarConnected: boolean;
+  googleCalendarAccountLabel: string | null;
+  calendarRangeLoadStates: Record<string, LoadStatus>;
+  calendarRanges: Record<string, CalendarRangeData>;
+  connectAppleCalendar: (icsUrl: string, accountLabel?: string) => Promise<CalendarConnection>;
+  disconnectGoogleCalendarAccount: () => Promise<void>;
+  deleteCalendarConnection: (connectionId: string) => Promise<void>;
+  ensureCalendarRange: (dateFrom: string, dateTo: string) => Promise<void>;
+  fetchCalendarConnections: (force?: boolean) => Promise<void>;
+  fetchGoogleCalendarOptions: (force?: boolean) => Promise<void>;
+  saveGoogleCalendarSelections: (calendarIds: string[]) => Promise<void>;
+  startGoogleCalendarConnect: (returnTo: string) => Promise<string>;
+  syncCalendarConnection: (connectionId: string) => Promise<void>;
+  syncAllGoogleCalendars: () => Promise<void>;
+};
+
 export type HabitsSlice = {
   habitLoadStates: Record<string, HabitLoadState>;
   addHabit: (key: string, name: string) => Promise<AddHabitResult>;
@@ -87,7 +116,7 @@ export type TasksSlice = {
   updateTask: (key: string, taskId: string, field: TaskField, value: string | number | boolean) => void;
 };
 
-export type AppStore = StoreMeta & MonthsSlice & DaysSlice & HabitsSlice & WeeksSlice & TasksSlice;
+export type AppStore = StoreMeta & MonthsSlice & DaysSlice & HabitsSlice & WeeksSlice & TasksSlice & CalendarSlice;
 
 export type AppSliceCreator<T> = StateCreator<AppStore, [], [], T>;
 
@@ -125,6 +154,10 @@ export function parseWeekKey(key: string): { week: number; year: number } | null
 
 export function isPersistedId(value: string | null | undefined): value is string {
   return Boolean(value && !value.startsWith("pending:"));
+}
+
+export function getCalendarRangeKey(dateFrom: string, dateTo: string): string {
+  return `${dateFrom}:${dateTo}`;
 }
 
 export function toDailyState(entry: DailyStateEntry): DailyState {
