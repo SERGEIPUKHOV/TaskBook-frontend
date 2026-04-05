@@ -33,11 +33,6 @@ export function CalendarScreen() {
 
   return (
     <div className="space-y-6">
-      <header className="rounded-[32px] border border-line bg-paper/70 px-4 py-4 shadow-paper sm:px-5 sm:py-5">
-        <div className="text-xs uppercase tracking-[0.22em] text-muted">Превью</div>
-        <h1 className="mt-1 text-2xl font-semibold text-ink">Календарь</h1>
-      </header>
-
       {connectionsStatus !== "loading" && calendarConnections.length === 0 ? (
         <Link
           className="flex min-h-40 items-center justify-center rounded-[32px] border border-dashed border-line bg-paper/60 px-6 text-base font-medium text-muted transition-colors hover:border-accent hover:text-accent"

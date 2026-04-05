@@ -27,6 +27,21 @@ type ProfileScreenProps = {
   googleStatus?: string | null;
 };
 
+type ChangePasswordModalProps = {
+  changeErrors: ChangePasswordErrors;
+  changeNotice: string;
+  confirmPassword: string;
+  currentPassword: string;
+  isChanging: boolean;
+  newPassword: string;
+  onCancel: () => void;
+  onConfirmPasswordChange: (value: string) => void;
+  onCurrentPasswordChange: (value: string) => void;
+  onNewPasswordChange: (value: string) => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  requestError: string;
+};
+
 function Section({
   children,
   tone = "default",
@@ -159,6 +174,81 @@ function DeleteAccountModal({
   );
 }
 
+function ChangePasswordModal({
+  changeErrors,
+  changeNotice,
+  confirmPassword,
+  currentPassword,
+  isChanging,
+  newPassword,
+  onCancel,
+  onConfirmPasswordChange,
+  onCurrentPasswordChange,
+  onNewPasswordChange,
+  onSubmit,
+  requestError,
+}: ChangePasswordModalProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 px-4 backdrop-blur-sm">
+      <div className="paper-panel w-full max-w-lg rounded-[32px] p-6">
+        <div className="text-lg font-semibold text-ink">Смена пароля</div>
+        <p className="mt-3 text-sm leading-7 text-muted">Введите текущий пароль и задайте новый.</p>
+        <form className="mt-5 space-y-5" onSubmit={onSubmit}>
+          <AuthPasswordField
+            autoComplete="current-password"
+            disabled={isChanging}
+            error={changeErrors.currentPassword}
+            id="profile-modal-current-password"
+            label="Текущий пароль"
+            onChange={onCurrentPasswordChange}
+            placeholder="Текущий пароль"
+            value={currentPassword}
+          />
+          <AuthPasswordField
+            autoComplete="new-password"
+            disabled={isChanging}
+            error={changeErrors.newPassword}
+            hint={`Минимум ${PASSWORD_MIN_LENGTH} символов`}
+            id="profile-modal-new-password"
+            label="Новый пароль"
+            onChange={onNewPasswordChange}
+            placeholder="Новый пароль"
+            value={newPassword}
+          />
+          <AuthPasswordField
+            autoComplete="new-password"
+            disabled={isChanging}
+            error={changeErrors.confirmPassword}
+            id="profile-modal-confirm-password"
+            label="Повторите новый пароль"
+            onChange={onConfirmPasswordChange}
+            placeholder="Повторите новый пароль"
+            value={confirmPassword}
+          />
+          {requestError ? <AuthBanner>{requestError}</AuthBanner> : null}
+          {changeNotice ? <AuthBanner tone="success">{changeNotice}</AuthBanner> : null}
+          <div className="flex items-center justify-end gap-3">
+            <button
+              className="rounded-[18px] border border-line bg-paper px-4 py-2.5 text-sm font-medium text-muted transition-colors hover:text-ink"
+              onClick={onCancel}
+              type="button"
+            >
+              Отмена
+            </button>
+            <button
+              className="rounded-[18px] border border-line bg-canvas px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isChanging}
+              type="submit"
+            >
+              {isChanging ? "Сохраняем..." : "Сохранить"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export function ProfileScreen({
   googleMessage = null,
   googleProvider = null,
@@ -179,6 +269,7 @@ export function ProfileScreen({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changeErrors, setChangeErrors] = useState<ChangePasswordErrors>({});
   const [isChanging, setIsChanging] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [deleteStep, setDeleteStep] = useState<DeleteStep>(null);
   const [deletePassword, setDeletePassword] = useState("");
@@ -287,6 +378,7 @@ export function ProfileScreen({
       setNewPassword("");
       setConfirmPassword("");
       setChangeNotice("Пароль изменён.");
+      setShowChangePassword(false);
     } catch (error) {
       const typedError = error as ApiError;
 
@@ -300,6 +392,14 @@ export function ProfileScreen({
     } finally {
       setIsChanging(false);
     }
+  }
+
+  function resetChangePasswordForm() {
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setChangeErrors({});
+    setRequestError("");
   }
 
   async function handleLogout() {
@@ -376,61 +476,33 @@ export function ProfileScreen({
       </Section>
 
       <Section title="Смена пароля">
-        <form className="space-y-5" onSubmit={handleChangePassword}>
-          <AuthPasswordField
-            autoComplete="current-password"
-            disabled={isChanging}
-            error={changeErrors.currentPassword}
-            id="profile-current-password"
-            label="Текущий пароль"
-            onChange={(value) => {
-              setCurrentPassword(value);
-              if (changeErrors.currentPassword) {
-                setChangeErrors((current) => ({ ...current, currentPassword: undefined }));
-              }
-            }}
-            placeholder="Текущий пароль"
-            value={currentPassword}
-          />
-          <AuthPasswordField
-            autoComplete="new-password"
-            disabled={isChanging}
-            error={changeErrors.newPassword}
-            hint={`Минимум ${PASSWORD_MIN_LENGTH} символов`}
-            id="profile-new-password"
-            label="Новый пароль"
-            onChange={(value) => {
-              setNewPassword(value);
-              if (changeErrors.newPassword) {
-                setChangeErrors((current) => ({ ...current, newPassword: undefined }));
-              }
-            }}
-            placeholder="Новый пароль"
-            value={newPassword}
-          />
-          <AuthPasswordField
-            autoComplete="new-password"
-            disabled={isChanging}
-            error={changeErrors.confirmPassword}
-            id="profile-confirm-password"
-            label="Повторите новый пароль"
-            onChange={(value) => {
-              setConfirmPassword(value);
-              if (changeErrors.confirmPassword) {
-                setChangeErrors((current) => ({ ...current, confirmPassword: undefined }));
-              }
-            }}
-            placeholder="Повторите новый пароль"
-            value={confirmPassword}
-          />
-          {requestError ? <AuthBanner>{requestError}</AuthBanner> : null}
-          {changeNotice ? <AuthBanner tone="success">{changeNotice}</AuthBanner> : null}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <button className="auth-btn-primary h-11 px-5 text-sm font-medium sm:w-auto" disabled={isChanging} type="submit">
-              {isChanging ? "Сохраняем..." : "Сменить пароль"}
-            </button>
+            <p className="text-sm font-medium text-ink">Сменить пароль</p>
+            <p className="mt-1 text-sm leading-6 text-muted">Откроем безопасное окно с подтверждением нового пароля.</p>
           </div>
-        </form>
+          <button
+            className="rounded-[18px] border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={isChanging}
+            onClick={() => {
+              resetChangePasswordForm();
+              setChangeNotice("");
+              setShowChangePassword(true);
+            }}
+            type="button"
+          >
+            Сменить пароль
+          </button>
+        </div>
+        {changeNotice ? <AuthBanner tone="success">{changeNotice}</AuthBanner> : null}
+      </Section>
+
+      <Section title="Интеграции календаря">
+        <ProfileCalendarIntegrations
+          googleMessage={googleMessage}
+          googleProvider={googleProvider}
+          googleStatus={googleStatus}
+        />
       </Section>
 
       <Section title="Сессия">
@@ -448,14 +520,6 @@ export function ProfileScreen({
             {isLoggingOut ? "Выходим..." : "Выйти"}
           </button>
         </div>
-      </Section>
-
-      <Section title="Интеграции календаря">
-        <ProfileCalendarIntegrations
-          googleMessage={googleMessage}
-          googleProvider={googleProvider}
-          googleStatus={googleStatus}
-        />
       </Section>
 
       <Section title="Опасная зона" tone="danger">
@@ -499,6 +563,41 @@ export function ProfileScreen({
           }}
           password={deletePassword}
           step={deleteStep}
+        />
+      ) : null}
+
+      {showChangePassword ? (
+        <ChangePasswordModal
+          changeErrors={changeErrors}
+          changeNotice={changeNotice}
+          confirmPassword={confirmPassword}
+          currentPassword={currentPassword}
+          isChanging={isChanging}
+          newPassword={newPassword}
+          onCancel={() => {
+            setShowChangePassword(false);
+            resetChangePasswordForm();
+          }}
+          onConfirmPasswordChange={(value) => {
+            setConfirmPassword(value);
+            if (changeErrors.confirmPassword) {
+              setChangeErrors((current) => ({ ...current, confirmPassword: undefined }));
+            }
+          }}
+          onCurrentPasswordChange={(value) => {
+            setCurrentPassword(value);
+            if (changeErrors.currentPassword) {
+              setChangeErrors((current) => ({ ...current, currentPassword: undefined }));
+            }
+          }}
+          onNewPasswordChange={(value) => {
+            setNewPassword(value);
+            if (changeErrors.newPassword) {
+              setChangeErrors((current) => ({ ...current, newPassword: undefined }));
+            }
+          }}
+          onSubmit={handleChangePassword}
+          requestError={requestError}
         />
       ) : null}
     </div>
