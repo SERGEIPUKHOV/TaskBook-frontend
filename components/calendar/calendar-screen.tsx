@@ -1,31 +1,53 @@
 "use client";
 
-import { addDays, addWeeks, format, startOfISOWeek } from "date-fns";
+import { addDays, addWeeks, differenceInCalendarWeeks, format, isValid, parseISO, startOfISOWeek } from "date-fns";
 import { ru } from "date-fns/locale";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { CalendarWeekGrid } from "@/components/calendar/calendar-week-grid";
 import { formatIsoDate } from "@/lib/dates";
 import { useAppStore } from "@/store/app-store";
 import { getCalendarRangeKey } from "@/store/slices/shared";
 
-export function CalendarScreen() {
-  const [weekOffset, setWeekOffset] = useState(0);
+function parseWeekStartParam(value: string | null): Date | null {
+  if (!value) {
+    return null;
+  }
 
+  const parsedDate = parseISO(value);
+  if (!isValid(parsedDate)) {
+    return null;
+  }
+
+  return startOfISOWeek(parsedDate);
+}
+
+export function CalendarScreen() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const ensureCalendarRange = useAppStore((state) => state.ensureCalendarRange);
   const fetchCalendarConnections = useAppStore((state) => state.fetchCalendarConnections);
   const calendarConnections = useAppStore((state) => state.calendarConnections);
   const connectionsStatus = useAppStore((state) => state.calendarConnectionsStatus);
+  const currentWeekStart = useMemo(() => startOfISOWeek(new Date()), []);
 
-  const { dateFrom, dateTo, weekStart } = useMemo(() => {
-    const weekStartDate = startOfISOWeek(addWeeks(new Date(), weekOffset));
+  const weekStart = useMemo(() => {
+    const urlWeekStart = parseWeekStartParam(searchParams.get("ws"));
+    return urlWeekStart ?? currentWeekStart;
+  }, [currentWeekStart, searchParams]);
+  const weekOffset = useMemo(
+    () => differenceInCalendarWeeks(weekStart, currentWeekStart, { weekStartsOn: 1 }),
+    [currentWeekStart, weekStart],
+  );
+
+  const { dateFrom, dateTo } = useMemo(() => {
     return {
-      weekStart: weekStartDate,
-      dateFrom: formatIsoDate(weekStartDate),
-      dateTo: formatIsoDate(addDays(weekStartDate, 6)),
+      dateFrom: formatIsoDate(weekStart),
+      dateTo: formatIsoDate(addDays(weekStart, 6)),
     };
-  }, [weekOffset]);
+  }, [weekStart]);
   const rangeKey = getCalendarRangeKey(dateFrom, dateTo);
   const weekEvents = useAppStore((state) => state.calendarRanges[rangeKey]?.events ?? []);
   const rangeStatus = useAppStore((state) => state.calendarRangeLoadStates[rangeKey] ?? "idle");
@@ -38,13 +60,31 @@ export function CalendarScreen() {
     void ensureCalendarRange(dateFrom, dateTo);
   }, [dateFrom, dateTo, ensureCalendarRange]);
 
+  useEffect(() => {
+    const nextWeekStart = formatIsoDate(weekStart);
+    if (searchParams.get("ws") === nextWeekStart) {
+      return;
+    }
+
+    router.replace(`/calendar?ws=${nextWeekStart}`, { scroll: false });
+  }, [router, searchParams, weekStart]);
+
   const weekLabel = `${format(weekStart, "d MMM", { locale: ru })} – ${format(addDays(weekStart, 6), "d MMM", {
     locale: ru,
   })}`;
 
-  const handlePrev = useCallback(() => setWeekOffset((offset) => offset - 1), []);
-  const handleNext = useCallback(() => setWeekOffset((offset) => offset + 1), []);
-  const handleToday = useCallback(() => setWeekOffset(0), []);
+  const handleNavigateWeek = useCallback(
+    (delta: number) => {
+      const nextWeekStart = addWeeks(weekStart, delta);
+      router.replace(`/calendar?ws=${formatIsoDate(nextWeekStart)}`, { scroll: false });
+    },
+    [router, weekStart],
+  );
+  const handlePrev = useCallback(() => handleNavigateWeek(-1), [handleNavigateWeek]);
+  const handleNext = useCallback(() => handleNavigateWeek(1), [handleNavigateWeek]);
+  const handleToday = useCallback(() => {
+    router.replace(`/calendar?ws=${formatIsoDate(currentWeekStart)}`, { scroll: false });
+  }, [currentWeekStart, router]);
 
   return (
     <div className="space-y-4">
@@ -88,6 +128,7 @@ export function CalendarScreen() {
         </Link>
       ) : (
         <CalendarWeekGrid
+          connections={calendarConnections}
           events={weekEvents}
           isLoading={rangeStatus === "loading" && weekEvents.length === 0}
           weekStart={weekStart}

@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { isValid, parseISO, startOfISOWeek } from "date-fns";
+import { useMemo, useState } from "react";
 
 import {
+  formatIsoDate,
   formatDayShort,
   formatShortDate,
   getAdjacentMonth,
   getAdjacentWeek,
+  getISOWeekReference,
   getMonthDate,
   getWeekDays,
   getWeeksForMonth,
@@ -60,16 +63,49 @@ function getDayHref(date: Date): string {
   return `/day/${date.getFullYear()}/${date.getMonth() + 1}/${date.getDate()}`;
 }
 
+function getCalendarWeekHref(weekStart: Date): string {
+  return `/calendar?ws=${formatIsoDate(weekStart)}`;
+}
+
+function parseCalendarWeekStart(value: string | null): Date | null {
+  if (!value) {
+    return null;
+  }
+
+  const parsedDate = parseISO(value);
+  if (!isValid(parsedDate)) {
+    return null;
+  }
+
+  return startOfISOWeek(parsedDate);
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const lastDay = useNavStore((state) => state.lastDay);
   const lastMonth = useNavStore((state) => state.lastMonth);
   const lastWeek = useNavStore((state) => state.lastWeek);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const context = currentContext(pathname);
+  const isCalendarContext = pathname.startsWith("/calendar");
+  const calendarWeekStart = useMemo(
+    () => (isCalendarContext ? parseCalendarWeekStart(searchParams.get("ws")) : null),
+    [isCalendarContext, searchParams],
+  );
+  const context = useMemo(() => {
+    if (!calendarWeekStart) {
+      return currentContext(pathname);
+    }
+
+    return {
+      year: calendarWeekStart.getFullYear(),
+      month: calendarWeekStart.getMonth() + 1,
+      weekRef: getISOWeekReference(calendarWeekStart),
+    };
+  }, [calendarWeekStart, pathname]);
   const today = new Date();
   const monthDate = getMonthDate(context.year, context.month);
   const prevMonth = getAdjacentMonth(context.year, context.month, -1);
@@ -83,6 +119,12 @@ export function Sidebar() {
   const nextWeekRef = weekRef ? getAdjacentWeek(weekRef.year, weekRef.week, 1) : null;
   const prevMonthHref = getSpreadHref(pathname, prevMonth.year, prevMonth.month);
   const nextMonthHref = getSpreadHref(pathname, nextMonth.year, nextMonth.month);
+  const prevCalendarHref = isCalendarContext
+    ? getCalendarWeekHref(getWeeksForMonth(prevMonth.year, prevMonth.month)[0]?.start ?? new Date())
+    : prevMonthHref;
+  const nextCalendarHref = isCalendarContext
+    ? getCalendarWeekHref(getWeeksForMonth(nextMonth.year, nextMonth.month)[0]?.start ?? new Date())
+    : nextMonthHref;
   const prevWeekDayHref = prevWeekRef ? getDayHref(getWeekDays(prevWeekRef.year, prevWeekRef.week)[0]) : prevMonthHref;
   const nextWeekDayHref = nextWeekRef ? getDayHref(getWeekDays(nextWeekRef.year, nextWeekRef.week)[0]) : nextMonthHref;
   const primaryMonthHref = getMonthNavHref({ context, lastDay, lastMonth, lastWeek, pathname, today });
@@ -143,7 +185,7 @@ export function Sidebar() {
             <Link
               aria-label={isDayContext ? "Предыдущая неделя" : "Предыдущий месяц"}
               className="rounded-full border border-line p-1.5 transition-colors hover:border-accent hover:text-accent"
-              href={isDayContext ? prevWeekDayHref : prevMonthHref}
+              href={isDayContext ? prevWeekDayHref : prevCalendarHref}
             >
               <ChevronLeftIcon className="h-4 w-4" />
             </Link>
@@ -163,7 +205,7 @@ export function Sidebar() {
             <Link
               aria-label={isDayContext ? "Следующая неделя" : "Следующий месяц"}
               className="rounded-full border border-line p-1.5 transition-colors hover:border-accent hover:text-accent"
-              href={isDayContext ? nextWeekDayHref : nextMonthHref}
+              href={isDayContext ? nextWeekDayHref : nextCalendarHref}
             >
               <ChevronRightIcon className="h-4 w-4" />
             </Link>
@@ -193,7 +235,9 @@ export function Sidebar() {
                   );
                 })
               : weeks.map((weekItem, index) => {
-                  const isActive = pathname === `/week/${weekItem.year}/${weekItem.week}`;
+                  const isActive = isCalendarContext
+                    ? calendarWeekStart !== null && formatIsoDate(weekItem.start) === formatIsoDate(calendarWeekStart)
+                    : pathname === `/week/${weekItem.year}/${weekItem.week}`;
 
                   return (
                     <Link
@@ -204,7 +248,7 @@ export function Sidebar() {
                           ? "border-ink bg-ink text-canvas"
                           : "border-transparent bg-paper/70 text-muted hover:border-line hover:text-ink",
                       )}
-                      href={`/week/${weekItem.year}/${weekItem.week}`}
+                      href={isCalendarContext ? getCalendarWeekHref(weekItem.start) : `/week/${weekItem.year}/${weekItem.week}`}
                     >
                       <div className="text-sm font-medium">Нед. {index + 1}</div>
                       <div className={cn("text-xs", isActive ? "text-canvas/80" : "text-muted")}>
@@ -216,7 +260,7 @@ export function Sidebar() {
           </div>
         </div>
 
-        <div className="mt-auto">
+        <div className="mt-auto xl:mt-8">
           <div className="rounded-[28px] border border-line bg-paper/90 p-2.5 shadow-paper xl:p-4">
             <div className="hidden text-xs uppercase tracking-[0.2em] text-muted xl:block">Аккаунт</div>
             <div className="mt-2 hidden break-all text-sm font-medium text-ink xl:block">
