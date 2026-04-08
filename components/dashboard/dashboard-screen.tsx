@@ -91,6 +91,10 @@ export function DashboardScreen() {
 
   const completedTasks = viewWeekData.tasks.filter((task) => getLastTaskStatus(task) === "done").length;
   const carryOverTasks = viewWeekData.tasks.filter((task) => !isTaskClosed(task)).length;
+  const hasMainGoal = viewMonthData.mainGoal.trim().length > 0;
+  const weekFocus = viewWeekData.reflection.focus.trim();
+  const weekReward = viewWeekData.reflection.reward.trim();
+  const hasWeekFocus = weekFocus.length > 0;
   const isCurrentMonth = viewOffset === 0;
   const daysInViewMonth = new Date(viewMonthRef.year, viewMonthRef.month, 0).getDate();
   const habitCutoffKey = isCurrentMonth
@@ -105,45 +109,50 @@ export function DashboardScreen() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 rounded-[32px] border border-line bg-paper/70 px-4 py-4 shadow-paper sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-5">
-        <div>
+      <header className="flex items-center gap-3 rounded-[32px] border border-line bg-paper/70 px-3 py-3 shadow-paper sm:px-5 sm:py-5">
+        <button
+          aria-label="Предыдущий месяц"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-paper transition-colors hover:border-accent hover:text-accent"
+          onClick={() => setViewOffset((offset) => offset - 1)}
+          type="button"
+        >
+          <ChevronLeftIcon className="h-5 w-5" />
+        </button>
+
+        <div className="min-w-0 flex-1 text-center">
           <div className="text-xs uppercase tracking-[0.22em] text-muted">Месячный разворот</div>
-          <h1 className="mt-1 text-2xl font-semibold text-ink">{viewMonthLabel}</h1>
+          <h1 className="mt-1 text-xl font-semibold text-ink sm:text-2xl">{viewMonthLabel}</h1>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            aria-label="Предыдущий месяц"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-paper transition-colors hover:border-accent hover:text-accent"
-            onClick={() => setViewOffset((offset) => offset - 1)}
-            type="button"
-          >
-            <ChevronLeftIcon className="h-5 w-5" />
-          </button>
-          <button
-            aria-label="Следующий месяц"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-paper transition-colors hover:border-accent hover:text-accent"
-            onClick={() => setViewOffset((offset) => offset + 1)}
-            type="button"
-          >
-            <ChevronRightIcon className="h-5 w-5" />
-          </button>
-        </div>
+        <button
+          aria-label="Следующий месяц"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-paper transition-colors hover:border-accent hover:text-accent"
+          onClick={() => setViewOffset((offset) => offset + 1)}
+          type="button"
+        >
+          <ChevronRightIcon className="h-5 w-5" />
+        </button>
       </header>
 
-      <div className="space-y-3">
-        <FocusBlock
-          emptyText="Главная задача месяца не задана"
-          text={viewMonthData.mainGoal}
-          title="Текущий фокус месяца"
-        />
-        <FocusBlock
-          detail={`Награда недели: ${viewWeekData.reflection.reward}`}
-          emptyText="Фокус недели не задан"
-          text={viewWeekData.reflection.focus}
-          title="Текущий фокус недели"
-        />
-      </div>
+      {(hasMainGoal || hasWeekFocus) ? (
+        <div className="space-y-3">
+          {hasMainGoal ? (
+            <FocusBlock
+              emptyText="Главная задача месяца не задана"
+              text={viewMonthData.mainGoal}
+              title="Текущий фокус месяца"
+            />
+          ) : null}
+          {hasWeekFocus ? (
+            <FocusBlock
+              detail={weekReward ? `Награда недели: ${weekReward}` : undefined}
+              emptyText="Фокус недели не задан"
+              text={viewWeekData.reflection.focus}
+              title="Текущий фокус недели"
+            />
+          ) : null}
+        </div>
+      ) : null}
 
       {SHOW_MONTH_STATES_PANEL ? (
         <MonthStatesPanel

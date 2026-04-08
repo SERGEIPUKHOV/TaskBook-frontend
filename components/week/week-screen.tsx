@@ -125,6 +125,7 @@ export function WeekScreen({ year, week }: WeekScreenProps) {
         kicker="Календарь"
         title="События недели"
       />
+
       <WeekPlannerBoard
         monthKey={habitMonthKey}
         monthNumber={habitMonthRef.month}
@@ -133,7 +134,7 @@ export function WeekScreen({ year, week }: WeekScreenProps) {
         weekKey={weekKey}
       />
       {SHOW_WEEK_STATE_PANEL ? <WeekStatePanel week={weekData} /> : null}
-      <WeekReflection week={weekData} weekKey={weekKey} />
+      <WeekReflection week={weekData} />
     </div>
   );
 }

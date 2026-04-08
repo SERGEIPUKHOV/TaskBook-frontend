@@ -37,34 +37,35 @@ export function MonthScreen({ year, month }: MonthScreenProps) {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-3 rounded-[32px] border border-line bg-paper/70 px-4 py-4 shadow-paper sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:py-5">
-        <div>
+      <header className="flex items-center gap-2 rounded-[32px] border border-line bg-paper/70 px-3 py-3 shadow-paper sm:px-5 sm:py-5">
+        <Link
+          aria-label="Предыдущий месяц"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-paper transition-colors hover:border-accent hover:text-accent"
+          href={`/month/${prevMonth.year}/${prevMonth.month}`}
+        >
+          <ChevronLeftIcon className="h-5 w-5" />
+        </Link>
+
+        <div className="min-w-0 flex-1 text-center">
           <div className="text-xs uppercase tracking-[0.22em] text-muted">Месячный разворот</div>
-          <h1 className="mt-1 text-2xl font-semibold text-ink">{formatMonthLabel(year, month)}</h1>
+          <h1 className="mt-1 text-xl font-semibold text-ink sm:text-2xl">{formatMonthLabel(year, month)}</h1>
+          <div className="mt-2">
+            <Link
+              className="inline-flex rounded-[18px] border border-line bg-paper px-3 py-2 text-xs font-medium text-ink transition-colors hover:border-accent hover:text-accent sm:text-sm"
+              href="/dashboard"
+            >
+              К дашборду
+            </Link>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Link
-            aria-label="Предыдущий месяц"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-paper transition-colors hover:border-accent hover:text-accent"
-            href={`/month/${prevMonth.year}/${prevMonth.month}`}
-          >
-            <ChevronLeftIcon className="h-5 w-5" />
-          </Link>
-          <Link
-            className="rounded-[22px] border border-line bg-paper px-4 py-3 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
-            href="/dashboard"
-          >
-            К дашборду
-          </Link>
-          <Link
-            aria-label="Следующий месяц"
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-line bg-paper transition-colors hover:border-accent hover:text-accent"
-            href={`/month/${nextMonth.year}/${nextMonth.month}`}
-          >
-            <ChevronRightIcon className="h-5 w-5" />
-          </Link>
-        </div>
+        <Link
+          aria-label="Следующий месяц"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-line bg-paper transition-colors hover:border-accent hover:text-accent"
+          href={`/month/${nextMonth.year}/${nextMonth.month}`}
+        >
+          <ChevronRightIcon className="h-5 w-5" />
+        </Link>
       </header>
 
       <MonthPlan month={monthData} monthKey={monthKey} />

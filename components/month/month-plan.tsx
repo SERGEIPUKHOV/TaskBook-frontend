@@ -22,17 +22,38 @@ function syncTextareaHeight(element: HTMLTextAreaElement | null) {
   element.style.height = `${Math.max(element.scrollHeight, 36)}px`;
 }
 
-function Section({
+function CollapsibleSection({
   children,
+  initiallyOpen,
+  resetKey,
   title,
 }: {
   children: ReactNode;
+  initiallyOpen: boolean;
+  resetKey: string;
   title: string;
 }) {
+  const [open, setOpen] = useState(initiallyOpen);
+  const previousResetKeyRef = useRef(resetKey);
+
+  useEffect(() => {
+    if (previousResetKeyRef.current !== resetKey) {
+      previousResetKeyRef.current = resetKey;
+      setOpen(initiallyOpen);
+    }
+  }, [initiallyOpen, resetKey]);
+
   return (
-    <section className="rounded-[24px] border border-line bg-canvas/65 p-3">
-      <div className="mb-3 text-base font-semibold text-ink">{title}</div>
-      {children}
+    <section className="rounded-[24px] border border-line bg-canvas/65">
+      <button
+        className="flex w-full items-center justify-between gap-3 p-3 text-left"
+        onClick={() => setOpen((current) => !current)}
+        type="button"
+      >
+        <span className="text-base font-semibold text-ink">{title}</span>
+        <span className="text-sm text-muted">{open ? "−" : "+"}</span>
+      </button>
+      {open ? <div className="px-3 pb-3">{children}</div> : null}
     </section>
   );
 }
@@ -69,13 +90,11 @@ function ListSection({
   field,
   monthKey,
   placeholder,
-  title,
   values,
 }: {
   field: ListField;
   monthKey: string;
   placeholder: string;
-  title: string;
   values: string[];
 }) {
   const addMonthListItem = useAppStore((state) => state.addMonthListItem);
@@ -109,7 +128,7 @@ function ListSection({
   }
 
   return (
-    <Section title={title}>
+    <>
       {values.length > 0 && (
         <div className="mb-2 space-y-2 border-b border-line/80 pb-3">
           {values.map((value, index) => (
@@ -172,12 +191,15 @@ function ListSection({
           + Добавить пункт
         </button>
       </div>
-    </Section>
+    </>
   );
 }
 
 export function MonthPlan({ monthKey, month }: MonthPlanProps) {
   const updateMonthText = useAppStore((state) => state.updateMonthText);
+  const hasMainGoal = month.mainGoal.trim().length > 0;
+  const hasFocusAreas = month.focusAreas.some((value) => value.trim().length > 0);
+  const hasNotes = month.notes.trim().length > 0;
 
   return (
     <div className="paper-panel rounded-[32px] p-4 sm:p-6">
@@ -189,31 +211,44 @@ export function MonthPlan({ monthKey, month }: MonthPlanProps) {
       </div>
 
       <div className="space-y-3">
-        <Section title="Главная задача месяца">
+        <CollapsibleSection
+          initiallyOpen={hasMainGoal}
+          resetKey={`${monthKey}:mainGoal`}
+          title="Главная задача месяца"
+        >
           <AutoHeightTextarea
             onChange={(value) => updateMonthText(monthKey, "mainGoal", value)}
             placeholder="Главная задача месяца..."
             value={month.mainGoal}
           />
-        </Section>
+        </CollapsibleSection>
 
-        <ListSection
-          field="focusAreas"
-          monthKey={monthKey}
-          placeholder="Фокус"
+        <CollapsibleSection
+          initiallyOpen={hasFocusAreas}
+          resetKey={`${monthKey}:focusAreas`}
           title="Фокус месяца"
-          values={month.focusAreas}
-        />
+        >
+          <ListSection
+            field="focusAreas"
+            monthKey={monthKey}
+            placeholder="Фокус"
+            values={month.focusAreas}
+          />
+        </CollapsibleSection>
 
         <MonthHabitList habits={month.habits} monthKey={monthKey} />
 
-        <Section title="Другое важное">
+        <CollapsibleSection
+          initiallyOpen={hasNotes}
+          resetKey={`${monthKey}:notes`}
+          title="Другое важное"
+        >
           <AutoHeightTextarea
             onChange={(value) => updateMonthText(monthKey, "notes", value)}
             placeholder="Свободное поле для любых заметок..."
             value={month.notes}
           />
-        </Section>
+        </CollapsibleSection>
       </div>
     </div>
   );
