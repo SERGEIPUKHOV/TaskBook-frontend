@@ -49,14 +49,6 @@ export function MonthScreen({ year, month }: MonthScreenProps) {
         <div className="min-w-0 flex-1 text-center">
           <div className="text-xs uppercase tracking-[0.22em] text-muted">Месячный разворот</div>
           <h1 className="mt-1 text-xl font-semibold text-ink sm:text-2xl">{formatMonthLabel(year, month)}</h1>
-          <div className="mt-2">
-            <Link
-              className="inline-flex rounded-[18px] border border-line bg-paper px-3 py-2 text-xs font-medium text-ink transition-colors hover:border-accent hover:text-accent sm:text-sm"
-              href="/dashboard"
-            >
-              К дашборду
-            </Link>
-          </div>
         </div>
 
         <Link

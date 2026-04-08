@@ -22,7 +22,7 @@ function ReflectionEntry({
   return (
     <div className="grid grid-cols-[56px_minmax(0,1fr)] items-start gap-3">
       <span className="text-sm text-muted">{formatDayStamp(parseISO(dayKey))}</span>
-      <p className="whitespace-pre-wrap text-sm leading-6 text-ink">{value}</p>
+      <p className="whitespace-pre-wrap break-words text-sm leading-6 text-ink">{value}</p>
     </div>
   );
 }

@@ -306,7 +306,7 @@ function HabitRow({
           monthKey={monthKey}
         />
       ))}
-      <div className="flex min-h-10 items-center px-3 py-1.5 text-sm text-ink" title={habitName || "Без названия"}>
+      <div className="flex min-h-10 items-center border-r border-line px-3 py-1.5 text-sm text-ink" title={habitName || "Без названия"}>
         <span className="truncate">{habitName || "Без названия"}</span>
       </div>
       <PlaceholderCell />
@@ -423,7 +423,7 @@ function TaskRow({
         />
       ))}
 
-      <div className="flex min-h-10 items-center gap-2 px-2 py-1.5">
+      <div className="flex min-h-10 items-center gap-2 border-r border-line px-2 py-1.5">
         <textarea
           ref={(element) => {
             textareaRef.current = element;
@@ -627,7 +627,7 @@ function StateRow({
           </div>
         );
       })}
-      <div className="flex min-h-10 items-center gap-2 px-3 py-1.5 text-sm text-ink">
+      <div className="flex min-h-10 items-center gap-2 border-r border-line px-3 py-1.5 text-sm text-ink">
         <Icon className="h-4 w-4 shrink-0 text-muted" />
         <span className="truncate">{label}</span>
       </div>
@@ -782,7 +782,7 @@ export function WeekPlannerBoard({
                     </div>
                   );
                 })}
-                <div className="h-12" />
+                <div className="h-12 border-r border-line" />
                 <div className={getRightColumnClass("flex h-12 items-center justify-center")}>?</div>
                 <div className={getRightColumnClass("flex h-12 items-center justify-center")}>Ti</div>
                 <div className={getRightColumnClass("flex h-12 items-center justify-center")}>Fa</div>
@@ -882,7 +882,7 @@ export function WeekPlannerBoard({
                 {dayKeys.map((dayKey, i) => (
                   <div key={`add-${dayKey}`} className={getDayCellClass(i === dayKeys.length - 1)} />
                 ))}
-                <div className="flex min-h-10 items-center gap-2 px-2 py-1.5">
+                <div className="flex min-h-10 items-center gap-2 border-r border-line px-2 py-1.5">
                   <input
                     ref={newTaskInputRef}
                     className="field-base flex-1 px-3 py-2 text-sm leading-5"

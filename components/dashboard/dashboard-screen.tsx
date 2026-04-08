@@ -94,6 +94,8 @@ export function DashboardScreen() {
   const hasMainGoal = viewMonthData.mainGoal.trim().length > 0;
   const weekFocus = viewWeekData.reflection.focus.trim();
   const weekReward = viewWeekData.reflection.reward.trim();
+  const focusAreasText = viewMonthData.focusAreas.filter((area) => area.trim().length > 0).join(" · ");
+  const hasFocusAreas = focusAreasText.length > 0;
   const hasWeekFocus = weekFocus.length > 0;
   const isCurrentMonth = viewOffset === 0;
   const daysInViewMonth = new Date(viewMonthRef.year, viewMonthRef.month, 0).getDate();
@@ -134,13 +136,20 @@ export function DashboardScreen() {
         </button>
       </header>
 
-      {(hasMainGoal || hasWeekFocus) ? (
+      {(hasMainGoal || hasFocusAreas || hasWeekFocus) ? (
         <div className="space-y-3">
           {hasMainGoal ? (
             <FocusBlock
               emptyText="Главная задача месяца не задана"
               text={viewMonthData.mainGoal}
               title="Текущий фокус месяца"
+            />
+          ) : null}
+          {hasFocusAreas ? (
+            <FocusBlock
+              emptyText="Фокус месяца не задан"
+              text={focusAreasText}
+              title="Фокус месяца"
             />
           ) : null}
           {hasWeekFocus ? (
