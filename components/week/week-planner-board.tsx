@@ -42,7 +42,7 @@ const PRIORITY_COLUMN_WIDTH = 40;
 const STATUS_BUTTON_SIZE = 32;
 const DAY_SECTION_WIDTH = DAY_COLUMN_WIDTH * 7;
 const ALTERNATING_DAY_INDICES = [0, 2, 4, 6] as const;
-const boardColumns = `repeat(7, ${DAY_COLUMN_WIDTH}px) ${PRIORITY_COLUMN_WIDTH}px 56px 56px minmax(200px, 1fr)`;
+const boardColumns = `repeat(7, ${DAY_COLUMN_WIDTH}px) minmax(200px, 1fr) ${PRIORITY_COLUMN_WIDTH}px 56px 56px`;
 // BLOCK-END: WEEK_PLANNER_LAYOUT_CONSTANTS
 
 // BLOCK-START: WEEK_PLANNER_UI_HELPERS
@@ -306,12 +306,12 @@ function HabitRow({
           monthKey={monthKey}
         />
       ))}
-      <PlaceholderCell />
-      <PlaceholderCell />
-      <PlaceholderCell />
       <div className="flex min-h-10 items-center px-3 py-1.5 text-sm text-ink" title={habitName || "Без названия"}>
         <span className="truncate">{habitName || "Без названия"}</span>
       </div>
+      <PlaceholderCell />
+      <PlaceholderCell />
+      <PlaceholderCell />
     </div>
   );
 }
@@ -423,6 +423,33 @@ function TaskRow({
         />
       ))}
 
+      <div className="flex min-h-10 items-center gap-2 px-2 py-1.5">
+        <textarea
+          ref={(element) => {
+            textareaRef.current = element;
+            registerInput(task.id, element);
+            syncTextareaHeight(element, 36);
+          }}
+          className="field-base w-full resize-none overflow-hidden px-3 py-2 text-sm leading-5 text-ink outline-none placeholder:text-muted/60"
+          onBlur={() => scheduleSave("title", draft.title)}
+          onChange={(event) => {
+            setDraft((current) => ({ ...current, title: event.target.value }));
+            syncTextareaHeight(event.currentTarget, 36);
+          }}
+          placeholder="Новая задача..."
+          rows={1}
+          value={draft.title}
+        />
+        <button
+          aria-label={`Удалить задачу ${draft.title || "без названия"}`}
+          className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm text-muted opacity-100 transition-colors hover:bg-danger/10 hover:text-danger md:opacity-0 md:transition-opacity md:group-hover:opacity-100"
+          onClick={() => onDelete(task)}
+          type="button"
+        >
+          ✕
+        </button>
+      </div>
+
       <div className={getRightColumnClass("flex items-center justify-center")}>
         <button
           className={cn(
@@ -476,33 +503,6 @@ function TaskRow({
           type="number"
           value={draft.fa}
         />
-      </div>
-
-      <div className="flex min-h-10 items-center gap-2 px-2 py-1.5">
-        <textarea
-          ref={(element) => {
-            textareaRef.current = element;
-            registerInput(task.id, element);
-            syncTextareaHeight(element, 36);
-          }}
-          className="field-base w-full resize-none overflow-hidden px-3 py-2 text-sm leading-5 text-ink outline-none placeholder:text-muted/60"
-          onBlur={() => scheduleSave("title", draft.title)}
-          onChange={(event) => {
-            setDraft((current) => ({ ...current, title: event.target.value }));
-            syncTextareaHeight(event.currentTarget, 36);
-          }}
-          placeholder="Новая задача..."
-          rows={1}
-          value={draft.title}
-        />
-        <button
-          aria-label={`Удалить задачу ${draft.title || "без названия"}`}
-          className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm text-muted opacity-100 transition-colors hover:bg-danger/10 hover:text-danger md:opacity-0 md:transition-opacity md:group-hover:opacity-100"
-          onClick={() => onDelete(task)}
-          type="button"
-        >
-          ✕
-        </button>
       </div>
     </div>
   );
@@ -627,13 +627,13 @@ function StateRow({
           </div>
         );
       })}
-      <div className={getRightColumnClass("flex items-center justify-center py-1.5")} />
-      <div className={getRightColumnClass("flex items-center justify-center py-1.5")} />
-      <div className={getRightColumnClass("flex items-center justify-center py-1.5")} />
       <div className="flex min-h-10 items-center gap-2 px-3 py-1.5 text-sm text-ink">
         <Icon className="h-4 w-4 shrink-0 text-muted" />
         <span className="truncate">{label}</span>
       </div>
+      <div className={getRightColumnClass("flex items-center justify-center py-1.5")} />
+      <div className={getRightColumnClass("flex items-center justify-center py-1.5")} />
+      <div className={getRightColumnClass("flex items-center justify-center py-1.5")} />
     </div>
   );
 }
@@ -782,10 +782,10 @@ export function WeekPlannerBoard({
                     </div>
                   );
                 })}
+                <div className="h-12" />
                 <div className={getRightColumnClass("flex h-12 items-center justify-center")}>?</div>
                 <div className={getRightColumnClass("flex h-12 items-center justify-center")}>Ti</div>
                 <div className={getRightColumnClass("flex h-12 items-center justify-center")}>Fa</div>
-                <div className="h-12" />
               </div>
               {/* BLOCK-END: WEEK_BOARD_HEADER */}
 
@@ -882,9 +882,6 @@ export function WeekPlannerBoard({
                 {dayKeys.map((dayKey, i) => (
                   <div key={`add-${dayKey}`} className={getDayCellClass(i === dayKeys.length - 1)} />
                 ))}
-                <PlaceholderCell />
-                <PlaceholderCell />
-                <PlaceholderCell />
                 <div className="flex min-h-10 items-center gap-2 px-2 py-1.5">
                   <input
                     ref={newTaskInputRef}
@@ -918,6 +915,9 @@ export function WeekPlannerBoard({
                     + Добавить задачу
                   </button>
                 </div>
+                <PlaceholderCell />
+                <PlaceholderCell />
+                <PlaceholderCell />
               </div>
               {/* BLOCK-END: WEEK_BOARD_ADD_TASK */}
               {/* BLOCK-END: WEEK_BOARD_TASK_GRID */}
