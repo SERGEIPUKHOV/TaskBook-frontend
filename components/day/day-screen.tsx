@@ -7,11 +7,9 @@ import { DayHabitList } from "@/components/day/day-habit-list";
 import { DayNavigator } from "@/components/day/day-navigator";
 import { DayReflection } from "@/components/day/day-reflection";
 import { DayTaskList } from "@/components/day/day-task-list";
-import { CalendarEventsPanel } from "@/components/calendar/calendar-events-panel";
 import { DayStateBlock } from "@/components/ui/day-state-block";
 import { formatIsoDate, getISOWeekReference, getMonthKey, getWeekKey, isValidCalendarDate } from "@/lib/dates";
 import { useAppStore } from "@/store/app-store";
-import { getCalendarRangeKey } from "@/store/slices/shared";
 import { useNavStore } from "@/store/nav-store";
 
 type DayScreenProps = {
@@ -29,12 +27,8 @@ export function DayScreen({ day, month, year }: DayScreenProps) {
   const dayKey = formatIsoDate(targetDate);
   const ensureMonth = useAppStore((state) => state.ensureMonth);
   const ensureWeek = useAppStore((state) => state.ensureWeek);
-  const ensureCalendarRange = useAppStore((state) => state.ensureCalendarRange);
   const monthData = useAppStore((state) => state.months[monthKey]);
   const weekData = useAppStore((state) => state.weeks[weekKey]);
-  const calendarRangeKey = getCalendarRangeKey(dayKey, dayKey);
-  const dayCalendarEvents = useAppStore((state) => state.calendarRanges[calendarRangeKey]?.events ?? []);
-  const dayCalendarStatus = useAppStore((state) => state.calendarRangeLoadStates[calendarRangeKey] ?? "idle");
   const setDailyMetric = useAppStore((state) => state.setDailyMetric);
   const setLastDay = useNavStore((state) => state.setLastDay);
   const isFuture = isAfter(startOfDay(targetDate), startOfDay(new Date()));
@@ -45,8 +39,7 @@ export function DayScreen({ day, month, year }: DayScreenProps) {
     }
     ensureWeek(weekRef.year, weekRef.week);
     ensureMonth(year, month);
-    void ensureCalendarRange(dayKey, dayKey);
-  }, [dayKey, ensureCalendarRange, ensureMonth, ensureWeek, isValidDate, month, weekRef.week, weekRef.year, year]);
+  }, [ensureMonth, ensureWeek, isValidDate, month, weekRef.week, weekRef.year, year]);
 
   useEffect(() => {
     if (!isValidDate) {
@@ -72,16 +65,9 @@ export function DayScreen({ day, month, year }: DayScreenProps) {
 
   return (
     <div className="space-y-6">
-      <DayNavigator date={targetDate} weekRef={weekRef} />
+      <DayNavigator date={targetDate} />
       <DayTaskList dayKey={dayKey} week={weekData} weekKey={weekKey} />
       <DayHabitList dayKey={dayKey} month={monthData} monthKey={monthKey} />
-      <CalendarEventsPanel
-        emptyMessage="На этот день внешние события пока не подтянулись."
-        events={dayCalendarEvents}
-        isLoading={dayCalendarStatus === "loading" && dayCalendarEvents.length === 0}
-        kicker="Календарь"
-        title="События дня"
-      />
       <section className="paper-panel rounded-[32px] p-5">
         <div className="mb-4 text-xs uppercase tracking-[0.2em] text-muted">Состояние</div>
         <DayStateBlock

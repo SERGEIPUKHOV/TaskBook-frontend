@@ -9,6 +9,7 @@ import { MonthStatesPanel } from "@/components/dashboard/month-states-panel";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icons";
 import { formatMonthLabel, getAdjacentMonth, getMonthKey, getWeekKey, getWeeksForMonth } from "@/lib/dates";
 import { useAppStore } from "@/store/app-store";
+import { useNavStore } from "@/store/nav-store";
 import { getLastTaskStatus, isTaskClosed } from "@/lib/week-tasks";
 
 const SHOW_MONTH_STATES_PANEL = true;
@@ -25,6 +26,7 @@ function progressRatio(done: number, total: number): number {
 export function DashboardScreen() {
   const today = new Date();
   const [viewOffset, setViewOffset] = useState(0);
+  const [hasSyncedNavMonth, setHasSyncedNavMonth] = useState(false);
   const monthRef = { year: today.getFullYear(), month: today.getMonth() + 1 };
   const weekRef = { year: getISOWeekYear(today), week: getISOWeek(today) };
   const monthKey = getMonthKey(monthRef.year, monthRef.month);
@@ -46,7 +48,28 @@ export function DashboardScreen() {
   const weekData = useAppStore((state) => state.weeks[weekKey]);
   const viewWeekData = useAppStore((state) => state.weeks[viewWeekKey]);
   const weeks = useAppStore((state) => state.weeks);
+  const lastMonth = useNavStore((state) => state.lastMonth);
+  const setLastMonth = useNavStore((state) => state.setLastMonth);
   const viewMonthLabel = formatMonthLabel(viewMonthRef.year, viewMonthRef.month);
+
+  useEffect(() => {
+    if (lastMonth) {
+      const offset = (lastMonth.year - monthRef.year) * 12 + (lastMonth.month - monthRef.month);
+      if (offset !== 0) {
+        setViewOffset(offset);
+      }
+    }
+    setHasSyncedNavMonth(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!hasSyncedNavMonth) {
+      return;
+    }
+
+    setLastMonth({ year: viewMonthRef.year, month: viewMonthRef.month });
+  }, [hasSyncedNavMonth, setLastMonth, viewMonthRef.month, viewMonthRef.year]);
 
   useEffect(() => {
     ensureMonth(monthRef.year, monthRef.month);
@@ -142,11 +165,12 @@ export function DashboardScreen() {
             <FocusBlock
               emptyText="Главная задача месяца не задана"
               text={viewMonthData.mainGoal}
-              title="Текущий фокус месяца"
+              title="Главная задача месяца"
             />
           ) : null}
           {hasFocusAreas ? (
             <FocusBlock
+              compact
               emptyText="Фокус месяца не задан"
               text={focusAreasText}
               title="Фокус месяца"

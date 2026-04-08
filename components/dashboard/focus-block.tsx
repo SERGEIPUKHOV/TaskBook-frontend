@@ -3,13 +3,14 @@
 import { cn } from "@/lib/utils";
 
 type FocusBlockProps = {
+  compact?: boolean;
   detail?: string;
   emptyText: string;
   text: string;
   title: string;
 };
 
-export function FocusBlock({ detail, emptyText, text, title }: FocusBlockProps) {
+export function FocusBlock({ compact = false, detail, emptyText, text, title }: FocusBlockProps) {
   const trimmedText = text.trim();
 
   return (
@@ -17,7 +18,8 @@ export function FocusBlock({ detail, emptyText, text, title }: FocusBlockProps) 
       <div className="text-xs uppercase tracking-[0.2em] text-muted">{title}</div>
       <div
         className={cn(
-          "mt-2 text-2xl font-semibold leading-snug text-ink",
+          "mt-2 leading-snug text-ink",
+          compact ? "text-lg font-medium" : "text-2xl font-semibold",
           trimmedText.length === 0 && "text-muted/55",
         )}
       >

@@ -138,9 +138,9 @@ export function formatWeekDateRange(year: number, week: number): string {
   const end = addDays(start, 6);
   const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
   if (sameMonth) {
-    return `${format(start, "d", { locale: ru })}–${format(end, "d LLLL yyyy", { locale: ru })}`;
+    return `${format(start, "d", { locale: ru })}–${format(end, "d LLLL", { locale: ru })}`;
   }
-  return `${format(start, "d MMM", { locale: ru })} – ${format(end, "d MMM yyyy", { locale: ru })}`;
+  return `${format(start, "d MMM", { locale: ru })} – ${format(end, "d MMM", { locale: ru })}`;
 }
 
 export function formatWeekLabel(year: number, week: number): string {
