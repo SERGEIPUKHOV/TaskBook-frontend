@@ -129,6 +129,7 @@ function createStore(initialWeek: WeekData) {
     startGoogleCalendarConnect: async () => "",
     syncCalendarConnection: noopPromise,
     syncAllGoogleCalendars: noopPromise,
+    undismissImportEvent: noop,
     updateConnectionColor: noopPromise,
     ...createTasksSlice(...args),
   }));

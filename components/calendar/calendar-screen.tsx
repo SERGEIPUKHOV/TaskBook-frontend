@@ -168,16 +168,20 @@ export function CalendarScreen() {
         />
       )}
 
-      {connectionsStatus !== "loading" && calendarConnections.length > 0 && importableEvents.length > 0 ? (
-        <div className="mt-3 flex justify-end px-1">
-          <button
-            className="flex items-center gap-1.5 rounded-full border border-line bg-paper px-4 py-2 text-sm font-medium text-muted transition-colors hover:border-accent hover:text-accent"
-            onClick={() => setBulkModalOpen(true)}
-            type="button"
-          >
-            <CalendarPlusIcon className="h-4 w-4" />
-            В план ({importableEvents.length})
-          </button>
+      {connectionsStatus !== "loading" && calendarConnections.length > 0 && (importableEvents.length > 0 || bulkNotice) ? (
+        <div className="mt-3 space-y-2 px-1">
+          {bulkNotice ? (
+            <p className="text-center text-sm text-accent">{bulkNotice}</p>
+          ) : null}
+          {importableEvents.length > 0 ? (
+            <button
+              className="w-full rounded-[20px] border border-line bg-paper px-5 py-3.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
+              onClick={() => setBulkModalOpen(true)}
+              type="button"
+            >
+              Перенести события в задачи и привычки ({importableEvents.length})
+            </button>
+          ) : null}
         </div>
       ) : null}
 
@@ -197,11 +201,6 @@ export function CalendarScreen() {
         />
       ) : null}
 
-      {bulkNotice ? (
-        <div className="fixed bottom-5 right-5 z-[80] rounded-[20px] border border-accent/30 bg-paper px-4 py-3 text-sm font-medium text-accent shadow-paper">
-          {bulkNotice}
-        </div>
-      ) : null}
     </div>
   );
 }

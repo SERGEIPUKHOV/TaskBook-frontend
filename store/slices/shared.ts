@@ -100,6 +100,7 @@ export type CalendarSlice = {
   startGoogleCalendarConnect: (returnTo: string) => Promise<string>;
   syncCalendarConnection: (connectionId: string) => Promise<void>;
   syncAllGoogleCalendars: () => Promise<void>;
+  undismissImportEvent: (eventId: string) => void;
   updateConnectionColor: (connectionId: string, color: string) => Promise<void>;
 };
 

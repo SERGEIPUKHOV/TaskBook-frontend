@@ -272,6 +272,7 @@ export function CalendarWeekGrid({
   const router = useRouter();
   const dismissedImportIds = useAppStore((state) => state.dismissedImportIds);
   const dismissImportEvent = useAppStore((state) => state.dismissImportEvent);
+  const undismissImportEvent = useAppStore((state) => state.undismissImportEvent);
   const importCalendarEventToPlanner = useAppStore((state) => state.importCalendarEventToPlanner);
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeHours = useMemo(() => getActiveHours(events), [events]);
@@ -376,8 +377,9 @@ export function CalendarWeekGrid({
     ? (colorMap.get(selectedEvent.connectionId)?.color ?? FALLBACK_COLOR)
     : FALLBACK_COLOR;
   const importBlockedReason = selectedEvent ? getCalendarImportBlockedReason(selectedEvent) : null;
-  const selectedEventIsImportable = selectedEvent
-    ? isCalendarEventImportable(selectedEvent) && !dismissedImportIds.includes(selectedEvent.id)
+  const selectedEventIsDismissed = selectedEvent ? dismissedImportIds.includes(selectedEvent.id) : false;
+  const showDismissToggle = selectedEvent
+    ? !selectedEvent.plannerLink && !importBlockedReason
     : false;
 
   async function handleImportSubmit() {
@@ -662,16 +664,25 @@ export function CalendarWeekGrid({
                 <div className="max-w-full text-right text-sm text-muted">{importBlockedReason}</div>
               ) : (
                 <>
-                  {selectedEventIsImportable ? (
+                  {showDismissToggle ? (
                     <button
-                      className="rounded-xl border border-line px-4 py-2 text-sm font-medium text-muted transition-colors hover:text-ink"
+                      className={cn(
+                        "rounded-xl border px-4 py-2 text-sm font-medium transition-colors",
+                        selectedEventIsDismissed
+                          ? "border-accent/40 bg-accent/10 text-accent"
+                          : "border-line text-muted hover:text-ink",
+                      )}
                       type="button"
                       onClick={() => {
+                        if (selectedEventIsDismissed) {
+                          undismissImportEvent(selectedEvent.id);
+                          return;
+                        }
+
                         dismissImportEvent(selectedEvent.id);
-                        setSelectedEvent(null);
                       }}
                     >
-                      Не переносить
+                      {selectedEventIsDismissed ? "Не переносить ✓" : "Не переносить"}
                     </button>
                   ) : null}
                   <button

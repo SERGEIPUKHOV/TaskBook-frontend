@@ -7,7 +7,6 @@ import { startTransition, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import {
-  TASK_CALENDAR_EXPORT_BUCKET_OPTIONS,
   type MetricName,
   type MonthData,
   type TaskStatus,
@@ -37,8 +36,6 @@ type PendingDeleteState = {
 };
 
 type TaskDraft = {
-  fa: string;
-  ti: string;
   title: string;
 };
 
@@ -49,7 +46,7 @@ const PRIORITY_COLUMN_WIDTH = 40;
 const STATUS_BUTTON_SIZE = 32;
 const DAY_SECTION_WIDTH = DAY_COLUMN_WIDTH * 7;
 const ALTERNATING_DAY_INDICES = [0, 2, 4, 6] as const;
-const boardColumns = `repeat(7, ${DAY_COLUMN_WIDTH}px) minmax(200px, 1fr) ${PRIORITY_COLUMN_WIDTH}px 56px 56px`;
+const boardColumns = `repeat(7, ${DAY_COLUMN_WIDTH}px) minmax(200px, 1fr) ${PRIORITY_COLUMN_WIDTH}px`;
 // BLOCK-END: WEEK_PLANNER_LAYOUT_CONSTANTS
 
 // BLOCK-START: WEEK_PLANNER_UI_HELPERS
@@ -84,10 +81,6 @@ function statusSymbol(status: TaskStatus | "planned"): string {
   }
 
   return "·";
-}
-
-function formatDraftNumber(value: number): string {
-  return value > 0 ? String(value) : "";
 }
 
 function getDayCellClass(isLastDay: boolean, extra?: string) {
@@ -317,25 +310,23 @@ function HabitRow({
         <span className="truncate">{habitName || "Без названия"}</span>
       </div>
       <PlaceholderCell />
-      <PlaceholderCell />
-      <PlaceholderCell />
     </div>
   );
 }
 // BLOCK-END: WEEK_PLANNER_AUX_COMPONENTS
 
 // BLOCK-START: WEEK_PLANNER_TASK_ROW
-// Description: Editable week task row with status cells, priority, timings, title editing, and delayed persistence.
+// Description: Editable week task row with status cells, priority toggle, title editing, and delayed title persistence.
 /**
  * function_contracts:
  *   TaskRow:
- *     description: "Renders one editable task row and coordinates debounced field persistence with store actions."
+ *     description: "Renders one editable task row and coordinates debounced title persistence with store actions."
  *     preconditions:
  *       - "task belongs to weekKey and contains valid startDayKey/statusTrail data"
  *       - "dayKeys contains seven ISO dates for the visible week"
  *     postconditions:
  *       - "User edits are mirrored into local draft state immediately"
- *       - "Blur events schedule store updates for title, Ti, and Fa fields"
+ *       - "Blur events schedule store updates for the title field"
  *       - "Delete action forwards the current task to the parent callback"
  */
 function TaskRow({
@@ -357,24 +348,16 @@ function TaskRow({
   const lastStatus = getLastTaskStatus(task);
   const isTaskFinal = lastStatus === "done" || lastStatus === "failed" || lastStatus === "moved";
   const [draft, setDraft] = useState<TaskDraft>({
-    fa: formatDraftNumber(task.fa),
-    ti: formatDraftNumber(task.ti),
     title: task.title,
   });
-  const saveTimersRef = useRef<Record<keyof TaskDraft, number | undefined>>({
-    fa: undefined,
-    ti: undefined,
-    title: undefined,
-  });
+  const saveTimerRef = useRef<number | undefined>(undefined);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     setDraft({
-      fa: formatDraftNumber(task.fa),
-      ti: formatDraftNumber(task.ti),
       title: task.title,
     });
-  }, [task.fa, task.ti, task.title]);
+  }, [task.title]);
 
   useEffect(() => {
     syncTextareaHeight(textareaRef.current, 32);
@@ -391,27 +374,20 @@ function TaskRow({
 
   useEffect(
     () => () => {
-      Object.values(saveTimersRef.current).forEach((timer) => {
-        if (timer) {
-          window.clearTimeout(timer);
-        }
-      });
+      if (saveTimerRef.current) {
+        window.clearTimeout(saveTimerRef.current);
+      }
     },
     [],
   );
 
-  function scheduleSave(field: keyof TaskDraft, value: string) {
-    if (saveTimersRef.current[field]) {
-      window.clearTimeout(saveTimersRef.current[field]);
+  function scheduleTitleSave(value: string) {
+    if (saveTimerRef.current) {
+      window.clearTimeout(saveTimerRef.current);
     }
 
-    saveTimersRef.current[field] = window.setTimeout(() => {
-      if (field === "title") {
-        updateTask(weekKey, task.id, "title", value);
-        return;
-      }
-
-      updateTask(weekKey, task.id, field, Math.min(999, Math.max(0, Number(value || 0))));
+    saveTimerRef.current = window.setTimeout(() => {
+      updateTask(weekKey, task.id, "title", value);
     }, 800);
   }
 
@@ -439,7 +415,7 @@ function TaskRow({
               syncTextareaHeight(element, 36);
             }}
             className="field-base w-full resize-none overflow-hidden px-3 py-2 text-sm leading-5 text-ink outline-none placeholder:text-muted/60"
-            onBlur={() => scheduleSave("title", draft.title)}
+            onBlur={() => scheduleTitleSave(draft.title)}
             onChange={(event) => {
               setDraft((current) => ({ ...current, title: event.target.value }));
               syncTextareaHeight(event.currentTarget, 36);
@@ -448,33 +424,6 @@ function TaskRow({
             rows={1}
             value={draft.title}
           />
-          <div className="mt-1 flex flex-wrap items-center gap-2 px-3 pb-1">
-            <button
-              className={cn(
-                "rounded-full border px-3 py-1 text-[11px] font-medium transition-colors",
-                task.calendarExportEnabled
-                  ? "border-accent/40 bg-accent/10 text-accent"
-                  : "border-line bg-canvas text-muted hover:border-accent/40 hover:text-accent",
-              )}
-              onClick={() => updateTask(weekKey, task.id, "calendarExportEnabled", !task.calendarExportEnabled)}
-              type="button"
-            >
-              {task.calendarExportEnabled ? "Выгружается в календарь" : "Показать во внешнем календаре"}
-            </button>
-            {task.calendarExportEnabled ? (
-              <select
-                className="rounded-full border border-line bg-canvas px-3 py-1 text-[11px] text-ink outline-none transition-colors focus:border-accent"
-                onChange={(event) => updateTask(weekKey, task.id, "calendarExportBucket", event.target.value)}
-                value={task.calendarExportBucket ?? "default"}
-              >
-                {TASK_CALENDAR_EXPORT_BUCKET_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            ) : null}
-          </div>
         </div>
         <button
           aria-label={`Удалить задачу ${draft.title || "без названия"}`}
@@ -499,46 +448,6 @@ function TaskRow({
         >
           •
         </button>
-      </div>
-
-      <div className={getRightColumnClass("flex items-center justify-center px-1")}>
-        <input
-          className="ti-input h-7 w-full rounded-md border border-transparent bg-transparent px-1 text-center text-sm text-ink outline-none transition-colors placeholder:text-muted/55 focus:border-line focus:bg-paper"
-          inputMode="numeric"
-          max={999}
-          min={0}
-          onBlur={() => scheduleSave("ti", draft.ti)}
-          onChange={(event) => setDraft((current) => ({ ...current, ti: event.target.value }))}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              event.currentTarget.blur();
-            }
-          }}
-          placeholder="—"
-          type="number"
-          value={draft.ti}
-        />
-      </div>
-
-      <div className={getRightColumnClass("flex items-center justify-center px-1")}>
-        <input
-          className="fa-input h-7 w-full rounded-md border border-transparent bg-transparent px-1 text-center text-sm text-ink outline-none transition-colors placeholder:text-muted/55 focus:border-line focus:bg-paper"
-          inputMode="numeric"
-          max={999}
-          min={0}
-          onBlur={() => scheduleSave("fa", draft.fa)}
-          onChange={(event) => setDraft((current) => ({ ...current, fa: event.target.value }))}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              event.currentTarget.blur();
-            }
-          }}
-          placeholder="—"
-          type="number"
-          value={draft.fa}
-        />
       </div>
     </div>
   );
@@ -667,8 +576,6 @@ function StateRow({
         <Icon className="h-4 w-4 shrink-0 text-muted" />
         <span className="truncate">{label}</span>
       </div>
-      <div className={getRightColumnClass("flex items-center justify-center py-1.5")} />
-      <div className={getRightColumnClass("flex items-center justify-center py-1.5")} />
       <div className={getRightColumnClass("flex items-center justify-center py-1.5")} />
     </div>
   );
@@ -820,8 +727,6 @@ export function WeekPlannerBoard({
                 })}
                 <div className="h-12 border-r border-line" />
                 <div className={getRightColumnClass("flex h-12 items-center justify-center")}>?</div>
-                <div className={getRightColumnClass("flex h-12 items-center justify-center")}>Ti</div>
-                <div className={getRightColumnClass("flex h-12 items-center justify-center")}>Fa</div>
               </div>
               {/* BLOCK-END: WEEK_BOARD_HEADER */}
 
@@ -951,8 +856,6 @@ export function WeekPlannerBoard({
                     + Добавить задачу
                   </button>
                 </div>
-                <PlaceholderCell />
-                <PlaceholderCell />
                 <PlaceholderCell />
               </div>
               {/* BLOCK-END: WEEK_BOARD_ADD_TASK */}

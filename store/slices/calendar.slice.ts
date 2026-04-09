@@ -61,6 +61,12 @@ export const createCalendarSlice: AppSliceCreator<CalendarSlice> = (set, get) =>
     }));
   },
 
+  undismissImportEvent: (eventId) => {
+    set((state) => ({
+      dismissedImportIds: state.dismissedImportIds.filter((id) => id !== eventId),
+    }));
+  },
+
   fetchCalendarConnections: async (force = false) => {
     const currentStatus = get().calendarConnectionsStatus;
     if (!force && (currentStatus === "loading" || currentStatus === "ready")) {

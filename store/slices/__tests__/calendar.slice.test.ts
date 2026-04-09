@@ -102,6 +102,17 @@ describe("createCalendarSlice", () => {
     expect(store.getState().dismissedImportIds).toEqual(["event-1"]);
   });
 
+  it("undismisses import events without touching other ids", () => {
+    const store = createStore();
+    store.setState({ dismissedImportIds: ["event-1", "event-2"] });
+
+    store.getState().undismissImportEvent("event-1");
+    expect(store.getState().dismissedImportIds).toEqual(["event-2"]);
+
+    store.getState().undismissImportEvent("missing");
+    expect(store.getState().dismissedImportIds).toEqual(["event-2"]);
+  });
+
   it("loads a calendar range once and stores mapped events", async () => {
     const store = createStore();
     apiMock.get.mockResolvedValueOnce({

@@ -1,6 +1,5 @@
 "use client";
 
-import { TASK_CALENDAR_EXPORT_BUCKET_OPTIONS } from "@/lib/planner-types";
 import { getLastTaskStatus, getTaskCellState, getWeekDayKeys } from "@/lib/week-tasks";
 import type { TaskStatus, WeekData } from "@/lib/planner-types";
 import { cn } from "@/lib/utils";
@@ -53,7 +52,6 @@ function statusToRu(status: TaskStatus | "planned"): string {
 
 export function DayTaskList({ dayKey, week, weekKey }: DayTaskListProps) {
   const cycleTaskStatus = useAppStore((state) => state.cycleTaskStatus);
-  const updateTask = useAppStore((state) => state.updateTask);
   const dayKeys = getWeekDayKeys(week.startDate);
   const dayIndex = dayKeys.indexOf(dayKey);
   const tasks = week.tasks.filter((task) => {
@@ -94,7 +92,7 @@ export function DayTaskList({ dayKey, week, weekKey }: DayTaskListProps) {
                 </button>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="min-w-0 flex-1 break-words text-base font-medium leading-snug text-ink">
+                    <h2 className="min-w-0 flex-1 break-words text-sm font-medium leading-snug text-ink">
                       {task.title || "Без названия"}
                     </h2>
                     {task.isPriority ? (
@@ -107,35 +105,6 @@ export function DayTaskList({ dayKey, week, weekKey }: DayTaskListProps) {
                     <span>Ti: {task.ti || "—"}</span>
                     <span>Fa: {task.fa || "—"}</span>
                     <span>Статус: {statusToRu(displayStatus)}</span>
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <button
-                      className={cn(
-                        "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
-                        task.calendarExportEnabled
-                          ? "border-accent/40 bg-accent/10 text-accent"
-                          : "border-line bg-canvas text-muted hover:border-accent/40 hover:text-accent",
-                      )}
-                      onClick={() =>
-                        updateTask(weekKey, task.id, "calendarExportEnabled", !task.calendarExportEnabled)
-                      }
-                      type="button"
-                    >
-                      {task.calendarExportEnabled ? "Выгружается в календарь" : "Показать во внешнем календаре"}
-                    </button>
-                    {task.calendarExportEnabled ? (
-                      <select
-                        className="rounded-full border border-line bg-canvas px-3 py-1.5 text-xs text-ink outline-none transition-colors focus:border-accent"
-                        onChange={(event) => updateTask(weekKey, task.id, "calendarExportBucket", event.target.value)}
-                        value={task.calendarExportBucket ?? "default"}
-                      >
-                        {TASK_CALENDAR_EXPORT_BUCKET_OPTIONS.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    ) : null}
                   </div>
                 </div>
               </div>
