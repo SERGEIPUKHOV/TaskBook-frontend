@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import { MobileNav } from "@/components/navigation/mobile-nav";
@@ -11,6 +11,10 @@ import type { ApiError } from "@/lib/auth-types";
 import { isPublicAuthPath } from "@/lib/auth-constants";
 import { useAppStore } from "@/store/app-store";
 import { useAuthStore } from "@/store/auth-store";
+
+function SidebarFallback() {
+  return <div className="hidden h-screen w-24 shrink-0 border-r border-line/70 md:flex xl:w-64" aria-hidden="true" />;
+}
 
 function sectionTitle(pathname: string): string {
   if (pathname === "/profile") {
@@ -107,7 +111,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="relative min-h-screen overflow-x-hidden">
       <div className="pointer-events-none absolute inset-0 bg-paper-fade opacity-80" />
       <div className="relative mx-auto flex min-h-screen max-w-[1600px]">
-        <Sidebar />
+        <Suspense fallback={<SidebarFallback />}>
+          <Sidebar />
+        </Suspense>
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">
           <header className="sticky top-0 z-30 border-b border-line/80 bg-canvas/85 backdrop-blur-xl">
             <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">

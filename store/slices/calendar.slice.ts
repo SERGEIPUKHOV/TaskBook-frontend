@@ -1,10 +1,15 @@
 import { api } from "@/lib/api";
+import { getMonthKey, getWeekKey } from "@/lib/dates";
 import {
   mapApiCalendarConnection,
+  mapApiCalendarEventImportResult,
   mapApiCalendarEventsRange,
+  mapApiCalendarTaskExportFeed,
   mapApiGoogleCalendarOptions,
   type ApiCalendarConnection,
+  type ApiCalendarEventImportResult,
   type ApiCalendarEventsRange,
+  type ApiCalendarTaskExportFeed,
   type ApiGoogleCalendarOptions,
   type ApiGoogleAuthSession,
 } from "@/lib/planner-api";
@@ -33,13 +38,18 @@ function upsertConnection(
     .sort((left, right) => left.accountLabel?.localeCompare(right.accountLabel ?? "") || left.provider.localeCompare(right.provider));
 }
 
+// BLOCK-START: CALENDAR_SLICE_MODULE
+// Description: Calendar connection management, persisted suggestion preferences, range loading, and event-to-planner import orchestration for the planner store.
 export const createCalendarSlice: AppSliceCreator<CalendarSlice> = (set, get) => ({
   calendarConnections: [],
   calendarConnectionsStatus: "idle",
+  importSuggestionsEnabled: true,
   googleCalendarOptions: [],
   googleCalendarOptionsStatus: "idle",
   googleCalendarConnected: false,
   googleCalendarAccountLabel: null,
+  taskExportFeeds: [],
+  taskExportFeedsStatus: "idle",
   calendarRangeLoadStates: {},
   calendarRanges: {},
 
@@ -93,9 +103,89 @@ export const createCalendarSlice: AppSliceCreator<CalendarSlice> = (set, get) =>
     }
   },
 
+  fetchTaskExportFeeds: async (force = false) => {
+    const currentStatus = get().taskExportFeedsStatus;
+    if (!force && (currentStatus === "loading" || currentStatus === "ready")) {
+      return;
+    }
+
+    set({ taskExportFeedsStatus: "loading" });
+    try {
+      const feeds = await api.get<ApiCalendarTaskExportFeed[]>("/calendar/feeds/tasks/links");
+      set({
+        taskExportFeeds: feeds.map(mapApiCalendarTaskExportFeed),
+        taskExportFeedsStatus: "ready",
+      });
+    } catch {
+      set({
+        taskExportFeeds: [],
+        taskExportFeedsStatus: "error",
+      });
+    }
+  },
+
   startGoogleCalendarConnect: async (returnTo) => {
     const session = await api.post<ApiGoogleAuthSession>("/calendar/google/auth-session", { return_to: returnTo });
     return session.authorize_url;
+  },
+
+  importCalendarEventToPlanner: async (eventId, payload) => {
+    const result = mapApiCalendarEventImportResult(
+      await api.post<ApiCalendarEventImportResult>(`/calendar/events/${eventId}/import`, {
+        is_priority: payload.isPriority ?? false,
+        month: payload.month,
+        start_day: payload.startDay,
+        target_type: payload.targetType,
+        time_planned: payload.timePlanned ?? null,
+        title: payload.title ?? null,
+        week: payload.week,
+        year: payload.year,
+      }),
+    );
+
+    set((state) => {
+      const nextWeekLoadStates = { ...state.weekLoadStates };
+      const nextMonthLoadStates = { ...state.monthLoadStates };
+
+      if (payload.targetType === "task" && payload.week) {
+        nextWeekLoadStates[getWeekKey(payload.year, payload.week)] = "idle";
+      }
+
+      if (payload.targetType === "habit" && payload.month) {
+        nextMonthLoadStates[getMonthKey(payload.year, payload.month)] = "idle";
+      }
+
+      return {
+        ...touchSave(),
+        calendarRanges: Object.fromEntries(
+          Object.entries(state.calendarRanges).map(([rangeKey, range]) => [
+            rangeKey,
+            {
+              ...range,
+              events: range.events.map((event) =>
+                event.id === eventId ? { ...event, plannerLink: result.plannerLink } : event,
+              ),
+            },
+          ]),
+        ),
+        monthLoadStates: nextMonthLoadStates,
+        weekLoadStates: nextWeekLoadStates,
+      };
+    });
+
+    return result;
+  },
+
+  bulkImportCalendarEventsToPlanner: async (requests) => {
+    const results = await Promise.allSettled(
+      requests.map(({ eventId, payload }) => get().importCalendarEventToPlanner(eventId, payload)),
+    );
+
+    return {
+      failedCount: results.filter((result) => result.status === "rejected").length,
+      importedCount: results.filter((result) => result.status === "fulfilled").length,
+      requestedCount: requests.length,
+    };
   },
 
   saveGoogleCalendarSelections: async (calendarIds) => {
@@ -181,6 +271,20 @@ export const createCalendarSlice: AppSliceCreator<CalendarSlice> = (set, get) =>
     }
   },
 
+  updateConnectionColor: async (connectionId, color) => {
+    const connection = mapApiCalendarConnection(
+      await api.patch<ApiCalendarConnection>(`/calendar/connections/${connectionId}/color`, {
+        color,
+      }),
+    );
+
+    set((state) => ({
+      ...touchSave(),
+      calendarConnections: upsertConnection(state.calendarConnections, connection),
+      calendarConnectionsStatus: "ready",
+    }));
+  },
+
   ensureCalendarRange: async (dateFrom, dateTo) => {
     const rangeKey = getCalendarRangeKey(dateFrom, dateTo);
     const currentStatus = get().calendarRangeLoadStates[rangeKey];
@@ -220,4 +324,9 @@ export const createCalendarSlice: AppSliceCreator<CalendarSlice> = (set, get) =>
       }));
     }
   },
+
+  toggleImportSuggestions: () => {
+    set((state) => ({ importSuggestionsEnabled: !state.importSuggestionsEnabled }));
+  },
 });
+// BLOCK-END: CALENDAR_SLICE_MODULE

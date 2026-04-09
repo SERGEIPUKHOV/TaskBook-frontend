@@ -2,14 +2,15 @@
 
 ## Назначение
 Внутренняя декомпозиция planner store на domain-oriented Zustand slices.
-Модуль держит typed state/actions для month, week, task, habit и daily-state сценариев и собирается в единый `useAppStore`.
+Модуль держит typed state/actions для month, week, task, habit, daily-state и calendar сценариев и собирается в единый `useAppStore`.
 
 ## Ответственность
-- `tasks.slice.ts` - task CRUD, reorder, task-day-status transitions и optimistic task updates.
+- `tasks.slice.ts` - task CRUD, reorder, task-day-status transitions, export flags и optimistic task updates.
 - `habits.slice.ts` - habits, habit logs и month reload после изменений.
 - `weeks.slice.ts` - week bundle loading, weekly summary и reflection entries.
 - `months.slice.ts` - month bundle loading и month-plan edits.
 - `days.slice.ts` - daily metrics updates и day-level save state.
+- `calendar.slice.ts` - calendar connections, persisted import suggestion preference, task feed links, event range loading и single/bulk event-to-planner import flow.
 - `shared.ts` - общие store types, slice interfaces, key parsers и reusable helpers.
 
 ## Граница (что НЕ делает этот модуль)
@@ -26,6 +27,7 @@
 | `weeks.slice.ts` | Week bundle, focus/reward и reflection |
 | `months.slice.ts` | Month bundle и month plan |
 | `days.slice.ts` | Daily metrics и save state |
+| `calendar.slice.ts` | Calendar integrations, event ranges, persisted suggestions toggle и import actions |
 | `shared.ts` | Typed slice contracts, helper types и key parsing |
 | `__tests__/tasks.slice.test.ts` | Unit coverage для task slice optimistic flows |
 
@@ -43,3 +45,5 @@
 - Planner keys остаются нормализованными (`YYYY-MM`, `YYYY-Www`) через shared helpers.
 - Optimistic updates обязаны иметь rollback path или последующий reconcile через API/store reload.
 - `shared.ts` остаётся единой точкой общих store-type и parser utilities для slices.
+- Calendar event import и task-feed link loading идут через store action, а не через direct fetch из компонентов planner UI.
+- Persist в root store допускается только для UI preferences вроде `importSuggestionsEnabled`; server-derived caches не сохраняются между сессиями.

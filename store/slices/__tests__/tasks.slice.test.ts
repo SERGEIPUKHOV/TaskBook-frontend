@@ -37,6 +37,8 @@ function buildTask(overrides: Partial<WeekTask> = {}): WeekTask {
     fa: 0,
     id: "task-1",
     isPriority: false,
+    calendarExportEnabled: false,
+    calendarExportBucket: null,
     startDayKey: "2026-03-09",
     statusTrail: [],
     ti: 0,
@@ -48,8 +50,19 @@ function buildTask(overrides: Partial<WeekTask> = {}): WeekTask {
 function createStore(initialWeek: WeekData) {
   const weekKey = "2026-W11";
   const noopAsync = async () => ({ ok: true as const });
+  const noopCalendarImport = async () => ({
+    plannerLink: {
+      id: "",
+      linkMode: "import_copy" as const,
+      openPath: "",
+      targetId: "",
+      targetKind: "task" as const,
+    },
+    status: "existing" as const,
+  });
   const noopCalendarConnect = async () => ({
     accountLabel: null,
+    color: null,
     createdAt: "",
     externalAccountId: "",
     id: "",
@@ -89,10 +102,13 @@ function createStore(initialWeek: WeekData) {
     updateWeekText: noop,
     calendarConnections: [],
     calendarConnectionsStatus: "idle",
+    importSuggestionsEnabled: true,
     googleCalendarOptions: [],
     googleCalendarOptionsStatus: "idle",
     googleCalendarConnected: false,
     googleCalendarAccountLabel: null,
+    taskExportFeeds: [],
+    taskExportFeedsStatus: "idle",
     calendarRangeLoadStates: {},
     calendarRanges: {},
     connectAppleCalendar: noopCalendarConnect,
@@ -101,10 +117,19 @@ function createStore(initialWeek: WeekData) {
     ensureCalendarRange: noopPromise,
     fetchCalendarConnections: noopPromise,
     fetchGoogleCalendarOptions: noopPromise,
+    fetchTaskExportFeeds: noopPromise,
+    bulkImportCalendarEventsToPlanner: async () => ({
+      failedCount: 0,
+      importedCount: 0,
+      requestedCount: 0,
+    }),
+    importCalendarEventToPlanner: noopCalendarImport,
     saveGoogleCalendarSelections: noopPromise,
     startGoogleCalendarConnect: async () => "",
     syncCalendarConnection: noopPromise,
     syncAllGoogleCalendars: noopPromise,
+    toggleImportSuggestions: noop,
+    updateConnectionColor: noopPromise,
     ...createTasksSlice(...args),
   }));
 
@@ -124,6 +149,8 @@ describe("createTasksSlice", () => {
     const { useStore, weekKey } = createStore(buildWeek());
     apiMock.post.mockResolvedValueOnce({
       carried_from_task_id: null,
+      calendar_export_bucket: null,
+      calendar_export_enabled: false,
       id: "task-server-1",
       is_priority: false,
       order: 0,
@@ -169,6 +196,36 @@ describe("createTasksSlice", () => {
     await vi.runAllTimersAsync();
 
     expect(apiMock.patch).toHaveBeenCalledWith("/tasks/task-1", {
+      calendar_export_bucket: null,
+      calendar_export_enabled: false,
+      is_priority: false,
+      start_day: 1,
+      time_actual: 0,
+      time_planned: 0,
+      title: "Task",
+    });
+    vi.useRealTimers();
+  });
+
+  it("enables calendar export with default bucket and persists task settings", async () => {
+    vi.useFakeTimers();
+    const { useStore, weekKey } = createStore(buildWeek({ tasks: [buildTask()] }));
+    apiMock.patch.mockResolvedValue(undefined);
+
+    useStore.getState().updateTask(weekKey, "task-1", "calendarExportEnabled", true);
+
+    expect(useStore.getState().weeks[weekKey]?.tasks[0]).toEqual(
+      expect.objectContaining({
+        calendarExportBucket: "default",
+        calendarExportEnabled: true,
+      }),
+    );
+
+    await vi.runAllTimersAsync();
+
+    expect(apiMock.patch).toHaveBeenCalledWith("/tasks/task-1", {
+      calendar_export_bucket: "default",
+      calendar_export_enabled: true,
       is_priority: false,
       start_day: 1,
       time_actual: 0,

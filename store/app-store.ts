@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 import { createCalendarSlice } from "@/store/slices/calendar.slice";
 import { createDaysSlice } from "@/store/slices/days.slice";
@@ -11,26 +12,36 @@ import { createTasksSlice } from "@/store/slices/tasks.slice";
 import { createWeeksSlice } from "@/store/slices/weeks.slice";
 
 // BLOCK-START: APP_STORE_MODULE
-// Description: Root planner store that composes slice sinks and preserves the public useAppStore API.
-export const useAppStore = create<AppStore>()((...args) => ({
-  lastSavedAt: null,
-  // BLOCK-START: APP_STORE_DAY_SLICE
-  // Description: Day-state actions remain reachable through the root barrel export.
-  ...createDaysSlice(...args),
-  // BLOCK-END: APP_STORE_DAY_SLICE
-  // BLOCK-START: APP_STORE_HABITS_SLICE
-  // Description: Habit actions remain reachable through the root barrel export.
-  ...createHabitsSlice(...args),
-  // BLOCK-END: APP_STORE_HABITS_SLICE
-  // BLOCK-START: APP_STORE_WEEK_SLICE
-  // Description: Week cache and reflection actions remain reachable through the root barrel export.
-  ...createWeeksSlice(...args),
-  // BLOCK-END: APP_STORE_WEEK_SLICE
-  // BLOCK-START: APP_STORE_TASKS_SLICE
-  // Description: Task actions remain reachable through the root barrel export.
-  ...createTasksSlice(...args),
-  // BLOCK-END: APP_STORE_TASKS_SLICE
-  ...createCalendarSlice(...args),
-  ...createMonthsSlice(...args),
-}));
+// Description: Root planner store that composes slice sinks and persists selected UI preferences without caching server data.
+export const useAppStore = create<AppStore>()(
+  persist(
+    (...args) => ({
+      lastSavedAt: null,
+      // BLOCK-START: APP_STORE_DAY_SLICE
+      // Description: Day-state actions remain reachable through the root barrel export.
+      ...createDaysSlice(...args),
+      // BLOCK-END: APP_STORE_DAY_SLICE
+      // BLOCK-START: APP_STORE_HABITS_SLICE
+      // Description: Habit actions remain reachable through the root barrel export.
+      ...createHabitsSlice(...args),
+      // BLOCK-END: APP_STORE_HABITS_SLICE
+      // BLOCK-START: APP_STORE_WEEK_SLICE
+      // Description: Week cache and reflection actions remain reachable through the root barrel export.
+      ...createWeeksSlice(...args),
+      // BLOCK-END: APP_STORE_WEEK_SLICE
+      // BLOCK-START: APP_STORE_TASKS_SLICE
+      // Description: Task actions remain reachable through the root barrel export.
+      ...createTasksSlice(...args),
+      // BLOCK-END: APP_STORE_TASKS_SLICE
+      ...createCalendarSlice(...args),
+      ...createMonthsSlice(...args),
+    }),
+    {
+      name: "taskbook-app-store",
+      partialize: (state) => ({
+        importSuggestionsEnabled: state.importSuggestionsEnabled,
+      }),
+    },
+  ),
+);
 // BLOCK-END: APP_STORE_MODULE

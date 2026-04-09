@@ -1,6 +1,7 @@
 import { api } from "@/lib/api";
 import { getAdjacentWeek, getWeekKey } from "@/lib/dates";
 import { mapApiTaskToWeekTask, type ApiTask } from "@/lib/planner-api";
+import type { TaskCalendarExportBucket } from "@/lib/planner-types";
 import { cycleTaskAtDay, getWeekDayKeys } from "@/lib/week-tasks";
 import { arrayMove, createId } from "@/lib/utils";
 
@@ -26,6 +27,8 @@ async function persistTask(get: Parameters<AppSliceCreator<TasksSlice>>[1], key:
 
   try {
     await api.patch(`/tasks/${task.id}`, {
+      calendar_export_bucket: task.calendarExportBucket,
+      calendar_export_enabled: task.calendarExportEnabled,
       is_priority: task.isPriority,
       start_day: startDayIndex + 1,
       time_actual: task.fa,
@@ -73,6 +76,8 @@ export const createTasksSlice: AppSliceCreator<TasksSlice> = (set, get) => ({
         ti: 0,
         fa: 0,
         isPriority: false,
+        calendarExportEnabled: false,
+        calendarExportBucket: null,
         startDayKey: current.startDate,
         statusTrail: [],
         carriedFromTaskId: null,
@@ -195,6 +200,22 @@ export const createTasksSlice: AppSliceCreator<TasksSlice> = (set, get) => ({
 
               if (field === "isPriority" && typeof value === "boolean") {
                 return { ...task, isPriority: value };
+              }
+
+              if (field === "calendarExportEnabled" && typeof value === "boolean") {
+                return {
+                  ...task,
+                  calendarExportEnabled: value,
+                  calendarExportBucket: value ? (task.calendarExportBucket ?? "default") : task.calendarExportBucket,
+                };
+              }
+
+              if (field === "calendarExportBucket") {
+                return {
+                  ...task,
+                  calendarExportEnabled: typeof value === "string" ? true : task.calendarExportEnabled,
+                  calendarExportBucket: typeof value === "string" ? (value as TaskCalendarExportBucket) : null,
+                };
               }
 
               return task;

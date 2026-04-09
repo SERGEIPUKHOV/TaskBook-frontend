@@ -13,6 +13,7 @@ import {
   formatWeekDateRange,
   getAdjacentWeek,
   getISOWeekStart,
+  getISOWeekReference,
   getMonthKey,
   getWeekKey,
   getWeekNumberInMonth,
@@ -30,10 +31,12 @@ const SHOW_WEEK_STATE_PANEL = false;
 export function WeekScreen({ year, week }: WeekScreenProps) {
   const weekKey = getWeekKey(year, week);
   const weekStart = getISOWeekStart(year, week);
+  const currentWeekRef = getISOWeekReference(new Date());
   const habitMonthRef = { year: weekStart.getFullYear(), month: weekStart.getMonth() + 1 };
   const endDate = addDays(weekStart, 6);
   const endMonthRef = { year: endDate.getFullYear(), month: endDate.getMonth() + 1 };
   const isCrossMonth = endMonthRef.year !== habitMonthRef.year || endMonthRef.month !== habitMonthRef.month;
+  const isCurrentWeek = year === currentWeekRef.year && week === currentWeekRef.week;
   const habitMonthKey = getMonthKey(habitMonthRef.year, habitMonthRef.month);
   const ensureMonth = useAppStore((state) => state.ensureMonth);
   const ensureWeek = useAppStore((state) => state.ensureWeek);
@@ -83,9 +86,16 @@ export function WeekScreen({ year, week }: WeekScreenProps) {
         <div className="min-w-0 flex-1 text-center">
           <div className="text-xs uppercase tracking-[0.22em] text-muted">Недельный разворот</div>
           <h1 className="mt-1 text-xl font-semibold text-ink sm:text-2xl">{formatWeekDateRange(year, week)}</h1>
-          <div className="mt-1 text-sm font-medium text-muted">
-            Неделя {getWeekNumberInMonth(year, week)}
-          </div>
+          {isCurrentWeek ? (
+            <div className="mt-1 text-sm font-medium text-muted">Неделя {getWeekNumberInMonth(year, week)}</div>
+          ) : (
+            <Link
+              className="mt-1 inline-flex text-sm font-medium text-accent transition-colors hover:text-ink"
+              href={`/week/${currentWeekRef.year}/${currentWeekRef.week}`}
+            >
+              Текущая неделя
+            </Link>
+          )}
         </div>
 
         <Link

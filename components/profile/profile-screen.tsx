@@ -505,42 +505,44 @@ export function ProfileScreen({
         />
       </Section>
 
-      <Section title="Сессия">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-ink">Выйти из аккаунта</p>
-            <p className="mt-1 text-sm leading-6 text-muted">Завершить текущую сессию.</p>
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Section title="Сессия">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-ink">Выйти из аккаунта</p>
+              <p className="mt-1 text-sm leading-6 text-muted">Завершить текущую сессию.</p>
+            </div>
+            <button
+              className="rounded-[18px] border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isLoggingOut}
+              onClick={() => void handleLogout()}
+              type="button"
+            >
+              {isLoggingOut ? "Выходим..." : "Выйти"}
+            </button>
           </div>
-          <button
-            className="rounded-[18px] border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={isLoggingOut}
-            onClick={() => void handleLogout()}
-            type="button"
-          >
-            {isLoggingOut ? "Выходим..." : "Выйти"}
-          </button>
-        </div>
-      </Section>
+        </Section>
 
-      <Section title="Опасная зона" tone="danger">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm font-medium text-ink">Удалить аккаунт и все данные</p>
-            <p className="mt-1 text-sm leading-6 text-muted">Все данные будут удалены безвозвратно.</p>
+        <Section title="Опасная зона" tone="danger">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-ink">Удалить аккаунт и все данные</p>
+              <p className="mt-1 text-sm leading-6 text-muted">Все данные будут удалены безвозвратно.</p>
+            </div>
+            <button
+              className="rounded-[18px] border border-danger px-4 py-2.5 text-sm font-medium text-danger transition-colors hover:bg-danger/10"
+              onClick={() => {
+                setDeleteError("");
+                setDeletePassword("");
+                setDeleteStep("warning");
+              }}
+              type="button"
+            >
+              Удалить аккаунт
+            </button>
           </div>
-          <button
-            className="rounded-[18px] border border-danger px-4 py-2.5 text-sm font-medium text-danger transition-colors hover:bg-danger/10"
-            onClick={() => {
-              setDeleteError("");
-              setDeletePassword("");
-              setDeleteStep("warning");
-            }}
-            type="button"
-          >
-            Удалить аккаунт
-          </button>
-        </div>
-      </Section>
+        </Section>
+      </div>
 
       {deleteStep ? (
         <DeleteAccountModal

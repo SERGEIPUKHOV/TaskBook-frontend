@@ -348,3 +348,79 @@ export function CalendarSyncIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+export function PlusIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={iconClassName(className)}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M12 5v14" />
+      <path d="M5 12h14" />
+    </svg>
+  );
+}
+
+export function CheckIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={iconClassName(className)}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="m5.5 12.5 4.2 4.2L18.5 8" />
+    </svg>
+  );
+}
+
+export function PlusCircleIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={iconClassName(className)}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 8.5v7" />
+      <path d="M8.5 12h7" />
+    </svg>
+  );
+}
+
+export function CalendarPlusIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={iconClassName(className)}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M7 3.5v3" />
+      <path d="M17 3.5v3" />
+      <rect x="3.5" y="5.5" width="17" height="15" rx="2.5" />
+      <path d="M3.5 9.5h17" />
+      <path d="M12 12v5" />
+      <path d="M9.5 14.5h5" />
+    </svg>
+  );
+}

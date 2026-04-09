@@ -1,5 +1,16 @@
 export type MetricName = "health" | "productivity" | "anxiety";
 export type TaskStatus = "planned" | "done" | "moved" | "failed";
+export type TaskCalendarExportBucket = "default" | "work" | "personal" | "family";
+
+export const TASK_CALENDAR_EXPORT_BUCKET_OPTIONS: Array<{
+  label: string;
+  value: TaskCalendarExportBucket;
+}> = [
+  { value: "default", label: "Общий" },
+  { value: "work", label: "Работа" },
+  { value: "personal", label: "Личное" },
+  { value: "family", label: "Семья" },
+];
 
 export type DailyState = {
   day: number;
@@ -22,6 +33,7 @@ export type Habit = {
 export type HabitLogMap = Record<string, string[]>;
 
 export type CalendarProvider = "apple" | "google";
+export type PlannerLinkTargetKind = "task" | "habit";
 
 export type CalendarConnection = {
   id: string;
@@ -30,6 +42,7 @@ export type CalendarConnection = {
   externalAccountId: string;
   accountLabel: string | null;
   providerAccountLabel: string | null;
+  color: string | null;
   lastSyncedAt: string | null;
   lastError: string | null;
   tokenExpiresAt: string | null;
@@ -51,6 +64,14 @@ export type GoogleCalendarOptionsState = {
   options: GoogleCalendarOption[];
 };
 
+export type CalendarPlannerLink = {
+  id: string;
+  linkMode: "import_copy";
+  openPath: string;
+  targetId: string;
+  targetKind: PlannerLinkTargetKind;
+};
+
 export type CalendarEvent = {
   id: string;
   connectionId: string;
@@ -66,12 +87,42 @@ export type CalendarEvent = {
   sourceTimezone: string | null;
   isAllDay: boolean;
   status: "confirmed" | "cancelled";
+  plannerLink: CalendarPlannerLink | null;
+  suggestedTargetType: PlannerLinkTargetKind;
 };
 
 export type CalendarRangeData = {
   dateFrom: string;
   dateTo: string;
   events: CalendarEvent[];
+};
+
+export type CalendarEventImportPayload = {
+  isPriority?: boolean;
+  month?: number;
+  startDay?: number;
+  targetType: PlannerLinkTargetKind;
+  timePlanned?: number | null;
+  title?: string | null;
+  week?: number;
+  year: number;
+};
+
+export type CalendarEventImportResult = {
+  plannerLink: CalendarPlannerLink;
+  status: "created" | "existing";
+};
+
+export type CalendarTaskExportFeed = {
+  bucket: TaskCalendarExportBucket;
+  feedPath: string;
+  taskCount: number;
+};
+
+export type CalendarBulkImportSummary = {
+  failedCount: number;
+  importedCount: number;
+  requestedCount: number;
 };
 
 export type MonthData = {
@@ -93,6 +144,8 @@ export type WeekTask = {
   ti: number;
   fa: number;
   isPriority: boolean;
+  calendarExportEnabled: boolean;
+  calendarExportBucket: TaskCalendarExportBucket | null;
   startDayKey: string;
   statusTrail: TaskStatus[];
   carriedFromTaskId?: string | null;

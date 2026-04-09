@@ -164,6 +164,10 @@ export function formatLongDayLabel(date: Date): string {
   return capitalize(format(date, "EEEE, d MMMM yyyy", { locale: ru }));
 }
 
+export function formatLongDayLabelWithoutYear(date: Date): string {
+  return capitalize(format(date, "EEEE, d MMMM", { locale: ru }));
+}
+
 export function formatIsoDate(date: Date): string {
   return format(date, "yyyy-MM-dd");
 }

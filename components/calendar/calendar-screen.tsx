@@ -1,13 +1,17 @@
 "use client";
 
-import { addDays, addWeeks, differenceInCalendarWeeks, format, isValid, parseISO, startOfISOWeek } from "date-fns";
+import { addDays, addWeeks, differenceInCalendarWeeks, format, getISOWeek, getISOWeekYear, isValid, parseISO, startOfISOWeek } from "date-fns";
 import { ru } from "date-fns/locale";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { CalendarBulkImportModal } from "@/components/calendar/calendar-bulk-import-modal";
+import { isCalendarEventImportable } from "@/components/calendar/calendar-import-helpers";
 import { CalendarWeekGrid } from "@/components/calendar/calendar-week-grid";
+import { CalendarPlusIcon, PlusCircleIcon } from "@/components/ui/icons";
 import { formatIsoDate } from "@/lib/dates";
+import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
 import { getCalendarRangeKey } from "@/store/slices/shared";
 
@@ -29,14 +33,20 @@ export function CalendarScreen() {
   const searchParams = useSearchParams();
   const ensureCalendarRange = useAppStore((state) => state.ensureCalendarRange);
   const fetchCalendarConnections = useAppStore((state) => state.fetchCalendarConnections);
+  const importSuggestionsEnabled = useAppStore((state) => state.importSuggestionsEnabled);
+  const toggleImportSuggestions = useAppStore((state) => state.toggleImportSuggestions);
   const calendarConnections = useAppStore((state) => state.calendarConnections);
   const connectionsStatus = useAppStore((state) => state.calendarConnectionsStatus);
   const currentWeekStart = useMemo(() => startOfISOWeek(new Date()), []);
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [bulkNotice, setBulkNotice] = useState<string | null>(null);
 
   const weekStart = useMemo(() => {
     const urlWeekStart = parseWeekStartParam(searchParams.get("ws"));
     return urlWeekStart ?? currentWeekStart;
   }, [currentWeekStart, searchParams]);
+  const weekYear = useMemo(() => getISOWeekYear(weekStart), [weekStart]);
+  const weekNumber = useMemo(() => getISOWeek(weekStart), [weekStart]);
   const weekOffset = useMemo(
     () => differenceInCalendarWeeks(weekStart, currentWeekStart, { weekStartsOn: 1 }),
     [currentWeekStart, weekStart],
@@ -50,6 +60,10 @@ export function CalendarScreen() {
   }, [weekStart]);
   const rangeKey = getCalendarRangeKey(dateFrom, dateTo);
   const weekEvents = useAppStore((state) => state.calendarRanges[rangeKey]?.events ?? []);
+  const importableEvents = useMemo(
+    () => weekEvents.filter((event) => isCalendarEventImportable(event)),
+    [weekEvents],
+  );
   const rangeStatus = useAppStore((state) => state.calendarRangeLoadStates[rangeKey] ?? "idle");
 
   useEffect(() => {
@@ -68,6 +82,24 @@ export function CalendarScreen() {
 
     router.replace(`/calendar?ws=${nextWeekStart}`, { scroll: false });
   }, [router, searchParams, weekStart]);
+
+  useEffect(() => {
+    if (!bulkNotice) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      setBulkNotice(null);
+    }, 4000);
+
+    return () => window.clearTimeout(timer);
+  }, [bulkNotice]);
+
+  useEffect(() => {
+    if (importableEvents.length === 0 && bulkModalOpen) {
+      setBulkModalOpen(false);
+    }
+  }, [bulkModalOpen, importableEvents.length]);
 
   const weekLabel = `${format(weekStart, "d MMM", { locale: ru })} – ${format(addDays(weekStart, 6), "d MMM", {
     locale: ru,
@@ -97,7 +129,7 @@ export function CalendarScreen() {
           ←
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center justify-center gap-2">
           <span className="text-sm font-medium text-ink">{weekLabel}</span>
           {weekOffset !== 0 ? (
             <button
@@ -106,6 +138,29 @@ export function CalendarScreen() {
               type="button"
             >
               Сегодня
+            </button>
+          ) : null}
+          <button
+            className={cn(
+              "flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors",
+              importSuggestionsEnabled
+                ? "border-accent/40 bg-accent/10 text-accent"
+                : "border-line bg-paper text-muted hover:border-accent hover:text-accent",
+            )}
+            onClick={toggleImportSuggestions}
+            type="button"
+          >
+            <PlusCircleIcon className="h-3.5 w-3.5" />
+            Предложения
+          </button>
+          {importSuggestionsEnabled && importableEvents.length > 0 ? (
+            <button
+              className="flex items-center gap-1.5 rounded-xl border border-line bg-paper px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent hover:text-accent"
+              onClick={() => setBulkModalOpen(true)}
+              type="button"
+            >
+              <CalendarPlusIcon className="h-3.5 w-3.5" />
+              В план ({importableEvents.length})
             </button>
           ) : null}
         </div>
@@ -131,9 +186,32 @@ export function CalendarScreen() {
           connections={calendarConnections}
           events={weekEvents}
           isLoading={rangeStatus === "loading" && weekEvents.length === 0}
+          showImportSuggestions={importSuggestionsEnabled}
           weekStart={weekStart}
         />
       )}
+
+      {bulkModalOpen ? (
+        <CalendarBulkImportModal
+          events={importableEvents}
+          onClose={() => setBulkModalOpen(false)}
+          onImported={(summary) => {
+            setBulkNotice(
+              summary.failedCount > 0
+                ? `Перенесено в план: ${summary.importedCount} из ${summary.requestedCount}.`
+                : `Перенесено в план: ${summary.importedCount}.`,
+            );
+          }}
+          weekNumber={weekNumber}
+          weekYear={weekYear}
+        />
+      ) : null}
+
+      {bulkNotice ? (
+        <div className="fixed bottom-5 right-5 z-[80] rounded-[20px] border border-accent/30 bg-paper px-4 py-3 text-sm font-medium text-accent shadow-paper">
+          {bulkNotice}
+        </div>
+      ) : null}
     </div>
   );
 }

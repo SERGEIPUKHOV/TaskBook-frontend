@@ -2,17 +2,39 @@
 
 import {
   addDays,
+  differenceInCalendarDays,
   format,
   getHours,
+  getISOWeek,
+  getISOWeekYear,
   getMinutes,
   isSameDay,
   parseISO,
 } from "date-fns";
 import { ru } from "date-fns/locale";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
-import type { CalendarConnection, CalendarEvent } from "@/lib/planner-types";
+import {
+  estimateCalendarEventTimePlanned,
+  getCalendarEventStartDay,
+  getCalendarImportBlockedReason,
+  isCalendarEventImportable,
+} from "@/components/calendar/calendar-import-helpers";
+import { CheckIcon, PlusIcon } from "@/components/ui/icons";
+import { useAppStore } from "@/store/app-store";
+import type {
+  CalendarConnection,
+  CalendarEvent,
+  CalendarEventImportPayload,
+  PlannerLinkTargetKind,
+} from "@/lib/planner-types";
+import { cn } from "@/lib/utils";
 
+// BLOCK-START: CALENDAR_WEEK_GRID_MODULE
+// Description: Interactive weekly calendar grid with event layout, details modal, and calendar-to-planner import flow.
+// BLOCK-START: CALENDAR_WEEK_GRID_LAYOUT_HELPERS
+// Description: Time-grid constants and geometry helpers for laying out weekly calendar events.
 const HOUR_HEIGHT = 58;
 const COLLAPSED_HOUR_HEIGHT = 30;
 const HOURS = Array.from({ length: 24 }, (_, index) => index);
@@ -110,7 +132,20 @@ function formatEventTimeLabel(event: CalendarEvent): string {
   return `${format(parseISO(event.startsAt), "d MMM, HH:mm", { locale: ru })} — ${format(parseISO(event.endsAt), "HH:mm", { locale: ru })}`;
 }
 
+// BLOCK-END: CALENDAR_WEEK_GRID_LAYOUT_HELPERS
+
+// BLOCK-START: CALENDAR_WEEK_GRID_IMPORT_HELPERS
+// Description: Event grouping, planner import defaults, and recommendation hints used by the import modal.
 const PROXIMITY_MS = 30 * 60 * 1000;
+const DAY_OPTIONS = [
+  { label: "Пн", value: 1 },
+  { label: "Вт", value: 2 },
+  { label: "Ср", value: 3 },
+  { label: "Чт", value: 4 },
+  { label: "Пт", value: 5 },
+  { label: "Сб", value: 6 },
+  { label: "Вс", value: 7 },
+] as const;
 
 function groupEventsByProximity(events: CalendarEvent[]): CalendarEvent[][] {
   if (events.length === 0) return [];
@@ -131,14 +166,115 @@ function groupEventsByProximity(events: CalendarEvent[]): CalendarEvent[][] {
   return groups;
 }
 
+function buildWeekInputValue(year: number, week: number): string {
+  return `${year}-W${String(week).padStart(2, "0")}`;
+}
+
+function buildMonthInputValue(year: number, month: number): string {
+  return `${year}-${String(month).padStart(2, "0")}`;
+}
+
+function parseWeekInputValue(value: string): { week: number; year: number } | null {
+  const match = /^(\d{4})-W(\d{2})$/.exec(value);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    year: Number(match[1]),
+    week: Number(match[2]),
+  };
+}
+
+function parseMonthInputValue(value: string): { month: number; year: number } | null {
+  const match = /^(\d{4})-(\d{2})$/.exec(value);
+  if (!match) {
+    return null;
+  }
+
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+  };
+}
+
+function estimateTimePlanned(event: CalendarEvent): string {
+  const estimate = estimateCalendarEventTimePlanned(event);
+  return estimate ? String(estimate) : "";
+}
+
+function getInitialImportTarget(event: CalendarEvent): PlannerLinkTargetKind {
+  return event.suggestedTargetType;
+}
+
+function buildTaskImportPayload(event: CalendarEvent): CalendarEventImportPayload & { targetType: "task" } {
+  const start = parseISO(event.startsAt);
+  return {
+    isPriority: false,
+    startDay: getCalendarEventStartDay(event),
+    targetType: "task",
+    timePlanned: estimateCalendarEventTimePlanned(event),
+    title: event.title,
+    week: getISOWeek(start),
+    year: getISOWeekYear(start),
+  };
+}
+
+function buildHabitImportPayload(event: CalendarEvent): CalendarEventImportPayload & { targetType: "habit" } {
+  const start = parseISO(event.startsAt);
+  return {
+    targetType: "habit",
+    title: event.title,
+    year: start.getFullYear(),
+    month: start.getMonth() + 1,
+  };
+}
+
+function getSuggestionHint(event: CalendarEvent): string {
+  if (event.suggestedTargetType === "habit") {
+    return "Рекомендуем привычку, потому что событие выглядит повторяющимся.";
+  }
+
+  if (event.isAllDay) {
+    return "Рекомендуем задачу на день, потому что событие помечено как весь день.";
+  }
+
+  return "Рекомендуем задачу как основной сценарий импорта события в план.";
+}
+// BLOCK-END: CALENDAR_WEEK_GRID_IMPORT_HELPERS
+
 type CalendarWeekGridProps = {
   connections: CalendarConnection[];
   events: CalendarEvent[];
   isLoading: boolean;
+  showImportSuggestions: boolean;
   weekStart: Date;
 };
 
-export function CalendarWeekGrid({ connections, events, isLoading, weekStart }: CalendarWeekGridProps) {
+type TaskImportState = {
+  isPriority: boolean;
+  startDay: number;
+  timePlanned: string;
+  title: string;
+  weekValue: string;
+};
+
+type HabitImportState = {
+  monthValue: string;
+  title: string;
+};
+
+// BLOCK-START: CALENDAR_WEEK_GRID_COMPONENT
+// Description: Renders the week grid, event details, and import dialog with linked-item navigation.
+export function CalendarWeekGrid({
+  connections,
+  events,
+  isLoading,
+  showImportSuggestions,
+  weekStart,
+}: CalendarWeekGridProps) {
+  const router = useRouter();
+  const importCalendarEventToPlanner = useAppStore((state) => state.importCalendarEventToPlanner);
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeHours = useMemo(() => getActiveHours(events), [events]);
   const totalHeight = useMemo(() => getTotalHeight(activeHours), [activeHours]);
@@ -157,6 +293,22 @@ export function CalendarWeekGrid({ connections, events, isLoading, weekStart }: 
     return minutesToPx(getHours(now) * 60 + getMinutes(now), activeHours);
   });
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [selectedTargetType, setSelectedTargetType] = useState<PlannerLinkTargetKind>("task");
+  const [taskImport, setTaskImport] = useState<TaskImportState>({
+    isPriority: false,
+    startDay: 1,
+    timePlanned: "",
+    title: "",
+    weekValue: buildWeekInputValue(getISOWeekYear(new Date()), getISOWeek(new Date())),
+  });
+  const [habitImport, setHabitImport] = useState<HabitImportState>({
+    monthValue: buildMonthInputValue(new Date().getFullYear(), new Date().getMonth() + 1),
+    title: "",
+  });
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importNotice, setImportNotice] = useState<string | null>(null);
+  const [isImportSubmitting, setIsImportSubmitting] = useState(false);
   const colorMap = useMemo(() => {
     const map = new Map<string, { color: string; provider: CalendarConnection["provider"] }>();
 
@@ -190,6 +342,33 @@ export function CalendarWeekGrid({ connections, events, isLoading, weekStart }: 
     return () => clearInterval(interval);
   }, [activeHours]);
 
+  useEffect(() => {
+    if (!selectedEvent) {
+      setIsImportDialogOpen(false);
+      setImportError(null);
+      setImportNotice(null);
+      return;
+    }
+
+    const taskDefaults = buildTaskImportPayload(selectedEvent);
+    const habitDefaults = buildHabitImportPayload(selectedEvent);
+    setSelectedTargetType(getInitialImportTarget(selectedEvent));
+    setTaskImport({
+      isPriority: Boolean(taskDefaults.isPriority),
+      startDay: taskDefaults.startDay ?? 1,
+      timePlanned: taskDefaults.timePlanned ? String(taskDefaults.timePlanned) : "",
+      title: taskDefaults.title ?? selectedEvent.title,
+      weekValue: buildWeekInputValue(taskDefaults.year, taskDefaults.week ?? getISOWeek(parseISO(selectedEvent.startsAt))),
+    });
+    setHabitImport({
+      monthValue: buildMonthInputValue(habitDefaults.year, habitDefaults.month ?? (parseISO(selectedEvent.startsAt).getMonth() + 1)),
+      title: habitDefaults.title ?? selectedEvent.title,
+    });
+    setImportError(null);
+    setImportNotice(null);
+    setIsImportDialogOpen(false);
+  }, [selectedEvent?.id]);
+
   const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
   const today = new Date();
   const hasAllDayEvents = days.some((day) =>
@@ -198,6 +377,69 @@ export function CalendarWeekGrid({ connections, events, isLoading, weekStart }: 
   const selectedEventColor = selectedEvent
     ? (colorMap.get(selectedEvent.connectionId)?.color ?? FALLBACK_COLOR)
     : FALLBACK_COLOR;
+  const importBlockedReason = selectedEvent ? getCalendarImportBlockedReason(selectedEvent) : null;
+
+  async function handleImportSubmit() {
+    if (!selectedEvent) {
+      return;
+    }
+
+    let payload: CalendarEventImportPayload | null = null;
+
+    if (selectedTargetType === "task") {
+      const parsedWeek = parseWeekInputValue(taskImport.weekValue);
+      if (!parsedWeek) {
+        setImportError("Проверь неделю для импорта задачи.");
+        return;
+      }
+
+      payload = {
+        isPriority: taskImport.isPriority,
+        startDay: taskImport.startDay,
+        targetType: "task",
+        timePlanned: taskImport.timePlanned.trim() ? Number(taskImport.timePlanned) : null,
+        title: taskImport.title,
+        week: parsedWeek.week,
+        year: parsedWeek.year,
+      };
+    } else {
+      const parsedMonth = parseMonthInputValue(habitImport.monthValue);
+      if (!parsedMonth) {
+        setImportError("Проверь месяц для импорта привычки.");
+        return;
+      }
+
+      payload = {
+        targetType: "habit",
+        title: habitImport.title,
+        year: parsedMonth.year,
+        month: parsedMonth.month,
+      };
+    }
+
+    setIsImportSubmitting(true);
+    setImportError(null);
+    try {
+      const result = await importCalendarEventToPlanner(selectedEvent.id, payload);
+      setSelectedEvent((current) => (current ? { ...current, plannerLink: result.plannerLink } : current));
+      setImportNotice(result.status === "created" ? "Добавлено в план." : "Это событие уже связано с планом.");
+      setIsImportDialogOpen(false);
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : "Не удалось добавить событие в план.");
+    } finally {
+      setIsImportSubmitting(false);
+    }
+  }
+
+  function handleOpenLinkedItem() {
+    if (!selectedEvent?.plannerLink) {
+      return;
+    }
+
+    router.push(selectedEvent.plannerLink.openPath);
+    setIsImportDialogOpen(false);
+    setSelectedEvent(null);
+  }
 
   if (isLoading) {
     return (
@@ -262,12 +504,24 @@ export function CalendarWeekGrid({ connections, events, isLoading, weekStart }: 
                       return (
                         <button
                           key={event.id}
-                          className="w-full truncate rounded border px-1.5 py-0.5 text-left text-[11px] font-medium transition duration-150 cursor-pointer hover:brightness-95"
+                          className={cn(
+                            "relative w-full truncate rounded border px-1.5 py-0.5 text-left text-[11px] font-medium transition duration-150 cursor-pointer hover:brightness-95",
+                            showImportSuggestions && "pr-5",
+                          )}
                           style={eventStyle(resolved.color, resolved.provider)}
                           title={event.title}
                           type="button"
                           onClick={() => setSelectedEvent(event)}
                         >
+                          {showImportSuggestions ? (
+                            <span className="pointer-events-none absolute right-1 top-1">
+                              {event.plannerLink ? (
+                                <CheckIcon className="h-3 w-3 text-muted/70" />
+                              ) : isCalendarEventImportable(event) ? (
+                                <PlusIcon className="h-3 w-3 text-accent/80" />
+                              ) : null}
+                            </span>
+                          ) : null}
                           {event.title}
                         </button>
                       );
@@ -325,9 +579,10 @@ export function CalendarWeekGrid({ connections, events, isLoading, weekStart }: 
                       return (
                         <button
                           key={event.id}
-                          className={[
-                            "absolute overflow-hidden rounded border px-1 py-0.5 text-left text-[11px] leading-tight shadow-sm transition duration-150 cursor-pointer hover:brightness-95",
-                          ].join(" ")}
+                          className={cn(
+                            "absolute relative overflow-hidden rounded border px-1 py-0.5 text-left text-[11px] leading-tight shadow-sm transition duration-150 cursor-pointer hover:brightness-95",
+                            showImportSuggestions && "pr-5",
+                          )}
                           style={{
                             ...eventStyle(resolved.color, resolved.provider),
                             top: getEventTop(event.startsAt, activeHours),
@@ -339,6 +594,15 @@ export function CalendarWeekGrid({ connections, events, isLoading, weekStart }: 
                           type="button"
                           onClick={() => setSelectedEvent(event)}
                         >
+                          {showImportSuggestions ? (
+                            <span className="pointer-events-none absolute right-1 top-1 z-10">
+                              {event.plannerLink ? (
+                                <CheckIcon className="h-3 w-3 text-muted/70" />
+                              ) : isCalendarEventImportable(event) ? (
+                                <PlusIcon className="h-3 w-3 text-accent/80" />
+                              ) : null}
+                            </span>
+                          ) : null}
                           <div className={colTotal > 1 ? "line-clamp-2 font-medium" : "truncate font-medium"}>{event.title}</div>
                           <div className="truncate opacity-70">{format(parseISO(event.startsAt), "HH:mm")}</div>
                         </button>
@@ -394,9 +658,194 @@ export function CalendarWeekGrid({ connections, events, isLoading, weekStart }: 
                 </div>
               ) : null}
             </div>
+
+            {importNotice ? <div className="mt-4 text-sm font-medium text-accent">{importNotice}</div> : null}
+            {importError && !isImportDialogOpen ? <div className="mt-4 text-sm text-danger">{importError}</div> : null}
+
+            <div className="mt-5 flex flex-wrap justify-end gap-2">
+              {selectedEvent.plannerLink ? (
+                <button
+                  className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                  type="button"
+                  onClick={handleOpenLinkedItem}
+                >
+                  Открыть в плане
+                </button>
+              ) : importBlockedReason ? (
+                <div className="max-w-full text-right text-sm text-muted">{importBlockedReason}</div>
+              ) : (
+                <button
+                  className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                  type="button"
+                  onClick={() => {
+                    setImportError(null);
+                    setIsImportDialogOpen(true);
+                  }}
+                >
+                  Добавить в план
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {selectedEvent && isImportDialogOpen ? (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/35 px-4 backdrop-blur-sm"
+          onClick={() => setIsImportDialogOpen(false)}
+        >
+          <div
+            aria-modal="true"
+            className="paper-panel w-full max-w-md overflow-y-auto rounded-[32px] p-6"
+            role="dialog"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-base font-semibold leading-snug text-ink">Добавить в план</div>
+                <div className="mt-1 text-sm text-muted">{getSuggestionHint(selectedEvent)}</div>
+              </div>
+              <button
+                className="shrink-0 rounded-full p-1 text-muted transition-colors hover:text-ink"
+                type="button"
+                onClick={() => setIsImportDialogOpen(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              {(["task", "habit"] as const).map((targetType) => (
+                <button
+                  key={targetType}
+                  className={[
+                    "rounded-2xl border px-3 py-2 text-sm font-medium transition-colors",
+                    selectedTargetType === targetType
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-line bg-paper text-muted hover:text-ink",
+                  ].join(" ")}
+                  type="button"
+                  onClick={() => setSelectedTargetType(targetType)}
+                >
+                  {targetType === "task" ? "Как задачу" : "Как привычку"}
+                </button>
+              ))}
+            </div>
+
+            {selectedTargetType === "task" ? (
+              <div className="mt-4 space-y-4">
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-ink">Название</span>
+                  <input
+                    className="field-base w-full px-3 py-2 text-sm text-ink outline-none"
+                    type="text"
+                    value={taskImport.title}
+                    onChange={(event) => setTaskImport((current) => ({ ...current, title: event.target.value }))}
+                  />
+                </label>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <label className="block space-y-1">
+                    <span className="text-sm font-medium text-ink">Неделя</span>
+                    <input
+                      className="field-base w-full px-3 py-2 text-sm text-ink outline-none"
+                      type="week"
+                      value={taskImport.weekValue}
+                      onChange={(event) => setTaskImport((current) => ({ ...current, weekValue: event.target.value }))}
+                    />
+                  </label>
+
+                  <label className="block space-y-1">
+                    <span className="text-sm font-medium text-ink">День недели</span>
+                    <select
+                      className="field-base w-full px-3 py-2 text-sm text-ink outline-none"
+                      value={taskImport.startDay}
+                      onChange={(event) =>
+                        setTaskImport((current) => ({ ...current, startDay: Number(event.target.value) }))
+                      }
+                    >
+                      {DAY_OPTIONS.map((dayOption) => (
+                        <option key={dayOption.value} value={dayOption.value}>
+                          {dayOption.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                  <label className="block space-y-1">
+                    <span className="text-sm font-medium text-ink">Ti</span>
+                    <input
+                      className="field-base w-full px-3 py-2 text-sm text-ink outline-none"
+                      inputMode="numeric"
+                      min={0}
+                      type="number"
+                      value={taskImport.timePlanned}
+                      onChange={(event) => setTaskImport((current) => ({ ...current, timePlanned: event.target.value }))}
+                    />
+                  </label>
+
+                  <label className="flex items-center gap-2 rounded-2xl border border-line px-3 py-2 text-sm text-ink">
+                    <input
+                      checked={taskImport.isPriority}
+                      type="checkbox"
+                      onChange={(event) =>
+                        setTaskImport((current) => ({ ...current, isPriority: event.target.checked }))
+                      }
+                    />
+                    <span>Приоритет</span>
+                  </label>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-4 space-y-4">
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-ink">Название</span>
+                  <input
+                    className="field-base w-full px-3 py-2 text-sm text-ink outline-none"
+                    type="text"
+                    value={habitImport.title}
+                    onChange={(event) => setHabitImport((current) => ({ ...current, title: event.target.value }))}
+                  />
+                </label>
+
+                <label className="block space-y-1">
+                  <span className="text-sm font-medium text-ink">Месяц</span>
+                  <input
+                    className="field-base w-full px-3 py-2 text-sm text-ink outline-none"
+                    type="month"
+                    value={habitImport.monthValue}
+                    onChange={(event) => setHabitImport((current) => ({ ...current, monthValue: event.target.value }))}
+                  />
+                </label>
+              </div>
+            )}
+
+            {importError ? <div className="mt-4 text-sm text-danger">{importError}</div> : null}
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                className="rounded-xl border border-line px-4 py-2 text-sm font-medium text-muted transition-colors hover:text-ink"
+                type="button"
+                onClick={() => setIsImportDialogOpen(false)}
+              >
+                Отмена
+              </button>
+              <button
+                className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                disabled={isImportSubmitting}
+                type="button"
+                onClick={() => void handleImportSubmit()}
+              >
+                {isImportSubmitting ? "Добавляем..." : "Добавить"}
+              </button>
+            </div>
           </div>
         </div>
       ) : null}
     </>
   );
 }
+// BLOCK-END: CALENDAR_WEEK_GRID_COMPONENT
+// BLOCK-END: CALENDAR_WEEK_GRID_MODULE

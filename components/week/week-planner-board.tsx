@@ -6,7 +6,14 @@ import { ru } from "date-fns/locale";
 import { startTransition, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-import type { MetricName, MonthData, TaskStatus, WeekData, WeekTask } from "@/lib/planner-types";
+import {
+  TASK_CALENDAR_EXPORT_BUCKET_OPTIONS,
+  type MetricName,
+  type MonthData,
+  type TaskStatus,
+  type WeekData,
+  type WeekTask,
+} from "@/lib/planner-types";
 import { getMonthKey } from "@/lib/dates";
 import { getLastTaskStatus, getTaskCellState, getWeekDayKeys } from "@/lib/week-tasks";
 import { cn } from "@/lib/utils";
@@ -423,23 +430,52 @@ function TaskRow({
         />
       ))}
 
-      <div className="flex min-h-10 items-center gap-2 border-r border-line px-2 py-1.5">
-        <textarea
-          ref={(element) => {
-            textareaRef.current = element;
-            registerInput(task.id, element);
-            syncTextareaHeight(element, 36);
-          }}
-          className="field-base w-full resize-none overflow-hidden px-3 py-2 text-sm leading-5 text-ink outline-none placeholder:text-muted/60"
-          onBlur={() => scheduleSave("title", draft.title)}
-          onChange={(event) => {
-            setDraft((current) => ({ ...current, title: event.target.value }));
-            syncTextareaHeight(event.currentTarget, 36);
-          }}
-          placeholder="Новая задача..."
-          rows={1}
-          value={draft.title}
-        />
+      <div className="flex min-h-10 items-start gap-2 border-r border-line px-2 py-1.5">
+        <div className="min-w-0 flex-1">
+          <textarea
+            ref={(element) => {
+              textareaRef.current = element;
+              registerInput(task.id, element);
+              syncTextareaHeight(element, 36);
+            }}
+            className="field-base w-full resize-none overflow-hidden px-3 py-2 text-sm leading-5 text-ink outline-none placeholder:text-muted/60"
+            onBlur={() => scheduleSave("title", draft.title)}
+            onChange={(event) => {
+              setDraft((current) => ({ ...current, title: event.target.value }));
+              syncTextareaHeight(event.currentTarget, 36);
+            }}
+            placeholder="Новая задача..."
+            rows={1}
+            value={draft.title}
+          />
+          <div className="mt-1 flex flex-wrap items-center gap-2 px-3 pb-1">
+            <button
+              className={cn(
+                "rounded-full border px-3 py-1 text-[11px] font-medium transition-colors",
+                task.calendarExportEnabled
+                  ? "border-accent/40 bg-accent/10 text-accent"
+                  : "border-line bg-canvas text-muted hover:border-accent/40 hover:text-accent",
+              )}
+              onClick={() => updateTask(weekKey, task.id, "calendarExportEnabled", !task.calendarExportEnabled)}
+              type="button"
+            >
+              {task.calendarExportEnabled ? "Выгружается в календарь" : "Показать во внешнем календаре"}
+            </button>
+            {task.calendarExportEnabled ? (
+              <select
+                className="rounded-full border border-line bg-canvas px-3 py-1 text-[11px] text-ink outline-none transition-colors focus:border-accent"
+                onChange={(event) => updateTask(weekKey, task.id, "calendarExportBucket", event.target.value)}
+                value={task.calendarExportBucket ?? "default"}
+              >
+                {TASK_CALENDAR_EXPORT_BUCKET_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+          </div>
+        </div>
         <button
           aria-label={`Удалить задачу ${draft.title || "без названия"}`}
           className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm text-muted opacity-100 transition-colors hover:bg-danger/10 hover:text-danger md:opacity-0 md:transition-opacity md:group-hover:opacity-100"

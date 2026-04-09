@@ -6,8 +6,8 @@ Typed helper-слой пользовательского frontend.
 
 ## Ответственность
 - `api.ts` - единая fetch-обёртка с `credentials: include`, error normalization и refresh retry.
-- `planner-api.ts` - маппинг backend payloads в frontend domain types и payload builders.
-- `planner-types.ts`, `auth-types.ts` - transport/domain type contracts.
+- `planner-api.ts` - маппинг backend payloads в frontend domain types и payload builders, включая calendar/planner bridge и task feed payloads.
+- `planner-types.ts`, `auth-types.ts` - transport/domain type contracts, включая calendar events, planner links и export bucket/feed types.
 - `dates.ts`, `week-tasks.ts`, `nav-hrefs.ts`, `utils.ts`, `chart-stats.ts` - вычисления и UI-support utilities.
 - `auth-constants.ts`, `auth-validation.ts`, `auth-session.ts` - auth constants, validation и browser session persistence helpers.
 

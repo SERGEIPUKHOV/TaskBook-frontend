@@ -2,9 +2,13 @@
 
 import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
-import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 
-import type { CalendarConnection } from "@/lib/planner-types";
+import {
+  TASK_CALENDAR_EXPORT_BUCKET_OPTIONS,
+  type CalendarTaskExportFeed,
+  type TaskCalendarExportBucket,
+} from "@/lib/planner-types";
 import { useAppStore } from "@/store/app-store";
 
 type ProfileCalendarIntegrationsProps = {
@@ -32,6 +36,63 @@ function accessRoleLabel(accessRole: string | null): string | null {
     return "reader";
   }
   return accessRole;
+}
+
+const CALENDAR_PALETTE = [
+  "#D50000",
+  "#E67C73",
+  "#F4511E",
+  "#F6BF26",
+  "#33B679",
+  "#0B8043",
+  "#039BE5",
+  "#3F51B5",
+  "#7986CB",
+  "#8E24AA",
+  "#616161",
+] as const;
+
+const FALLBACK_CONNECTION_COLOR = "#616161";
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1").replace(/\/$/, "");
+
+function resolveConnectionColor(color: string | null): string {
+  return color ?? FALLBACK_CONNECTION_COLOR;
+}
+
+function taskFeedLabel(bucket: TaskCalendarExportBucket): string {
+  return TASK_CALENDAR_EXPORT_BUCKET_OPTIONS.find((option) => option.value === bucket)?.label ?? bucket;
+}
+
+function buildAbsoluteFeedUrl(feedPath: string): string {
+  return new URL(feedPath, API_BASE).toString();
+}
+
+function ConnectionColorSwatches({
+  currentColor,
+  disabled = false,
+  onSelect,
+}: {
+  currentColor: string | null;
+  disabled?: boolean;
+  onSelect: (paletteColor: string) => void;
+}) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {CALENDAR_PALETTE.map((paletteColor) => (
+        <button
+          key={paletteColor}
+          className="h-5 w-5 rounded-full border-2 transition-transform hover:scale-110 disabled:cursor-wait disabled:opacity-60"
+          disabled={disabled}
+          style={{
+            backgroundColor: paletteColor,
+            borderColor: resolveConnectionColor(currentColor) === paletteColor ? "var(--color-ink)" : "transparent",
+          }}
+          type="button"
+          onClick={() => onSelect(paletteColor)}
+        />
+      ))}
+    </div>
+  );
 }
 
 function GoogleLogo() {
@@ -155,12 +216,17 @@ export function ProfileCalendarIntegrations({
   const [applePending, setApplePending] = useState(false);
   const [showApplePicker, setShowApplePicker] = useState(false);
   const [appleSyncPending, setAppleSyncPending] = useState<Record<string, boolean>>({});
+  const [colorPickerConnectionId, setColorPickerConnectionId] = useState<string | null>(null);
+  const [colorUpdatePendingConnectionId, setColorUpdatePendingConnectionId] = useState<string | null>(null);
   const [appleLabel, setAppleLabel] = useState("");
   const [appleUrl, setAppleUrl] = useState("");
+  const [copiedFeedBucket, setCopiedFeedBucket] = useState<TaskCalendarExportBucket | null>(null);
   const [screenError, setScreenError] = useState<string | null>(null);
+  const copiedFeedTimerRef = useRef<number | null>(null);
 
   const fetchCalendarConnections = useAppStore((state) => state.fetchCalendarConnections);
   const fetchGoogleCalendarOptions = useAppStore((state) => state.fetchGoogleCalendarOptions);
+  const fetchTaskExportFeeds = useAppStore((state) => state.fetchTaskExportFeeds);
   const startGoogleCalendarConnect = useAppStore((state) => state.startGoogleCalendarConnect);
   const saveGoogleCalendarSelections = useAppStore((state) => state.saveGoogleCalendarSelections);
   const syncAllGoogleCalendars = useAppStore((state) => state.syncAllGoogleCalendars);
@@ -168,17 +234,21 @@ export function ProfileCalendarIntegrations({
   const connectAppleCalendar = useAppStore((state) => state.connectAppleCalendar);
   const syncCalendarConnection = useAppStore((state) => state.syncCalendarConnection);
   const deleteCalendarConnection = useAppStore((state) => state.deleteCalendarConnection);
+  const updateConnectionColor = useAppStore((state) => state.updateConnectionColor);
   const calendarConnections = useAppStore((state) => state.calendarConnections);
   const calendarConnectionsStatus = useAppStore((state) => state.calendarConnectionsStatus);
   const googleCalendarOptions = useAppStore((state) => state.googleCalendarOptions);
   const googleCalendarOptionsStatus = useAppStore((state) => state.googleCalendarOptionsStatus);
   const googleCalendarConnected = useAppStore((state) => state.googleCalendarConnected);
   const googleCalendarAccountLabel = useAppStore((state) => state.googleCalendarAccountLabel);
+  const taskExportFeeds = useAppStore((state) => state.taskExportFeeds);
+  const taskExportFeedsStatus = useAppStore((state) => state.taskExportFeedsStatus);
 
   useEffect(() => {
     void fetchCalendarConnections();
     void fetchGoogleCalendarOptions();
-  }, [fetchCalendarConnections, fetchGoogleCalendarOptions]);
+    void fetchTaskExportFeeds();
+  }, [fetchCalendarConnections, fetchGoogleCalendarOptions, fetchTaskExportFeeds]);
 
   useEffect(() => {
     setSelectedGoogleCalendarIds(
@@ -192,6 +262,15 @@ export function ProfileCalendarIntegrations({
       void fetchCalendarConnections(true);
     }
   }, [fetchCalendarConnections, fetchGoogleCalendarOptions, googleProvider, googleStatus]);
+
+  useEffect(
+    () => () => {
+      if (copiedFeedTimerRef.current) {
+        window.clearTimeout(copiedFeedTimerRef.current);
+      }
+    },
+    [],
+  );
 
   const googleConnections = calendarConnections.filter((connection) => connection.provider === "google");
   const appleConnections = calendarConnections.filter((connection) => connection.provider === "apple");
@@ -262,6 +341,7 @@ export function ProfileCalendarIntegrations({
       await disconnectGoogleCalendarAccount();
       setSelectedGoogleCalendarIds([]);
       setShowCalendarPicker(false);
+      setColorPickerConnectionId(null);
     } catch (error) {
       setScreenError(error instanceof Error ? error.message : "Не удалось отключить Google Calendar");
     } finally {
@@ -306,8 +386,22 @@ export function ProfileCalendarIntegrations({
     setScreenError(null);
     try {
       await deleteCalendarConnection(connectionId);
+      setColorPickerConnectionId((current) => (current === connectionId ? null : current));
     } catch (error) {
       setScreenError(error instanceof Error ? error.message : "Не удалось отключить календарь");
+    }
+  }
+
+  async function handleUpdateConnectionColor(connectionId: string, color: string) {
+    setScreenError(null);
+    setColorUpdatePendingConnectionId(connectionId);
+    try {
+      await updateConnectionColor(connectionId, color);
+      setColorPickerConnectionId(null);
+    } catch (error) {
+      setScreenError(error instanceof Error ? error.message : "Не удалось обновить цвет календаря");
+    } finally {
+      setColorUpdatePendingConnectionId(null);
     }
   }
 
@@ -335,6 +429,21 @@ export function ProfileCalendarIntegrations({
     setAppleLabel("");
     setAppleUrl("");
     setShowApplePicker(false);
+  }
+
+  async function handleCopyTaskFeed(feed: CalendarTaskExportFeed) {
+    try {
+      await navigator.clipboard.writeText(buildAbsoluteFeedUrl(feed.feedPath));
+      setCopiedFeedBucket(feed.bucket);
+      if (copiedFeedTimerRef.current) {
+        window.clearTimeout(copiedFeedTimerRef.current);
+      }
+      copiedFeedTimerRef.current = window.setTimeout(() => {
+        setCopiedFeedBucket((current) => (current === feed.bucket ? null : current));
+      }, 1800);
+    } catch (error) {
+      setScreenError(error instanceof Error ? error.message : "Не удалось скопировать ссылку на ICS feed");
+    }
   }
 
   return (
@@ -369,36 +478,84 @@ export function ProfileCalendarIntegrations({
                 <div className="mt-2">
                   {latestGoogleSync ? `Последняя синхронизация: ${formatConnectionDate(latestGoogleSync)}` : "Синк ещё не запускался"}
                 </div>
-                <div className="mt-3 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-col gap-2">
                   <button
-                    className="rounded-[18px] border border-line bg-canvas px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
+                    className="w-full rounded-[18px] border border-line bg-canvas px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
                     disabled={googleCalendarOptionsStatus === "loading"}
                     onClick={() => setShowCalendarPicker(true)}
                     type="button"
                   >
                     {`Выбрать календари${savedGoogleCalendarIds.length > 0 ? ` (${savedGoogleCalendarIds.length})` : ""}`}
                   </button>
-                  <button
-                    className="rounded-[18px] border border-line bg-canvas px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
-                    disabled={googleSyncPending || googleConnections.length === 0}
-                    onClick={() => {
-                      void handleSyncAllGoogle();
-                    }}
-                    type="button"
-                  >
-                    {googleSyncPending ? "Синхронизируем..." : "Синхронизировать все"}
-                  </button>
-                  <button
-                    className="rounded-[18px] border border-line bg-canvas px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-danger hover:text-danger disabled:cursor-wait disabled:opacity-60"
-                    disabled={googleDisconnectPending}
-                    onClick={() => {
-                      void handleDisconnectGoogleAccount();
-                    }}
-                    type="button"
-                  >
-                    {googleDisconnectPending ? "Отключаем..." : "Отключить Google"}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      className="flex-1 rounded-[18px] border border-line bg-canvas px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
+                      disabled={googleSyncPending || googleConnections.length === 0}
+                      onClick={() => {
+                        void handleSyncAllGoogle();
+                      }}
+                      type="button"
+                    >
+                      {googleSyncPending ? "Синхронизируем..." : "Синхронизировать"}
+                    </button>
+                    <button
+                      className="flex-1 rounded-[18px] border border-line bg-canvas px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-danger hover:text-danger disabled:cursor-wait disabled:opacity-60"
+                      disabled={googleDisconnectPending}
+                      onClick={() => {
+                        void handleDisconnectGoogleAccount();
+                      }}
+                      type="button"
+                    >
+                      {googleDisconnectPending ? "Удаляем..." : "Удалить"}
+                    </button>
+                  </div>
                 </div>
+
+                {googleConnections.length > 0 ? (
+                  <div className="mt-4 space-y-2">
+                    {googleConnections.map((connection) => (
+                      <div
+                        key={connection.id}
+                        className="rounded-[20px] border border-line bg-canvas/70 px-4 py-3 text-sm leading-6 text-muted"
+                      >
+                        <div className="flex items-start gap-3">
+                          <button
+                            className="mt-1 h-4 w-4 shrink-0 rounded-full border border-line/50 transition-transform hover:scale-110 disabled:cursor-wait disabled:opacity-60"
+                            disabled={colorUpdatePendingConnectionId === connection.id}
+                            style={{ backgroundColor: resolveConnectionColor(connection.color) }}
+                            title="Изменить цвет"
+                            type="button"
+                            onClick={() => setColorPickerConnectionId(
+                              colorPickerConnectionId === connection.id ? null : connection.id,
+                            )}
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-semibold text-ink">{connection.accountLabel || "Google calendar"}</div>
+                            <div className="mt-1 text-xs leading-5 text-muted">
+                              {connection.lastError ? (
+                                <span className="text-danger">{connection.lastError}</span>
+                              ) : connection.lastSyncedAt ? (
+                                `Последняя синхронизация: ${formatConnectionDate(connection.lastSyncedAt)}`
+                              ) : (
+                                "Синк ещё не запускался"
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {colorPickerConnectionId === connection.id ? (
+                          <ConnectionColorSwatches
+                            currentColor={connection.color}
+                            disabled={colorUpdatePendingConnectionId === connection.id}
+                            onSelect={(paletteColor) => {
+                              void handleUpdateConnectionColor(connection.id, paletteColor);
+                            }}
+                          />
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -431,16 +588,41 @@ export function ProfileCalendarIntegrations({
                     key={connection.id}
                     className="rounded-[24px] border border-line bg-paper/70 px-4 py-4 text-sm leading-6 text-muted"
                   >
-                    <div className="text-sm font-semibold text-ink">{connection.accountLabel || "ICS feed"}</div>
-                    <div className="mt-1">
-                      {connection.lastError ? (
-                        <span className="text-danger">{connection.lastError}</span>
-                      ) : connection.lastSyncedAt ? (
-                        `Последняя синхронизация: ${formatConnectionDate(connection.lastSyncedAt)}`
-                      ) : (
-                        "Синк ещё не запускался"
-                      )}
+                    <div className="flex items-start gap-3">
+                      <button
+                        className="mt-1 h-4 w-4 shrink-0 rounded-full border border-line/50 transition-transform hover:scale-110 disabled:cursor-wait disabled:opacity-60"
+                        disabled={colorUpdatePendingConnectionId === connection.id}
+                        style={{ backgroundColor: resolveConnectionColor(connection.color) }}
+                        title="Изменить цвет"
+                        type="button"
+                        onClick={() => setColorPickerConnectionId(
+                          colorPickerConnectionId === connection.id ? null : connection.id,
+                        )}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold text-ink">{connection.accountLabel || "ICS feed"}</div>
+                        <div className="mt-1">
+                          {connection.lastError ? (
+                            <span className="text-danger">{connection.lastError}</span>
+                          ) : connection.lastSyncedAt ? (
+                            `Последняя синхронизация: ${formatConnectionDate(connection.lastSyncedAt)}`
+                          ) : (
+                            "Синк ещё не запускался"
+                          )}
+                        </div>
+                      </div>
                     </div>
+
+                    {colorPickerConnectionId === connection.id ? (
+                      <ConnectionColorSwatches
+                        currentColor={connection.color}
+                        disabled={colorUpdatePendingConnectionId === connection.id}
+                        onSelect={(paletteColor) => {
+                          void handleUpdateConnectionColor(connection.id, paletteColor);
+                        }}
+                      />
+                    ) : null}
+
                     <div className="mt-3 flex flex-wrap gap-2">
                       <button
                         className="rounded-[18px] border border-line bg-canvas px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-wait disabled:opacity-60"
@@ -469,6 +651,70 @@ export function ProfileCalendarIntegrations({
           </div>
         </ProviderCard>
       </div>
+
+      <section className="rounded-[28px] border border-line bg-canvas/50 p-5 sm:p-6">
+        <div className="text-base font-semibold text-ink">Экспорт задач</div>
+        <div className="mt-2 text-sm leading-6 text-muted">
+          Выбери bucket для задачи в planner и подпиши нужный ICS URL во внешний календарь. Так можно развести рабочие и личные задачи по разным календарям без write-доступа к Google или Apple.
+        </div>
+        <div className="mt-4 space-y-3">
+          {taskExportFeedsStatus === "loading" ? (
+            <>
+              <div className="h-20 animate-pulse rounded-[22px] border border-line bg-paper/60" />
+              <div className="h-20 animate-pulse rounded-[22px] border border-line bg-paper/60" />
+            </>
+          ) : null}
+
+          {taskExportFeedsStatus === "error" ? (
+            <div className="rounded-[22px] border border-danger/30 bg-danger/10 px-4 py-4 text-sm leading-6 text-danger">
+              Не удалось загрузить ссылки на экспорт задач.
+              <button
+                className="ml-2 font-medium underline underline-offset-4"
+                onClick={() => {
+                  void fetchTaskExportFeeds(true);
+                }}
+                type="button"
+              >
+                Повторить
+              </button>
+            </div>
+          ) : null}
+
+          {taskExportFeedsStatus === "ready"
+            ? taskExportFeeds.map((feed) => (
+                <div
+                  key={feed.bucket}
+                  className="rounded-[24px] border border-line bg-paper/70 px-4 py-4 text-sm leading-6 text-muted"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <div className="text-sm font-semibold text-ink">{taskFeedLabel(feed.bucket)}</div>
+                      <div className="mt-1 text-xs text-muted">
+                        {feed.taskCount > 0 ? `Задач в фиде: ${feed.taskCount}` : "Пока пусто, но ссылку уже можно подписать"}
+                      </div>
+                    </div>
+                    <button
+                      className="rounded-[18px] border border-line bg-canvas px-4 py-2 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
+                      onClick={() => {
+                        void handleCopyTaskFeed(feed);
+                      }}
+                      type="button"
+                    >
+                      {copiedFeedBucket === feed.bucket ? "Скопировано" : "Скопировать ссылку"}
+                    </button>
+                  </div>
+                  <div className="mt-3 break-all rounded-[18px] border border-line bg-canvas/70 px-3 py-3 text-xs leading-5 text-muted">
+                    {buildAbsoluteFeedUrl(feed.feedPath)}
+                  </div>
+                </div>
+              ))
+            : null}
+        </div>
+        <div className="mt-4 rounded-[22px] border border-line bg-paper/70 px-4 py-4 text-sm leading-6 text-muted">
+          Google Calendar: <span className="text-ink">Другие календари → Добавить по URL</span>.
+          Apple Calendar: <span className="text-ink">Файл → Новая подписка на календарь</span>.
+        </div>
+      </section>
 
       {showApplePicker ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 px-4 backdrop-blur-sm">

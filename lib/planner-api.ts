@@ -6,11 +6,16 @@ import { addDays, format, parseISO } from "date-fns";
 import type {
   CalendarConnection,
   CalendarEvent,
+  CalendarEventImportResult,
+  CalendarPlannerLink,
   CalendarRangeData,
+  CalendarTaskExportFeed,
   GoogleCalendarOptionsState,
   DailyState,
   Habit,
   MonthData,
+  PlannerLinkTargetKind,
+  TaskCalendarExportBucket,
   TaskStatus,
   WeekData,
   WeekTask,
@@ -76,6 +81,8 @@ type ApiTask = {
   is_priority: boolean;
   order: number;
   start_day: number | null;
+  calendar_export_enabled: boolean;
+  calendar_export_bucket: TaskCalendarExportBucket | null;
   carried_from_task_id: string | null;
   statuses: Record<string, string>;
 };
@@ -99,6 +106,7 @@ type ApiCalendarConnection = {
   external_account_id: string;
   account_label: string | null;
   provider_account_label: string | null;
+  color: string | null;
   last_synced_at: string | null;
   last_error: string | null;
   token_expires_at: string | null;
@@ -135,6 +143,8 @@ type ApiCalendarEvent = {
   source_timezone: string | null;
   is_all_day: boolean;
   status: CalendarEvent["status"];
+  planner_link: ApiCalendarPlannerLink | null;
+  suggested_target_type: PlannerLinkTargetKind;
 };
 
 type ApiCalendarEventsRange = {
@@ -143,9 +153,28 @@ type ApiCalendarEventsRange = {
   events: ApiCalendarEvent[];
 };
 
+type ApiCalendarPlannerLink = {
+  id: string;
+  link_mode: CalendarPlannerLink["linkMode"];
+  open_path: string;
+  target_id: string;
+  target_kind: CalendarPlannerLink["targetKind"];
+};
+
+type ApiCalendarEventImportResult = {
+  planner_link: ApiCalendarPlannerLink;
+  status: CalendarEventImportResult["status"];
+};
+
 type ApiGoogleAuthSession = {
   authorize_url: string;
   state_expires_in: number;
+};
+
+type ApiCalendarTaskExportFeed = {
+  bucket: TaskCalendarExportBucket;
+  feed_path: string;
+  task_count: number;
 };
 
 export type WeekEntryMeta = {
@@ -203,6 +232,8 @@ export function mapApiTaskToWeekTask(task: ApiTask, weekStartDate: string): Week
     ti: task.time_planned ?? 0,
     fa: task.time_actual ?? 0,
     isPriority: task.is_priority,
+    calendarExportEnabled: task.calendar_export_enabled,
+    calendarExportBucket: task.calendar_export_bucket,
     startDayKey: dayKeys[startIndex] ?? weekStartDate,
     statusTrail,
     carriedFromTaskId: task.carried_from_task_id,
@@ -294,6 +325,7 @@ export function mapApiCalendarConnection(entry: ApiCalendarConnection): Calendar
     externalAccountId: entry.external_account_id,
     accountLabel: entry.account_label,
     providerAccountLabel: entry.provider_account_label,
+    color: entry.color,
     lastSyncedAt: entry.last_synced_at,
     lastError: entry.last_error,
     tokenExpiresAt: entry.token_expires_at,
@@ -332,6 +364,25 @@ export function mapApiCalendarEvent(entry: ApiCalendarEvent): CalendarEvent {
     sourceTimezone: entry.source_timezone,
     isAllDay: entry.is_all_day,
     status: entry.status,
+    plannerLink: entry.planner_link ? mapApiCalendarPlannerLink(entry.planner_link) : null,
+    suggestedTargetType: entry.suggested_target_type,
+  };
+}
+
+export function mapApiCalendarPlannerLink(entry: ApiCalendarPlannerLink): CalendarPlannerLink {
+  return {
+    id: entry.id,
+    linkMode: entry.link_mode,
+    openPath: entry.open_path,
+    targetId: entry.target_id,
+    targetKind: entry.target_kind,
+  };
+}
+
+export function mapApiCalendarEventImportResult(entry: ApiCalendarEventImportResult): CalendarEventImportResult {
+  return {
+    plannerLink: mapApiCalendarPlannerLink(entry.planner_link),
+    status: entry.status,
   };
 }
 
@@ -343,10 +394,20 @@ export function mapApiCalendarEventsRange(entry: ApiCalendarEventsRange): Calend
   };
 }
 
+export function mapApiCalendarTaskExportFeed(entry: ApiCalendarTaskExportFeed): CalendarTaskExportFeed {
+  return {
+    bucket: entry.bucket,
+    feedPath: entry.feed_path,
+    taskCount: entry.task_count,
+  };
+}
+
 export type {
   ApiCalendarConnection,
   ApiCalendarEvent,
+  ApiCalendarEventImportResult,
   ApiCalendarEventsRange,
+  ApiCalendarTaskExportFeed,
   ApiGoogleCalendarOptions,
   ApiGoogleAuthSession,
   ApiHabit,

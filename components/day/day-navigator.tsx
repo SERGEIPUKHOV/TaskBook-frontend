@@ -4,7 +4,7 @@ import Link from "next/link";
 import { isSameDay, startOfDay } from "date-fns";
 
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icons";
-import { formatLongDayLabel, getAdjacentDay, getDayReference } from "@/lib/dates";
+import { formatLongDayLabelWithoutYear, getAdjacentDay, getDayReference } from "@/lib/dates";
 
 type DayNavigatorProps = {
   date: Date;
@@ -29,7 +29,7 @@ export function DayNavigator({ date }: DayNavigatorProps) {
 
       <div className="min-w-0 flex-1 text-center">
         <div className="text-xs uppercase tracking-[0.22em] text-muted">Дневной разворот</div>
-        <h1 className="mt-1 text-xl font-semibold text-ink sm:text-2xl">{formatLongDayLabel(date)}</h1>
+        <h1 className="mt-1 text-xl font-semibold text-ink sm:text-2xl">{formatLongDayLabelWithoutYear(date)}</h1>
         {!isCurrentDay ? (
           <Link
             className="mt-1 inline-flex text-sm font-medium text-accent transition-colors hover:text-ink"

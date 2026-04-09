@@ -2,11 +2,12 @@
 
 ## Назначение
 Компоненты профиля пользователя.
-Модуль показывает данные аккаунта и покрывает password change, logout и delete-account flow.
+Модуль показывает данные аккаунта и покрывает password change, calendar integrations, logout и delete-account flow.
 
 ## Ответственность
 - `profile-screen.tsx` загружает и рендерит профиль текущего пользователя.
 - Синхронизирует profile snapshot через `useAuthStore`.
+- Встраивает UI календарных интеграций, task ICS export links и account-level connection actions.
 - Выполняет password change и delete-account запросы через `@/lib/api`.
 - Управляет локальным confirmation flow для опасных действий и logout UX.
 
@@ -20,10 +21,12 @@
 | Файл | Роль |
 |---|---|
 | `profile-screen.tsx` | Экран профиля, смена пароля, logout и удаление аккаунта |
+| `profile-calendar-integrations.tsx` | UI управления Google/Apple connections, task export feeds и calendar settings |
 
 ## Зависимости
 - `@/store/auth-store`
 - `@/lib/api`, `@/lib/auth-types`, `@/lib/auth-validation`, `@/lib/utils`
+- `@/store/app-store`, `@/lib/planner-types`
 - `@/components/auth/auth-fields`
 - `next/navigation`
 - `date-fns`

@@ -2,10 +2,14 @@ import type { StateCreator } from "zustand";
 
 import type { WeekEntryMeta } from "@/lib/planner-api";
 import type {
+  CalendarBulkImportSummary,
   CalendarConnection,
-  GoogleCalendarOptionsState,
+  CalendarEventImportPayload,
+  CalendarEventImportResult,
   CalendarRangeData,
+  CalendarTaskExportFeed,
   DailyState,
+  GoogleCalendarOptionsState,
   MetricName,
   MonthData,
   WeekData,
@@ -23,7 +27,7 @@ export type HabitLoadState = {
   status: HabitLoadStatus;
 };
 
-export type TaskField = "title" | "ti" | "fa" | "isPriority";
+export type TaskField = "title" | "ti" | "fa" | "isPriority" | "calendarExportEnabled" | "calendarExportBucket";
 
 export type DailyStateEntry = {
   anxiety: number;
@@ -71,10 +75,13 @@ export type DaysSlice = {
 export type CalendarSlice = {
   calendarConnections: CalendarConnection[];
   calendarConnectionsStatus: LoadStatus;
+  importSuggestionsEnabled: boolean;
   googleCalendarOptions: GoogleCalendarOptionsState["options"];
   googleCalendarOptionsStatus: LoadStatus;
   googleCalendarConnected: boolean;
   googleCalendarAccountLabel: string | null;
+  taskExportFeeds: CalendarTaskExportFeed[];
+  taskExportFeedsStatus: LoadStatus;
   calendarRangeLoadStates: Record<string, LoadStatus>;
   calendarRanges: Record<string, CalendarRangeData>;
   connectAppleCalendar: (icsUrl: string, accountLabel?: string) => Promise<CalendarConnection>;
@@ -83,10 +90,17 @@ export type CalendarSlice = {
   ensureCalendarRange: (dateFrom: string, dateTo: string) => Promise<void>;
   fetchCalendarConnections: (force?: boolean) => Promise<void>;
   fetchGoogleCalendarOptions: (force?: boolean) => Promise<void>;
+  fetchTaskExportFeeds: (force?: boolean) => Promise<void>;
+  importCalendarEventToPlanner: (eventId: string, payload: CalendarEventImportPayload) => Promise<CalendarEventImportResult>;
+  bulkImportCalendarEventsToPlanner: (
+    eventIds: Array<{ eventId: string; payload: CalendarEventImportPayload }>,
+  ) => Promise<CalendarBulkImportSummary>;
   saveGoogleCalendarSelections: (calendarIds: string[]) => Promise<void>;
   startGoogleCalendarConnect: (returnTo: string) => Promise<string>;
   syncCalendarConnection: (connectionId: string) => Promise<void>;
   syncAllGoogleCalendars: () => Promise<void>;
+  toggleImportSuggestions: () => void;
+  updateConnectionColor: (connectionId: string, color: string) => Promise<void>;
 };
 
 export type HabitsSlice = {
@@ -113,7 +127,7 @@ export type TasksSlice = {
   deleteTask: (key: string, taskId: string) => void;
   moveTask: (key: string, activeId: string, targetId: string) => void;
   setTaskStartDay: (key: string, taskId: string, dayKey: string) => void;
-  updateTask: (key: string, taskId: string, field: TaskField, value: string | number | boolean) => void;
+  updateTask: (key: string, taskId: string, field: TaskField, value: string | number | boolean | null) => void;
 };
 
 export type AppStore = StoreMeta & MonthsSlice & DaysSlice & HabitsSlice & WeeksSlice & TasksSlice & CalendarSlice;
