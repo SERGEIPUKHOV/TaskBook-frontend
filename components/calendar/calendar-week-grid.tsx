@@ -509,14 +509,9 @@ export function CalendarWeekGrid({
                             "w-full truncate rounded border px-1.5 py-0.5 text-left text-[11px] font-medium transition duration-150 cursor-pointer hover:brightness-95",
                             isCalendarEventImportable(event) &&
                               !dismissedImportIds.includes(event.id) &&
-                              "border-l-2",
+                              "importable-glow",
                           )}
-                          style={{
-                            ...eventStyle(resolved.color, resolved.provider),
-                            ...(isCalendarEventImportable(event) && !dismissedImportIds.includes(event.id)
-                              ? { borderLeftColor: "rgb(var(--accent) / 0.6)" }
-                              : {}),
-                          }}
+                          style={eventStyle(resolved.color, resolved.provider)}
                           title={event.title}
                           type="button"
                           onClick={() => setSelectedEvent(event)}
@@ -582,13 +577,10 @@ export function CalendarWeekGrid({
                             "absolute overflow-hidden rounded border px-1 py-0.5 text-left text-[11px] leading-tight shadow-sm transition duration-150 cursor-pointer hover:brightness-95",
                             isCalendarEventImportable(event) &&
                               !dismissedImportIds.includes(event.id) &&
-                              "border-l-2",
+                              "importable-glow",
                           )}
                           style={{
                             ...eventStyle(resolved.color, resolved.provider),
-                            ...(isCalendarEventImportable(event) && !dismissedImportIds.includes(event.id)
-                              ? { borderLeftColor: "rgb(var(--accent) / 0.6)" }
-                              : {}),
                             top: getEventTop(event.startsAt, activeHours),
                             height: getEventHeight(event.startsAt, event.endsAt, activeHours),
                             left: `calc(${colLeft}% + 2px)`,

@@ -73,11 +73,12 @@ export function CalendarBulkImportModal({
     >
       <div
         aria-modal="true"
-        className="paper-panel w-full max-w-2xl overflow-y-auto rounded-[32px] p-6"
+        className="paper-panel flex w-full max-w-2xl flex-col rounded-[32px]"
+        style={{ maxHeight: "85vh" }}
         role="dialog"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex shrink-0 items-start justify-between gap-3 px-6 pb-4 pt-6">
           <div>
             <div className="text-base font-semibold leading-snug text-ink">Добавить события в план</div>
             <div className="mt-1 text-sm text-muted">
@@ -94,7 +95,8 @@ export function CalendarBulkImportModal({
           </button>
         </div>
 
-        <div className="mt-4 space-y-2">
+        <div className="flex-1 overflow-y-auto px-6">
+        <div className="space-y-2 pb-2">
           {rows.map((row) => (
             <div
               key={row.event.id}
@@ -144,10 +146,12 @@ export function CalendarBulkImportModal({
             </div>
           ))}
         </div>
+        </div>
 
-        {error ? <div className="mt-4 text-sm text-danger">{error}</div> : null}
+        <div className="shrink-0 px-6 pb-6 pt-4">
+        {error ? <div className="mb-3 text-sm text-danger">{error}</div> : null}
 
-        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="text-sm text-muted">
             {checkedCount > 0 ? `Будет добавлено: ${checkedCount}` : "Выберите хотя бы одно событие."}
           </div>
@@ -170,6 +174,7 @@ export function CalendarBulkImportModal({
               {isSubmitting ? "Добавляем..." : `Добавить (${checkedCount})`}
             </button>
           </div>
+        </div>
         </div>
       </div>
     </div>
