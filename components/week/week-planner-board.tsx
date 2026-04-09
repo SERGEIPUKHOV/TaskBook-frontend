@@ -730,65 +730,8 @@ export function WeekPlannerBoard({
               </div>
               {/* BLOCK-END: WEEK_BOARD_HEADER */}
 
-              {/* States section */}
-              <div className="relative z-10 border-b border-line/70 bg-canvas/80 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-                Состояние
-              </div>
-              {stateMetrics.map(({ key, label, icon }) => (
-                <StateRow
-                  key={key}
-                  dayKeys={dayKeys}
-                  icon={icon}
-                  metricKey={key}
-                  label={label}
-                  months={months}
-                />
-              ))}
-
-              <div className="relative z-10 border-b border-line/70 bg-canvas/80 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-                Привычки
-              </div>
-
-              {habitLoadStatus === "error" && typeof habits === "undefined" ? (
-                <div className="relative z-10 px-4 py-3 text-sm text-muted">
-                  Не удалось загрузить привычки.
-                  <button
-                    className="ml-1 text-accent transition-colors hover:text-ink"
-                    onClick={() => void fetchMonthHabits(monthYear, monthNumber)}
-                    type="button"
-                  >
-                    Повторить →
-                  </button>
-                </div>
-              ) : null}
-
-              {(habitLoadStatus === "idle" || habitLoadStatus === "loading") && typeof habits === "undefined" ? (
-                <HabitSkeletonRows count={skeletonRowCount} />
-              ) : null}
-
-              {Array.isArray(habits) && habits.length === 0 ? (
-                <div className="relative z-10 px-4 py-4 text-sm text-muted">
-                  Привычки не заданы.
-                  <Link className="ml-1 text-accent" href={`/month/${monthYear}/${monthNumber}`}>
-                    Перейти к месяцу
-                  </Link>
-                </div>
-              ) : null}
-
-              {Array.isArray(habits)
-                ? habits.map((habit) => (
-                    <HabitRow
-                      key={habit.id}
-                      habitId={habit.id}
-                      habitLogs={habitLogs?.[habit.id] ?? []}
-                      habitName={habit.name}
-                      monthKey={monthKey}
-                      weekDayKeys={dayKeys}
-                    />
-                  ))
-                : null}
-
-              <div className="relative z-10 h-px bg-line" />
+              {/* HIDDEN: States section — temporarily hidden */}
+              {/* HIDDEN: Habits section — temporarily hidden */}
               {/* BLOCK-START: WEEK_BOARD_TASK_GRID */}
               {/* Description: Habit rows and task rows rendered in the weekly grid with optimistic interactions. */}
               <div className="relative z-10 border-y border-line/70 bg-canvas/80 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
