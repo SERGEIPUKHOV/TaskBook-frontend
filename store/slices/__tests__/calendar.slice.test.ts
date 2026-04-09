@@ -90,16 +90,16 @@ describe("createCalendarSlice", () => {
     expect(store.getState().calendarConnectionsStatus).toBe("ready");
   });
 
-  it("toggles persisted import suggestions flag in slice state", () => {
+  it("dismisses import events without duplicating ids", () => {
     const store = createStore();
 
-    expect(store.getState().importSuggestionsEnabled).toBe(true);
+    expect(store.getState().dismissedImportIds).toEqual([]);
 
-    store.getState().toggleImportSuggestions();
-    expect(store.getState().importSuggestionsEnabled).toBe(false);
+    store.getState().dismissImportEvent("event-1");
+    expect(store.getState().dismissedImportIds).toEqual(["event-1"]);
 
-    store.getState().toggleImportSuggestions();
-    expect(store.getState().importSuggestionsEnabled).toBe(true);
+    store.getState().dismissImportEvent("event-1");
+    expect(store.getState().dismissedImportIds).toEqual(["event-1"]);
   });
 
   it("loads a calendar range once and stores mapped events", async () => {

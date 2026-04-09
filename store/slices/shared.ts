@@ -75,7 +75,7 @@ export type DaysSlice = {
 export type CalendarSlice = {
   calendarConnections: CalendarConnection[];
   calendarConnectionsStatus: LoadStatus;
-  importSuggestionsEnabled: boolean;
+  dismissedImportIds: string[];
   googleCalendarOptions: GoogleCalendarOptionsState["options"];
   googleCalendarOptionsStatus: LoadStatus;
   googleCalendarConnected: boolean;
@@ -85,6 +85,7 @@ export type CalendarSlice = {
   calendarRangeLoadStates: Record<string, LoadStatus>;
   calendarRanges: Record<string, CalendarRangeData>;
   connectAppleCalendar: (icsUrl: string, accountLabel?: string) => Promise<CalendarConnection>;
+  dismissImportEvent: (eventId: string) => void;
   disconnectGoogleCalendarAccount: () => Promise<void>;
   deleteCalendarConnection: (connectionId: string) => Promise<void>;
   ensureCalendarRange: (dateFrom: string, dateTo: string) => Promise<void>;
@@ -99,7 +100,6 @@ export type CalendarSlice = {
   startGoogleCalendarConnect: (returnTo: string) => Promise<string>;
   syncCalendarConnection: (connectionId: string) => Promise<void>;
   syncAllGoogleCalendars: () => Promise<void>;
-  toggleImportSuggestions: () => void;
   updateConnectionColor: (connectionId: string, color: string) => Promise<void>;
 };
 

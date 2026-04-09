@@ -2,7 +2,6 @@
 
 import {
   addDays,
-  differenceInCalendarDays,
   format,
   getHours,
   getISOWeek,
@@ -21,7 +20,6 @@ import {
   getCalendarImportBlockedReason,
   isCalendarEventImportable,
 } from "@/components/calendar/calendar-import-helpers";
-import { CheckIcon, PlusIcon } from "@/components/ui/icons";
 import { useAppStore } from "@/store/app-store";
 import type {
   CalendarConnection,
@@ -247,7 +245,6 @@ type CalendarWeekGridProps = {
   connections: CalendarConnection[];
   events: CalendarEvent[];
   isLoading: boolean;
-  showImportSuggestions: boolean;
   weekStart: Date;
 };
 
@@ -270,10 +267,11 @@ export function CalendarWeekGrid({
   connections,
   events,
   isLoading,
-  showImportSuggestions,
   weekStart,
 }: CalendarWeekGridProps) {
   const router = useRouter();
+  const dismissedImportIds = useAppStore((state) => state.dismissedImportIds);
+  const dismissImportEvent = useAppStore((state) => state.dismissImportEvent);
   const importCalendarEventToPlanner = useAppStore((state) => state.importCalendarEventToPlanner);
   const scrollRef = useRef<HTMLDivElement>(null);
   const activeHours = useMemo(() => getActiveHours(events), [events]);
@@ -378,6 +376,9 @@ export function CalendarWeekGrid({
     ? (colorMap.get(selectedEvent.connectionId)?.color ?? FALLBACK_COLOR)
     : FALLBACK_COLOR;
   const importBlockedReason = selectedEvent ? getCalendarImportBlockedReason(selectedEvent) : null;
+  const selectedEventIsImportable = selectedEvent
+    ? isCalendarEventImportable(selectedEvent) && !dismissedImportIds.includes(selectedEvent.id)
+    : false;
 
   async function handleImportSubmit() {
     if (!selectedEvent) {
@@ -505,23 +506,21 @@ export function CalendarWeekGrid({
                         <button
                           key={event.id}
                           className={cn(
-                            "relative w-full truncate rounded border px-1.5 py-0.5 text-left text-[11px] font-medium transition duration-150 cursor-pointer hover:brightness-95",
-                            showImportSuggestions && "pr-5",
+                            "w-full truncate rounded border px-1.5 py-0.5 text-left text-[11px] font-medium transition duration-150 cursor-pointer hover:brightness-95",
+                            isCalendarEventImportable(event) &&
+                              !dismissedImportIds.includes(event.id) &&
+                              "border-l-2",
                           )}
-                          style={eventStyle(resolved.color, resolved.provider)}
+                          style={{
+                            ...eventStyle(resolved.color, resolved.provider),
+                            ...(isCalendarEventImportable(event) && !dismissedImportIds.includes(event.id)
+                              ? { borderLeftColor: "rgb(var(--accent) / 0.6)" }
+                              : {}),
+                          }}
                           title={event.title}
                           type="button"
                           onClick={() => setSelectedEvent(event)}
                         >
-                          {showImportSuggestions ? (
-                            <span className="pointer-events-none absolute right-1 top-1">
-                              {event.plannerLink ? (
-                                <CheckIcon className="h-3 w-3 text-muted/70" />
-                              ) : isCalendarEventImportable(event) ? (
-                                <PlusIcon className="h-3 w-3 text-accent/80" />
-                              ) : null}
-                            </span>
-                          ) : null}
                           {event.title}
                         </button>
                       );
@@ -580,11 +579,16 @@ export function CalendarWeekGrid({
                         <button
                           key={event.id}
                           className={cn(
-                            "absolute relative overflow-hidden rounded border px-1 py-0.5 text-left text-[11px] leading-tight shadow-sm transition duration-150 cursor-pointer hover:brightness-95",
-                            showImportSuggestions && "pr-5",
+                            "absolute overflow-hidden rounded border px-1 py-0.5 text-left text-[11px] leading-tight shadow-sm transition duration-150 cursor-pointer hover:brightness-95",
+                            isCalendarEventImportable(event) &&
+                              !dismissedImportIds.includes(event.id) &&
+                              "border-l-2",
                           )}
                           style={{
                             ...eventStyle(resolved.color, resolved.provider),
+                            ...(isCalendarEventImportable(event) && !dismissedImportIds.includes(event.id)
+                              ? { borderLeftColor: "rgb(var(--accent) / 0.6)" }
+                              : {}),
                             top: getEventTop(event.startsAt, activeHours),
                             height: getEventHeight(event.startsAt, event.endsAt, activeHours),
                             left: `calc(${colLeft}% + 2px)`,
@@ -594,15 +598,6 @@ export function CalendarWeekGrid({
                           type="button"
                           onClick={() => setSelectedEvent(event)}
                         >
-                          {showImportSuggestions ? (
-                            <span className="pointer-events-none absolute right-1 top-1 z-10">
-                              {event.plannerLink ? (
-                                <CheckIcon className="h-3 w-3 text-muted/70" />
-                              ) : isCalendarEventImportable(event) ? (
-                                <PlusIcon className="h-3 w-3 text-accent/80" />
-                              ) : null}
-                            </span>
-                          ) : null}
                           <div className={colTotal > 1 ? "line-clamp-2 font-medium" : "truncate font-medium"}>{event.title}</div>
                           <div className="truncate opacity-70">{format(parseISO(event.startsAt), "HH:mm")}</div>
                         </button>
@@ -674,16 +669,30 @@ export function CalendarWeekGrid({
               ) : importBlockedReason ? (
                 <div className="max-w-full text-right text-sm text-muted">{importBlockedReason}</div>
               ) : (
-                <button
-                  className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
-                  type="button"
-                  onClick={() => {
-                    setImportError(null);
-                    setIsImportDialogOpen(true);
-                  }}
-                >
-                  Добавить в план
-                </button>
+                <>
+                  {selectedEventIsImportable ? (
+                    <button
+                      className="rounded-xl border border-line px-4 py-2 text-sm font-medium text-muted transition-colors hover:text-ink"
+                      type="button"
+                      onClick={() => {
+                        dismissImportEvent(selectedEvent.id);
+                        setSelectedEvent(null);
+                      }}
+                    >
+                      Не переносить
+                    </button>
+                  ) : null}
+                  <button
+                    className="rounded-xl bg-accent px-4 py-2 text-sm font-medium text-white transition-opacity hover:opacity-90"
+                    type="button"
+                    onClick={() => {
+                      setImportError(null);
+                      setIsImportDialogOpen(true);
+                    }}
+                  >
+                    Добавить в план
+                  </button>
+                </>
               )}
             </div>
           </div>

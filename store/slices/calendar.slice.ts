@@ -39,11 +39,11 @@ function upsertConnection(
 }
 
 // BLOCK-START: CALENDAR_SLICE_MODULE
-// Description: Calendar connection management, persisted suggestion preferences, range loading, and event-to-planner import orchestration for the planner store.
+// Description: Calendar connection management, persisted per-event dismiss state, range loading, and event-to-planner import orchestration for the planner store.
 export const createCalendarSlice: AppSliceCreator<CalendarSlice> = (set, get) => ({
   calendarConnections: [],
   calendarConnectionsStatus: "idle",
-  importSuggestionsEnabled: true,
+  dismissedImportIds: [],
   googleCalendarOptions: [],
   googleCalendarOptionsStatus: "idle",
   googleCalendarConnected: false,
@@ -52,6 +52,14 @@ export const createCalendarSlice: AppSliceCreator<CalendarSlice> = (set, get) =>
   taskExportFeedsStatus: "idle",
   calendarRangeLoadStates: {},
   calendarRanges: {},
+
+  dismissImportEvent: (eventId) => {
+    set((state) => ({
+      dismissedImportIds: state.dismissedImportIds.includes(eventId)
+        ? state.dismissedImportIds
+        : [...state.dismissedImportIds, eventId],
+    }));
+  },
 
   fetchCalendarConnections: async (force = false) => {
     const currentStatus = get().calendarConnectionsStatus;
@@ -325,8 +333,5 @@ export const createCalendarSlice: AppSliceCreator<CalendarSlice> = (set, get) =>
     }
   },
 
-  toggleImportSuggestions: () => {
-    set((state) => ({ importSuggestionsEnabled: !state.importSuggestionsEnabled }));
-  },
 });
 // BLOCK-END: CALENDAR_SLICE_MODULE

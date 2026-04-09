@@ -12,7 +12,7 @@ import { createTasksSlice } from "@/store/slices/tasks.slice";
 import { createWeeksSlice } from "@/store/slices/weeks.slice";
 
 // BLOCK-START: APP_STORE_MODULE
-// Description: Root planner store that composes slice sinks and persists selected UI preferences without caching server data.
+// Description: Root planner store that composes slice sinks and persists selected calendar triage preferences without caching server data.
 export const useAppStore = create<AppStore>()(
   persist(
     (...args) => ({
@@ -39,7 +39,7 @@ export const useAppStore = create<AppStore>()(
     {
       name: "taskbook-app-store",
       partialize: (state) => ({
-        importSuggestionsEnabled: state.importSuggestionsEnabled,
+        dismissedImportIds: state.dismissedImportIds,
       }),
     },
   ),

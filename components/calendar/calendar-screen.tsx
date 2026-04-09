@@ -9,9 +9,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CalendarBulkImportModal } from "@/components/calendar/calendar-bulk-import-modal";
 import { isCalendarEventImportable } from "@/components/calendar/calendar-import-helpers";
 import { CalendarWeekGrid } from "@/components/calendar/calendar-week-grid";
-import { CalendarPlusIcon, PlusCircleIcon } from "@/components/ui/icons";
+import { CalendarPlusIcon } from "@/components/ui/icons";
 import { formatIsoDate } from "@/lib/dates";
-import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
 import { getCalendarRangeKey } from "@/store/slices/shared";
 
@@ -31,10 +30,9 @@ function parseWeekStartParam(value: string | null): Date | null {
 export function CalendarScreen() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const dismissedImportIds = useAppStore((state) => state.dismissedImportIds);
   const ensureCalendarRange = useAppStore((state) => state.ensureCalendarRange);
   const fetchCalendarConnections = useAppStore((state) => state.fetchCalendarConnections);
-  const importSuggestionsEnabled = useAppStore((state) => state.importSuggestionsEnabled);
-  const toggleImportSuggestions = useAppStore((state) => state.toggleImportSuggestions);
   const calendarConnections = useAppStore((state) => state.calendarConnections);
   const connectionsStatus = useAppStore((state) => state.calendarConnectionsStatus);
   const currentWeekStart = useMemo(() => startOfISOWeek(new Date()), []);
@@ -61,8 +59,11 @@ export function CalendarScreen() {
   const rangeKey = getCalendarRangeKey(dateFrom, dateTo);
   const weekEvents = useAppStore((state) => state.calendarRanges[rangeKey]?.events ?? []);
   const importableEvents = useMemo(
-    () => weekEvents.filter((event) => isCalendarEventImportable(event)),
-    [weekEvents],
+    () =>
+      weekEvents.filter(
+        (event) => isCalendarEventImportable(event) && !dismissedImportIds.includes(event.id),
+      ),
+    [dismissedImportIds, weekEvents],
   );
   const rangeStatus = useAppStore((state) => state.calendarRangeLoadStates[rangeKey] ?? "idle");
 
@@ -140,29 +141,6 @@ export function CalendarScreen() {
               Сегодня
             </button>
           ) : null}
-          <button
-            className={cn(
-              "flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors",
-              importSuggestionsEnabled
-                ? "border-accent/40 bg-accent/10 text-accent"
-                : "border-line bg-paper text-muted hover:border-accent hover:text-accent",
-            )}
-            onClick={toggleImportSuggestions}
-            type="button"
-          >
-            <PlusCircleIcon className="h-3.5 w-3.5" />
-            Предложения
-          </button>
-          {importSuggestionsEnabled && importableEvents.length > 0 ? (
-            <button
-              className="flex items-center gap-1.5 rounded-xl border border-line bg-paper px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:border-accent hover:text-accent"
-              onClick={() => setBulkModalOpen(true)}
-              type="button"
-            >
-              <CalendarPlusIcon className="h-3.5 w-3.5" />
-              В план ({importableEvents.length})
-            </button>
-          ) : null}
         </div>
 
         <button
@@ -186,10 +164,22 @@ export function CalendarScreen() {
           connections={calendarConnections}
           events={weekEvents}
           isLoading={rangeStatus === "loading" && weekEvents.length === 0}
-          showImportSuggestions={importSuggestionsEnabled}
           weekStart={weekStart}
         />
       )}
+
+      {connectionsStatus !== "loading" && calendarConnections.length > 0 && importableEvents.length > 0 ? (
+        <div className="mt-3 flex justify-end px-1">
+          <button
+            className="flex items-center gap-1.5 rounded-full border border-line bg-paper px-4 py-2 text-sm font-medium text-muted transition-colors hover:border-accent hover:text-accent"
+            onClick={() => setBulkModalOpen(true)}
+            type="button"
+          >
+            <CalendarPlusIcon className="h-4 w-4" />
+            В план ({importableEvents.length})
+          </button>
+        </div>
+      ) : null}
 
       {bulkModalOpen ? (
         <CalendarBulkImportModal
