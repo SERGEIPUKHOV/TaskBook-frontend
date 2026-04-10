@@ -102,7 +102,7 @@ function StatusLegend() {
   return (
     <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-muted">
       <div className="flex items-center gap-2">
-        <span className="flex h-4 w-4 items-center justify-center rounded-[4px] border border-success bg-success/10 text-[10px] text-success">
+        <span className="flex h-4 w-4 items-center justify-center rounded-[4px] border border-success-dark bg-success/10 text-[10px] text-success-dark">
           ✓
         </span>
         <span>Выполнено</span>
@@ -219,7 +219,7 @@ function TaskStatusCell({
       <button
         className={cn(
           "flex items-center justify-center rounded-[10px] border text-sm transition-colors",
-          state.status === "done" && "border-success bg-success/10 text-success",
+          state.status === "done" && "border-success-dark bg-success/10 text-success-dark",
           state.status === "moved" && "border-accent bg-accent/10 text-accent",
           state.status === "failed" && "border-danger bg-danger/10 text-danger",
           state.status === "planned" &&

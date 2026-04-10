@@ -26,7 +26,7 @@ function statusLabel(status: TaskStatus | "planned"): string {
 
 function statusClassName(status: TaskStatus | "planned"): string {
   if (status === "done") {
-    return "border-success bg-success/10 text-success";
+    return "border-success-dark bg-success/10 text-success-dark";
   }
   if (status === "moved") {
     return "border-accent bg-accent/10 text-accent";

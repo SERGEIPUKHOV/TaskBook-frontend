@@ -18,6 +18,7 @@ const config: Config = {
         line: "rgb(var(--line) / <alpha-value>)",
         accent: "rgb(var(--accent) / <alpha-value>)",
         success: "rgb(var(--success) / <alpha-value>)",
+        "success-dark": "rgb(var(--success-dark) / <alpha-value>)",
         danger: "rgb(var(--danger) / <alpha-value>)",
         anxiety: "rgb(var(--anxiety) / <alpha-value>)",
         priority: "rgb(var(--priority) / <alpha-value>)",
