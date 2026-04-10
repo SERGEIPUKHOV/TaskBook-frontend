@@ -48,6 +48,7 @@ type ApiHabit = {
   id: string;
   name: string;
   order: number;
+  schedule_days?: number[] | null;
 };
 
 type ApiHabitGrid = {
@@ -145,6 +146,8 @@ type ApiCalendarEvent = {
   status: CalendarEvent["status"];
   planner_link: ApiCalendarPlannerLink | null;
   suggested_target_type: PlannerLinkTargetKind;
+  recurrence?: string[] | null;
+  recurring_event_id?: string | null;
 };
 
 type ApiCalendarEventsRange = {
@@ -251,7 +254,11 @@ export function buildMonthPlanPayload(month: MonthData) {
 }
 
 export function mapMonthBundleToMonthData(year: number, month: number, bundle: ApiMonthBundle): MonthData {
-  const habits: Habit[] = bundle.grid.habits.map((habit) => ({ id: habit.id, name: habit.name }));
+  const habits: Habit[] = bundle.grid.habits.map((habit) => ({
+    id: habit.id,
+    name: habit.name,
+    scheduleDays: habit.schedule_days ?? [],
+  }));
   const habitLogs = Object.fromEntries(
     habits.map((habit) => [
       habit.id,
@@ -366,6 +373,8 @@ export function mapApiCalendarEvent(entry: ApiCalendarEvent): CalendarEvent {
     status: entry.status,
     plannerLink: entry.planner_link ? mapApiCalendarPlannerLink(entry.planner_link) : null,
     suggestedTargetType: entry.suggested_target_type,
+    recurrence: entry.recurrence ?? undefined,
+    recurringEventId: entry.recurring_event_id ?? undefined,
   };
 }
 

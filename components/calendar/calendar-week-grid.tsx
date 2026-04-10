@@ -19,6 +19,7 @@ import {
   getCalendarEventStartDay,
   getCalendarImportBlockedReason,
   isCalendarEventImportable,
+  parseRruleScheduleDays,
 } from "@/components/calendar/calendar-import-helpers";
 import { useAppStore } from "@/store/app-store";
 import type {
@@ -221,6 +222,7 @@ function buildTaskImportPayload(event: CalendarEvent): CalendarEventImportPayloa
 function buildHabitImportPayload(event: CalendarEvent): CalendarEventImportPayload & { targetType: "habit" } {
   const start = parseISO(event.startsAt);
   return {
+    scheduleDays: parseRruleScheduleDays(event.recurrence),
     targetType: "habit",
     title: event.title,
     year: start.getFullYear(),
@@ -417,6 +419,7 @@ export function CalendarWeekGrid({
         title: habitImport.title,
         year: parsedMonth.year,
         month: parsedMonth.month,
+        scheduleDays: buildHabitImportPayload(selectedEvent).scheduleDays,
       };
     }
 

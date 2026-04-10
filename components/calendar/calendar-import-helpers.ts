@@ -12,6 +12,16 @@ export type CalendarBulkImportRow = {
   targetType: PlannerLinkTargetKind;
 };
 
+const RRULE_DAY_TO_ISO_DAY: Record<string, number> = {
+  FR: 5,
+  MO: 1,
+  SA: 6,
+  SU: 7,
+  TH: 4,
+  TU: 2,
+  WE: 3,
+};
+
 export function estimateCalendarEventTimePlanned(event: CalendarEvent): number | null {
   if (event.isAllDay) {
     return null;
@@ -73,6 +83,31 @@ export function buildCalendarBulkImportRows(events: CalendarEvent[]): CalendarBu
     }));
 }
 
+export function parseRruleScheduleDays(recurrence?: string[]): number[] {
+  if (!recurrence?.length) {
+    return [];
+  }
+
+  const rrule = recurrence.find((item) => item.startsWith("RRULE:"));
+  if (!rrule) {
+    return [];
+  }
+
+  const byday = /BYDAY=([^;]+)/.exec(rrule)?.[1];
+  if (!byday) {
+    return [];
+  }
+
+  return Array.from(
+    new Set(
+      byday
+        .split(",")
+        .map((item) => RRULE_DAY_TO_ISO_DAY[item])
+        .filter((value): value is number => typeof value === "number"),
+    ),
+  ).sort((left, right) => left - right);
+}
+
 export function buildCalendarEventImportPayload(
   event: CalendarEvent,
   targetType: PlannerLinkTargetKind,
@@ -83,6 +118,7 @@ export function buildCalendarEventImportPayload(
     const start = parseISO(event.startsAt);
     return {
       month: start.getMonth() + 1,
+      scheduleDays: parseRruleScheduleDays(event.recurrence),
       targetType: "habit",
       title: event.title,
       year: start.getFullYear(),

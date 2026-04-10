@@ -5,6 +5,7 @@ import {
   buildCalendarEventImportPayload,
   getCalendarImportBlockedReason,
   isCalendarEventImportable,
+  parseRruleScheduleDays,
 } from "@/components/calendar/calendar-import-helpers";
 import type { CalendarEvent } from "@/lib/planner-types";
 
@@ -58,11 +59,42 @@ describe("calendar import helpers", () => {
     );
   });
 
+  it("deduplicates recurring events of the same series in bulk rows", () => {
+    const rows = buildCalendarBulkImportRows([
+      buildEvent({
+        externalEventId: "event-1",
+        id: "event-1",
+        recurringEventId: "series-1",
+        title: "Weekly Piano",
+      }),
+      buildEvent({
+        externalEventId: "event-2",
+        id: "event-2",
+        recurringEventId: "series-1",
+        title: "Weekly Piano",
+      }),
+      buildEvent({
+        externalEventId: "event-3",
+        id: "event-3",
+        recurringEventId: "series-2",
+        title: "Weekly Sync",
+      }),
+      buildEvent({
+        externalEventId: "event-4",
+        id: "event-4",
+        title: "One-off Review",
+      }),
+    ]);
+
+    expect(rows.map((row) => row.event.id)).toEqual(["event-1", "event-3", "event-4"]);
+  });
+
   it("builds habit payloads from event month and task payloads from visible week", () => {
     expect(
       buildCalendarEventImportPayload(buildEvent({ suggestedTargetType: "habit" }), "habit", 2026, 15),
     ).toEqual({
       month: 4,
+      scheduleDays: [],
       targetType: "habit",
       title: "Review",
       year: 2026,
@@ -77,5 +109,11 @@ describe("calendar import helpers", () => {
       week: 15,
       year: 2026,
     });
+  });
+
+  it("parses BYDAY recurrence into ISO weekday numbers", () => {
+    expect(parseRruleScheduleDays(["RRULE:FREQ=WEEKLY;BYDAY=MO,WE,FR"])).toEqual([1, 3, 5]);
+    expect(parseRruleScheduleDays(["RRULE:FREQ=MONTHLY"])).toEqual([]);
+    expect(parseRruleScheduleDays(undefined)).toEqual([]);
   });
 });

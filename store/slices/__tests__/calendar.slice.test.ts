@@ -38,6 +38,7 @@ function createStore() {
     fetchMonthHabits: noopPromise,
     toggleHabitDay: noop,
     updateHabitName: noop,
+    updateHabitSchedule: noop,
     weekEntryMeta: {},
     weekLoadStates: {},
     weeks: {},
@@ -212,6 +213,7 @@ describe("createCalendarSlice", () => {
     expect(apiMock.post).toHaveBeenCalledWith("/calendar/events/event-1/import", {
       is_priority: true,
       month: undefined,
+      schedule_days: undefined,
       start_day: 2,
       target_type: "task",
       time_planned: 2,

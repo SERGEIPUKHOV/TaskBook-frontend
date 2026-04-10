@@ -244,6 +244,7 @@ function HabitCell({
   isFuture,
   isLastDay,
   monthKey,
+  isScheduledDay,
 }: {
   dayKey: string;
   habitId: string;
@@ -251,25 +252,28 @@ function HabitCell({
   isFuture: boolean;
   isLastDay: boolean;
   monthKey: string;
+  isScheduledDay: boolean;
 }) {
   const toggleHabitDay = useAppStore((state) => state.toggleHabitDay);
+  const isDisabled = !isScheduledDay || isFuture;
+  const showCompleted = isScheduledDay && isCompleted;
 
   return (
     <div className={getDayCellClass(isLastDay, "flex items-start justify-center pt-1")}>
       <button
         className={cn(
           "flex items-center justify-center rounded-[10px] border text-sm transition-colors",
-          isCompleted
+          showCompleted
             ? "border-success bg-success text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]"
             : "border-line bg-paper hover:border-accent hover:bg-canvas",
-          isFuture && "pointer-events-none opacity-35",
+          isDisabled && "pointer-events-none opacity-35",
         )}
-        disabled={isFuture}
+        disabled={isDisabled}
         onClick={() => toggleHabitDay(monthKey, habitId, dayKey)}
         style={{ height: STATUS_BUTTON_SIZE, width: STATUS_BUTTON_SIZE }}
         type="button"
       >
-        {isCompleted ? <span className="text-sm leading-none text-white">■</span> : null}
+        {showCompleted ? <span className="text-sm leading-none text-white">■</span> : null}
       </button>
     </div>
   );
@@ -284,12 +288,14 @@ function HabitRow({
   habitName,
   habitLogs,
   monthKey,
+  scheduleDays,
   weekDayKeys,
 }: {
   habitId: string;
   habitLogs: string[];
   habitName: string;
   monthKey: string;
+  scheduleDays?: number[];
   weekDayKeys: string[];
 }) {
   return (
@@ -298,15 +304,24 @@ function HabitRow({
       style={{ gridTemplateColumns: boardColumns }}
     >
       {weekDayKeys.map((dayKey, dayIndex) => (
-        <HabitCell
-          key={`${habitId}-${dayKey}`}
-          dayKey={dayKey}
-          habitId={habitId}
-          isCompleted={habitLogs.includes(dayKey)}
-          isFuture={isAfter(startOfDay(parseISO(dayKey)), startOfDay(new Date()))}
-          isLastDay={dayIndex === weekDayKeys.length - 1}
-          monthKey={monthKey}
-        />
+        (() => {
+          const dayOfWeek = parseISO(dayKey).getDay();
+          const isoDay = dayOfWeek === 0 ? 7 : dayOfWeek;
+          const isScheduledDay = !scheduleDays?.length || scheduleDays.includes(isoDay);
+
+          return (
+            <HabitCell
+              key={`${habitId}-${dayKey}`}
+              dayKey={dayKey}
+              habitId={habitId}
+              isCompleted={isScheduledDay && habitLogs.includes(dayKey)}
+              isFuture={isAfter(startOfDay(parseISO(dayKey)), startOfDay(new Date()))}
+              isLastDay={dayIndex === weekDayKeys.length - 1}
+              isScheduledDay={isScheduledDay}
+              monthKey={monthKey}
+            />
+          );
+        })()
       ))}
       <div className="flex min-h-10 items-center border-r border-line px-3 py-1.5 text-sm text-ink" title={habitName || "Без названия"}>
         <span className="truncate">{habitName || "Без названия"}</span>

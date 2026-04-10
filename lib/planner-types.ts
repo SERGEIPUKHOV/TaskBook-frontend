@@ -28,6 +28,7 @@ export type DayChartStats = {
 export type Habit = {
   id: string;
   name: string;
+  scheduleDays?: number[];
 };
 
 export type HabitLogMap = Record<string, string[]>;
@@ -89,6 +90,7 @@ export type CalendarEvent = {
   status: "confirmed" | "cancelled";
   plannerLink: CalendarPlannerLink | null;
   suggestedTargetType: PlannerLinkTargetKind;
+  recurrence?: string[];
   recurringEventId?: string;
 };
 
@@ -101,6 +103,7 @@ export type CalendarRangeData = {
 export type CalendarEventImportPayload = {
   isPriority?: boolean;
   month?: number;
+  scheduleDays?: number[];
   startDay?: number;
   targetType: PlannerLinkTargetKind;
   timePlanned?: number | null;

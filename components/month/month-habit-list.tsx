@@ -18,6 +18,27 @@ type PendingDeleteState = {
   habitName: string;
 };
 
+const WEEKDAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"] as const;
+
+function normalizeScheduleDays(days?: number[]): number[] {
+  if (!days?.length) {
+    return [];
+  }
+
+  return Array.from(new Set(days))
+    .filter((day) => day >= 1 && day <= 7)
+    .sort((left, right) => left - right);
+}
+
+function scheduleSubtitle(days?: number[]): string | null {
+  const normalizedDays = normalizeScheduleDays(days);
+  if (!normalizedDays.length) {
+    return null;
+  }
+
+  return normalizedDays.map((day) => WEEKDAY_LABELS[day - 1]).join(", ");
+}
+
 function syncTextareaHeight(element: HTMLTextAreaElement | null) {
   if (!element) {
     return;
@@ -73,10 +94,86 @@ function DeleteDialog({
   );
 }
 
+function HabitScheduleDialog({
+  habit,
+  onClose,
+  onSave,
+}: {
+  habit: Habit;
+  onClose: () => void;
+  onSave: (days: number[]) => void;
+}) {
+  const [selectedDays, setSelectedDays] = useState(() => normalizeScheduleDays(habit.scheduleDays));
+
+  useEffect(() => {
+    setSelectedDays(normalizeScheduleDays(habit.scheduleDays));
+  }, [habit.id, habit.scheduleDays]);
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 px-4 backdrop-blur-sm">
+      <div className="paper-panel w-full max-w-md rounded-[32px] p-6">
+        <div className="text-xs uppercase tracking-[0.2em] text-muted">Расписание привычки</div>
+        <h3 className="mt-3 break-words text-xl font-semibold text-ink">{habit.name || "Без названия"}</h3>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          Выберите дни недели. Если ничего не выбрано, привычка считается ежедневной.
+        </p>
+
+        <div className="mt-5 flex flex-wrap gap-2">
+          {WEEKDAY_LABELS.map((label, index) => {
+            const day = index + 1;
+            const isSelected = selectedDays.includes(day);
+
+            return (
+              <button
+                key={label}
+                className={cn(
+                  "rounded-full border px-3 py-2 text-sm font-medium transition-colors",
+                  isSelected
+                    ? "border-accent bg-accent/10 text-accent"
+                    : "border-line bg-paper text-ink hover:border-accent hover:text-accent",
+                )}
+                onClick={() =>
+                  setSelectedDays((current) =>
+                    current.includes(day)
+                      ? current.filter((item) => item !== day)
+                      : [...current, day].sort((left, right) => left - right),
+                  )
+                }
+                type="button"
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="mt-6 flex items-center justify-end gap-3">
+          <button
+            className="rounded-[20px] border border-line bg-paper px-4 py-3 text-sm font-medium text-muted transition-colors hover:text-ink"
+            onClick={onClose}
+            type="button"
+          >
+            Отмена
+          </button>
+          <button
+            className="rounded-[20px] border border-accent bg-accent/10 px-4 py-3 text-sm font-medium text-accent transition-colors hover:bg-accent/15"
+            onClick={() => onSave(selectedDays)}
+            type="button"
+          >
+            Готово
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 export function MonthHabitList({ habits, monthKey }: MonthHabitListProps) {
   const addHabit = useAppStore((state) => state.addHabit);
   const deleteHabit = useAppStore((state) => state.deleteHabit);
   const updateHabitName = useAppStore((state) => state.updateHabitName);
+  const updateHabitSchedule = useAppStore((state) => state.updateHabitSchedule);
   const newHabitInputRef = useRef<HTMLInputElement | null>(null);
   const inputRefs = useRef<Record<string, HTMLTextAreaElement | null>>({});
   const saveTimersRef = useRef<Record<string, number>>({});
@@ -85,6 +182,7 @@ export function MonthHabitList({ habits, monthKey }: MonthHabitListProps) {
   const [isAdding, setIsAdding] = useState(false);
   const [newHabitName, setNewHabitName] = useState("");
   const [pendingDelete, setPendingDelete] = useState<PendingDeleteState | null>(null);
+  const [scheduleTarget, setScheduleTarget] = useState<Habit | null>(null);
 
   useEffect(() => {
     setDrafts((current) =>
@@ -177,36 +275,49 @@ export function MonthHabitList({ habits, monthKey }: MonthHabitListProps) {
       <section className="rounded-[28px] border border-line bg-canvas/65 p-4">
         <div className="space-y-1.5 border-y border-line/80 py-3">
           {habits.map((habit, index) => (
-            <label key={habit.id} className="grid grid-cols-[20px_minmax(0,1fr)_32px] items-center gap-3">
+            <div key={habit.id} className="grid grid-cols-[20px_minmax(0,1fr)_32px_32px] items-start gap-3">
               <span className="text-sm text-muted">{index + 1}.</span>
-              <textarea
-                ref={(element) => {
-                  inputRefs.current[habit.id] = element;
-                  syncTextareaHeight(element);
-                }}
-                className="min-h-[36px] w-full resize-none overflow-hidden rounded-xl border border-transparent bg-transparent px-2 py-2 text-sm leading-5 text-ink outline-none transition-colors placeholder:text-muted/60 focus:border-accent focus:bg-paper/80"
-                onBlur={() => scheduleSave(habit.id, drafts[habit.id] ?? "")}
-                onChange={(event) => {
-                  setDrafts((current) => ({
-                    ...current,
-                    [habit.id]: event.target.value,
-                  }));
-                  syncTextareaHeight(event.currentTarget);
-                }}
-                onInput={(event) => syncTextareaHeight(event.currentTarget)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    event.currentTarget.blur();
-                  }
-                }}
-                placeholder="Новая привычка..."
-                rows={1}
-                value={drafts[habit.id] ?? ""}
-              />
+              <div className="min-w-0">
+                <textarea
+                  ref={(element) => {
+                    inputRefs.current[habit.id] = element;
+                    syncTextareaHeight(element);
+                  }}
+                  className="min-h-[36px] w-full resize-none overflow-hidden rounded-xl border border-transparent bg-transparent px-2 py-2 text-sm leading-5 text-ink outline-none transition-colors placeholder:text-muted/60 focus:border-accent focus:bg-paper/80"
+                  onBlur={() => scheduleSave(habit.id, drafts[habit.id] ?? "")}
+                  onChange={(event) => {
+                    setDrafts((current) => ({
+                      ...current,
+                      [habit.id]: event.target.value,
+                    }));
+                    syncTextareaHeight(event.currentTarget);
+                  }}
+                  onInput={(event) => syncTextareaHeight(event.currentTarget)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      event.currentTarget.blur();
+                    }
+                  }}
+                  placeholder="Новая привычка..."
+                  rows={1}
+                  value={drafts[habit.id] ?? ""}
+                />
+                {scheduleSubtitle(habit.scheduleDays) ? (
+                  <div className="px-2 pb-1 text-xs text-muted">{scheduleSubtitle(habit.scheduleDays)}</div>
+                ) : null}
+              </div>
+              <button
+                aria-label={`Настроить дни для ${habit.name || "привычки"}`}
+                className="mt-1 flex h-7 w-7 items-center justify-center rounded-full border border-line text-muted transition-colors hover:border-accent hover:text-accent"
+                onClick={() => setScheduleTarget(habit)}
+                type="button"
+              >
+                ⚙
+              </button>
               <button
                 aria-label={`Удалить ${habit.name || "привычку"}`}
-                className="flex h-7 w-7 items-center justify-center rounded-full border border-line text-muted transition-colors hover:border-danger hover:text-danger"
+                className="mt-1 flex h-7 w-7 items-center justify-center rounded-full border border-line text-muted transition-colors hover:border-danger hover:text-danger"
                 onClick={() =>
                   setPendingDelete({
                     countdown: 5,
@@ -218,7 +329,7 @@ export function MonthHabitList({ habits, monthKey }: MonthHabitListProps) {
               >
                 ×
               </button>
-            </label>
+            </div>
           ))}
         </div>
         <form className="mt-3 space-y-2" onSubmit={handleAddHabit}>
@@ -262,6 +373,17 @@ export function MonthHabitList({ habits, monthKey }: MonthHabitListProps) {
             setPendingDelete(null);
           }}
           state={pendingDelete}
+        />
+      ) : null}
+
+      {scheduleTarget ? (
+        <HabitScheduleDialog
+          habit={scheduleTarget}
+          onClose={() => setScheduleTarget(null)}
+          onSave={(days) => {
+            updateHabitSchedule(monthKey, scheduleTarget.id, days);
+            setScheduleTarget(null);
+          }}
         />
       ) : null}
     </>

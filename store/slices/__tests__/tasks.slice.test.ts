@@ -94,6 +94,7 @@ function createStore(initialWeek: WeekData) {
     fetchMonthHabits: noopPromise,
     toggleHabitDay: noop,
     updateHabitName: noop,
+    updateHabitSchedule: noop,
     weekEntryMeta: {},
     weekLoadStates: { [weekKey]: "ready" },
     weeks: { [weekKey]: initialWeek },

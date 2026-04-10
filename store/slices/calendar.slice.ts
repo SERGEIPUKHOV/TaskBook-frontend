@@ -148,6 +148,7 @@ export const createCalendarSlice: AppSliceCreator<CalendarSlice> = (set, get) =>
       await api.post<ApiCalendarEventImportResult>(`/calendar/events/${eventId}/import`, {
         is_priority: payload.isPriority ?? false,
         month: payload.month,
+        schedule_days: payload.scheduleDays,
         start_day: payload.startDay,
         target_type: payload.targetType,
         time_planned: payload.timePlanned ?? null,

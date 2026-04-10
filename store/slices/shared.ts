@@ -111,6 +111,7 @@ export type HabitsSlice = {
   fetchMonthHabits: (year: number, month: number) => Promise<void>;
   toggleHabitDay: (key: string, habitId: string, dayKey: string) => void;
   updateHabitName: (key: string, habitId: string, value: string) => void;
+  updateHabitSchedule: (key: string, habitId: string, days: number[]) => void;
 };
 
 export type WeeksSlice = {

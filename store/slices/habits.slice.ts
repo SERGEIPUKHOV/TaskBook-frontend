@@ -1,8 +1,31 @@
 import { api } from "@/lib/api";
+import type { Habit, MonthData } from "@/lib/planner-types";
 
 import { loadMonthBundle } from "./months.slice";
 import type { AddHabitResult, AppSliceCreator, HabitsSlice } from "./shared";
 import { createHabitLoadState, parseMonthKey, touchSave } from "./shared";
+
+function normalizeScheduleDays(days: number[]): number[] {
+  return Array.from(new Set(days))
+    .filter((day) => day >= 1 && day <= 7)
+    .sort((left, right) => left - right);
+}
+
+function updateHabitInAllMonths(
+  months: Record<string, MonthData>,
+  habitId: string,
+  updater: (habit: Habit) => Habit,
+): Record<string, MonthData> {
+  return Object.fromEntries(
+    Object.entries(months).map(([monthKey, month]) => [
+      monthKey,
+      {
+        ...month,
+        habits: month.habits.map((habit) => (habit.id === habitId ? updater(habit) : habit)),
+      },
+    ]),
+  );
+}
 
 // BLOCK-START: HABITS_SLICE_MODULE
 // Description: Habit loading state and month-scoped habit CRUD/logging actions.
@@ -57,15 +80,25 @@ export const createHabitsSlice: AppSliceCreator<HabitsSlice> = (set, get) => ({
 
       return {
         ...touchSave(),
-        months: Object.fromEntries(
-          Object.entries(state.months).map(([monthKey, month]) => [
-            monthKey,
-            {
-              ...month,
-              habits: month.habits.map((habit) => (habit.id === habitId ? { ...habit, name: value } : habit)),
-            },
-          ]),
-        ),
+        months: updateHabitInAllMonths(state.months, habitId, (habit) => ({ ...habit, name: value })),
+      };
+    }),
+
+  updateHabitSchedule: (key, habitId, days) =>
+    set((state) => {
+      if (!state.months[key]) {
+        return state;
+      }
+
+      const normalizedDays = normalizeScheduleDays(days);
+      void api.patch(`/habits/${habitId}`, { schedule_days: normalizedDays });
+
+      return {
+        ...touchSave(),
+        months: updateHabitInAllMonths(state.months, habitId, (habit) => ({
+          ...habit,
+          scheduleDays: normalizedDays,
+        })),
       };
     }),
 
@@ -93,7 +126,7 @@ export const createHabitsSlice: AppSliceCreator<HabitsSlice> = (set, get) => ({
     }
 
     try {
-      const habit = await api.post<{ id: string; name: string; order: number }>(
+      const habit = await api.post<{ id: string; name: string; order: number; schedule_days?: number[] | null }>(
         `/months/${parsed.year}/${parsed.month}/habits`,
         { name: trimmedName },
       );
@@ -125,7 +158,7 @@ export const createHabitsSlice: AppSliceCreator<HabitsSlice> = (set, get) => ({
               monthKey,
               {
                 ...month,
-                habits: [...month.habits, { id: habit.id, name: habit.name }],
+                habits: [...month.habits, { id: habit.id, name: habit.name, scheduleDays: habit.schedule_days ?? [] }],
                 habitLogs: {
                   ...month.habitLogs,
                   [habit.id]: month.habitLogs[habit.id] ?? [],
