@@ -1,6 +1,6 @@
 "use client";
 
-import { isAfter, parseISO, startOfDay } from "date-fns";
+import { getDay, isAfter, parseISO, startOfDay } from "date-fns";
 
 import type { MonthData } from "@/lib/planner-types";
 import { cn } from "@/lib/utils";
@@ -26,6 +26,10 @@ export function DayHabitList({ dayKey, month, monthKey }: DayHabitListProps) {
           </div>
         ) : null}
         {month.habits.map((habit) => {
+          const dayOfWeek = getDay(parseISO(dayKey));
+          const isoDay = dayOfWeek === 0 ? 7 : dayOfWeek;
+          const isScheduledDay =
+            !habit.scheduleDays?.length || habit.scheduleDays.includes(isoDay);
           const isCompleted = (month.habitLogs[habit.id] ?? []).includes(dayKey);
 
           return (
@@ -33,7 +37,7 @@ export function DayHabitList({ dayKey, month, monthKey }: DayHabitListProps) {
               key={habit.id}
               className={cn(
                 "flex items-center gap-3 rounded-[24px] border border-line bg-paper/90 px-4 py-4",
-                isFuture && "pointer-events-none opacity-35",
+                (isFuture || !isScheduledDay) && "pointer-events-none opacity-35",
               )}
             >
               <button
@@ -41,7 +45,7 @@ export function DayHabitList({ dayKey, month, monthKey }: DayHabitListProps) {
                   "flex h-10 w-10 items-center justify-center rounded-[14px] border transition-colors",
                   isCompleted ? "border-success bg-success text-white" : "border-line bg-paper text-transparent",
                 )}
-                disabled={isFuture}
+                disabled={isFuture || !isScheduledDay}
                 onClick={() => toggleHabitDay(monthKey, habit.id, dayKey)}
                 type="button"
               >

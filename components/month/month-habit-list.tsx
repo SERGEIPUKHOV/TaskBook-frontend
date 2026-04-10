@@ -276,7 +276,7 @@ export function MonthHabitList({ habits, monthKey }: MonthHabitListProps) {
         <div className="space-y-1.5 border-y border-line/80 py-3">
           {habits.map((habit, index) => (
             <div key={habit.id} className="grid grid-cols-[20px_minmax(0,1fr)_32px_32px] items-start gap-3">
-              <span className="text-sm text-muted">{index + 1}.</span>
+              <span className="pt-2 text-sm text-muted">{index + 1}.</span>
               <div className="min-w-0">
                 <textarea
                   ref={(element) => {
