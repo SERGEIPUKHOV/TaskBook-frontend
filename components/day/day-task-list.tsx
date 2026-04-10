@@ -26,7 +26,7 @@ function statusLabel(status: TaskStatus | "planned"): string {
 
 function statusClassName(status: TaskStatus | "planned"): string {
   if (status === "done") {
-    return "border-success bg-success text-white";
+    return "border-success bg-success/10 text-success";
   }
   if (status === "moved") {
     return "border-accent bg-accent/10 text-accent";
@@ -68,7 +68,6 @@ export function DayTaskList({ dayKey, week, weekKey }: DayTaskListProps) {
                   className={cn(
                     "mt-0.5 flex h-10 w-10 items-center justify-center rounded-[14px] border text-sm transition-colors",
                     statusClassName(displayStatus),
-                    cellState?.isInteractive && "hover:border-ink hover:text-ink",
                     !cellState?.isInteractive && "cursor-default opacity-80",
                   )}
                   disabled={!cellState?.isInteractive}

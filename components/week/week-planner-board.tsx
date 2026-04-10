@@ -69,7 +69,7 @@ function formatHeaderDay(dayKey: string): { day: string; label: string } {
 
 function statusSymbol(status: TaskStatus | "planned"): string {
   if (status === "done") {
-    return "■";
+    return "✓";
   }
 
   if (status === "moved") {
@@ -102,7 +102,9 @@ function StatusLegend() {
   return (
     <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-muted">
       <div className="flex items-center gap-2">
-        <span className="flex h-4 w-4 items-center justify-center rounded-[4px] border border-success bg-success text-[10px] text-white" />
+        <span className="flex h-4 w-4 items-center justify-center rounded-[4px] border border-success bg-success/10 text-[10px] text-success">
+          ✓
+        </span>
         <span>Выполнено</span>
       </div>
       <div className="flex items-center gap-2">
@@ -217,23 +219,19 @@ function TaskStatusCell({
       <button
         className={cn(
           "flex items-center justify-center rounded-[10px] border text-sm transition-colors",
-          state.status === "done" &&
-            "border-success bg-success text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]",
+          state.status === "done" && "border-success bg-success/10 text-success",
           state.status === "moved" && "border-accent bg-accent/10 text-accent",
           state.status === "failed" && "border-danger bg-danger/10 text-danger",
           state.status === "planned" &&
             (state.isAwaitingTransfer
               ? "border-accent bg-paper text-accent"
               : "border-accent/50 bg-accent/5 text-accent"),
-          state.isInteractive &&
-            state.status !== "done" &&
-            "hover:border-accent hover:bg-canvas",
         )}
         onClick={onClick}
         style={{ height: STATUS_BUTTON_SIZE, width: STATUS_BUTTON_SIZE }}
         type="button"
       >
-        {state.status && state.status !== "done" ? statusSymbol(state.status) : ""}
+        {state.status ? statusSymbol(state.status) : ""}
       </button>
     </div>
   );
