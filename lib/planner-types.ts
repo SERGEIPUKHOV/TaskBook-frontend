@@ -89,6 +89,7 @@ export type CalendarEvent = {
   status: "confirmed" | "cancelled";
   plannerLink: CalendarPlannerLink | null;
   suggestedTargetType: PlannerLinkTargetKind;
+  recurringEventId?: string;
 };
 
 export type CalendarRangeData = {

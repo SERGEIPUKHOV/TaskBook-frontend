@@ -56,12 +56,21 @@ export function isCalendarEventImportable(event: CalendarEvent): boolean {
 }
 
 export function buildCalendarBulkImportRows(events: CalendarEvent[]): CalendarBulkImportRow[] {
-  return events.map((event) => ({
-    checked: true,
-    error: undefined,
-    event,
-    targetType: event.suggestedTargetType,
-  }));
+  const seen = new Set<string>();
+  return events
+    .filter((event) => {
+      const key = event.recurringEventId;
+      if (!key) return true;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .map((event) => ({
+      checked: true,
+      error: undefined,
+      event,
+      targetType: event.suggestedTargetType,
+    }));
 }
 
 export function buildCalendarEventImportPayload(
