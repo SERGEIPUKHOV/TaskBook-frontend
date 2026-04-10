@@ -25,36 +25,38 @@ export function DayHabitList({ dayKey, month, monthKey }: DayHabitListProps) {
             Для этого месяца привычки не заданы.
           </div>
         ) : null}
-        {month.habits.map((habit) => {
-          const dayOfWeek = getDay(parseISO(dayKey));
-          const isoDay = dayOfWeek === 0 ? 7 : dayOfWeek;
-          const isScheduledDay =
-            !habit.scheduleDays?.length || habit.scheduleDays.includes(isoDay);
-          const isCompleted = (month.habitLogs[habit.id] ?? []).includes(dayKey);
+        {month.habits
+          .filter((habit) => {
+            const dayOfWeek = getDay(parseISO(dayKey));
+            const isoDay = dayOfWeek === 0 ? 7 : dayOfWeek;
+            return !habit.scheduleDays?.length || habit.scheduleDays.includes(isoDay);
+          })
+          .map((habit) => {
+            const isCompleted = (month.habitLogs[habit.id] ?? []).includes(dayKey);
 
-          return (
-            <label
-              key={habit.id}
-              className={cn(
-                "flex items-center gap-3 rounded-[24px] border border-line bg-paper/90 px-4 py-4",
-                (isFuture || !isScheduledDay) && "pointer-events-none opacity-35",
-              )}
-            >
-              <button
+            return (
+              <label
+                key={habit.id}
                 className={cn(
-                  "flex h-10 w-10 items-center justify-center rounded-[14px] border transition-colors",
-                  isCompleted ? "border-success bg-success text-white" : "border-line bg-paper text-transparent",
+                  "flex items-center gap-3 rounded-[24px] border border-line bg-paper/90 px-4 py-4",
+                  isFuture && "pointer-events-none opacity-35",
                 )}
-                disabled={isFuture || !isScheduledDay}
-                onClick={() => toggleHabitDay(monthKey, habit.id, dayKey)}
-                type="button"
               >
-                ✓
-              </button>
-              <span className="text-sm font-medium text-ink">{habit.name}</span>
-            </label>
-          );
-        })}
+                <button
+                  className={cn(
+                    "flex h-10 w-10 items-center justify-center rounded-[14px] border transition-colors",
+                    isCompleted ? "border-success bg-success text-white" : "border-line bg-paper text-transparent",
+                  )}
+                  disabled={isFuture}
+                  onClick={() => toggleHabitDay(monthKey, habit.id, dayKey)}
+                  type="button"
+                >
+                  ✓
+                </button>
+                <span className="text-sm font-medium text-ink">{habit.name}</span>
+              </label>
+            );
+          })}
       </div>
     </section>
   );
