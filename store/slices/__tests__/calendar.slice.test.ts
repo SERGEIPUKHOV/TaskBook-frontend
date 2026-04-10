@@ -264,6 +264,7 @@ describe("createCalendarSlice", () => {
 
     expect(importSpy).toHaveBeenCalledTimes(2);
     expect(summary).toEqual({
+      errors: [{ eventId: "event-2", message: "boom" }],
       failedCount: 1,
       importedCount: 1,
       requestedCount: 2,

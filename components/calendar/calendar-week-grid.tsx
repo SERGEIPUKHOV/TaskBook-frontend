@@ -682,7 +682,7 @@ export function CalendarWeekGrid({
                         dismissImportEvent(selectedEvent.id);
                       }}
                     >
-                      {selectedEventIsDismissed ? "Не переносить ✓" : "Не переносить"}
+                      {selectedEventIsDismissed ? "🚫 Не переносить ✓" : "🚫 Не переносить"}
                     </button>
                   ) : null}
                   <button

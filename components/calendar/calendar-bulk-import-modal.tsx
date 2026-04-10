@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import type { CalendarBulkImportSummary, CalendarEvent, PlannerLinkTargetKind } from "@/lib/planner-types";
+import type { CalendarBulkImportSummary, CalendarEvent } from "@/lib/planner-types";
 import { useAppStore } from "@/store/app-store";
 import { cn } from "@/lib/utils";
 import {
   buildCalendarBulkImportRows,
   buildCalendarEventImportPayload,
-  formatCalendarBulkEventMeta,
+  formatCalendarBulkEventDate,
+  formatCalendarBulkEventTime,
   type CalendarBulkImportRow,
 } from "@/components/calendar/calendar-import-helpers";
 
@@ -49,6 +50,7 @@ export function CalendarBulkImportModal({
 
     setIsSubmitting(true);
     setError(null);
+    setRows((current) => current.map((row) => ({ ...row, error: undefined })));
 
     try {
       const summary = await bulkImportCalendarEventsToPlanner(
@@ -58,7 +60,18 @@ export function CalendarBulkImportModal({
         })),
       );
       onImported(summary);
-      onClose();
+      if (summary.errors.length === 0 || summary.importedCount === summary.requestedCount) {
+        onClose();
+        return;
+      }
+
+      const errorsByEventId = new Map(summary.errors.map((item) => [item.eventId, item.message]));
+      setRows((current) =>
+        current.map((row) => ({
+          ...row,
+          error: errorsByEventId.get(row.event.id),
+        })),
+      );
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Не удалось добавить события в план.");
     } finally {
@@ -100,7 +113,7 @@ export function CalendarBulkImportModal({
           {rows.map((row) => (
             <div
               key={row.event.id}
-              className="grid grid-cols-[auto_minmax(0,1fr)_120px] items-center gap-3 rounded-[24px] border border-line bg-canvas/50 px-4 py-3"
+              className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-[24px] border border-line bg-canvas/50 px-4 py-3"
             >
               <label className="flex items-center justify-center">
                 <input
@@ -110,7 +123,9 @@ export function CalendarBulkImportModal({
                   onChange={(event) =>
                     setRows((current) =>
                       current.map((entry) =>
-                        entry.event.id === row.event.id ? { ...entry, checked: event.target.checked } : entry,
+                        entry.event.id === row.event.id
+                          ? { ...entry, checked: event.target.checked, error: undefined }
+                          : entry,
                       ),
                     )
                   }
@@ -120,29 +135,43 @@ export function CalendarBulkImportModal({
 
               <div className="min-w-0">
                 <div className="truncate text-sm font-medium text-ink">{row.event.title}</div>
-                <div className="mt-1 text-xs text-muted">{formatCalendarBulkEventMeta(row.event)}</div>
+                <div className="mt-1 text-xs text-muted">{formatCalendarBulkEventDate(row.event)}</div>
+                <div className="text-xs text-muted">{formatCalendarBulkEventTime(row.event)}</div>
+                {row.error ? (
+                  <div className="mt-1 text-xs text-danger">{row.error}</div>
+                ) : null}
               </div>
 
-              <select
-                className={cn(
-                  "field-base w-full px-3 py-2 text-sm text-ink outline-none",
-                  !row.checked && "opacity-60",
-                )}
-                disabled={isSubmitting}
-                onChange={(event) =>
-                  setRows((current) =>
-                    current.map((entry) =>
-                      entry.event.id === row.event.id
-                        ? { ...entry, targetType: event.target.value as PlannerLinkTargetKind }
-                        : entry,
-                    ),
-                  )
-                }
-                value={row.targetType}
-              >
-                <option value="task">Задача</option>
-                <option value="habit">Привычка</option>
-              </select>
+              <div className={cn("flex gap-1", !row.checked && "opacity-50")}>
+                {(["task", "habit"] as const).map((type) => (
+                  <button
+                    key={type}
+                    className={cn(
+                      "rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors",
+                      row.targetType === type
+                        ? "border-accent bg-accent/10 text-accent"
+                        : "border-line text-muted hover:border-accent/40 hover:text-ink",
+                    )}
+                    disabled={isSubmitting}
+                    onClick={() =>
+                      setRows((current) =>
+                        current.map((entry) =>
+                          entry.event.id === row.event.id
+                            ? {
+                                ...entry,
+                                error: undefined,
+                                targetType: type,
+                              }
+                            : entry,
+                        ),
+                      )
+                    }
+                    type="button"
+                  >
+                    {type === "task" ? "Задача" : "Привычка"}
+                  </button>
+                ))}
+              </div>
             </div>
           ))}
         </div>

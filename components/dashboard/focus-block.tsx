@@ -19,7 +19,7 @@ export function FocusBlock({ compact = false, detail, emptyText, text, title }: 
       <div
         className={cn(
           "mt-2 leading-snug text-ink",
-          compact ? "text-lg font-medium" : "text-2xl font-semibold",
+          compact ? "text-lg font-medium" : "text-lg font-semibold",
           trimmedText.length === 0 && "text-muted/55",
         )}
       >

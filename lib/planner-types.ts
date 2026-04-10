@@ -120,6 +120,7 @@ export type CalendarTaskExportFeed = {
 };
 
 export type CalendarBulkImportSummary = {
+  errors: Array<{ eventId: string; message: string }>;
   failedCount: number;
   importedCount: number;
   requestedCount: number;

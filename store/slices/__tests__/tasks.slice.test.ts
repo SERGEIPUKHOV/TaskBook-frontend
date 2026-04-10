@@ -120,6 +120,7 @@ function createStore(initialWeek: WeekData) {
     fetchGoogleCalendarOptions: noopPromise,
     fetchTaskExportFeeds: noopPromise,
     bulkImportCalendarEventsToPlanner: async () => ({
+      errors: [],
       failedCount: 0,
       importedCount: 0,
       requestedCount: 0,

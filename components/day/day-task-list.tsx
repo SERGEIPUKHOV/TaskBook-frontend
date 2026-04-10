@@ -34,20 +34,7 @@ function statusClassName(status: TaskStatus | "planned"): string {
   if (status === "failed") {
     return "border-danger bg-danger/10 text-danger";
   }
-  return "border-line bg-paper text-muted";
-}
-
-function statusToRu(status: TaskStatus | "planned"): string {
-  if (status === "done") {
-    return "Выполнено";
-  }
-  if (status === "moved") {
-    return "Перенесено";
-  }
-  if (status === "failed") {
-    return "Не выполнено";
-  }
-  return "Назначено";
+  return "border-accent/50 bg-accent/5 text-accent";
 }
 
 export function DayTaskList({ dayKey, week, weekKey }: DayTaskListProps) {
@@ -76,7 +63,7 @@ export function DayTaskList({ dayKey, week, weekKey }: DayTaskListProps) {
 
           return (
             <div key={task.id} className="rounded-[24px] border border-line bg-paper/90 px-4 py-4">
-              <div className="flex items-start gap-4">
+              <div className="flex items-center gap-4">
                 <button
                   className={cn(
                     "mt-0.5 flex h-10 w-10 items-center justify-center rounded-[14px] border text-sm transition-colors",
@@ -100,11 +87,6 @@ export function DayTaskList({ dayKey, week, weekKey }: DayTaskListProps) {
                         Приоритет
                       </span>
                     ) : null}
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted">
-                    <span>Ti: {task.ti || "—"}</span>
-                    <span>Fa: {task.fa || "—"}</span>
-                    <span>Статус: {statusToRu(displayStatus)}</span>
                   </div>
                 </div>
               </div>

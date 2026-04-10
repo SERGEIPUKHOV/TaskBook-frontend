@@ -194,7 +194,7 @@ function TaskStatusCell({
       <div className={wrapperClassName}>
         <button
           aria-label="Начать задачу с этого дня"
-          className="flex h-8 w-8 items-center justify-center rounded-[10px] text-muted/55 transition-colors hover:bg-canvas hover:text-muted"
+          className="flex h-8 w-8 items-center justify-center rounded-[10px] text-muted/25 transition-colors hover:bg-canvas hover:text-muted"
           onClick={onMoveStart}
           type="button"
         >
@@ -222,7 +222,9 @@ function TaskStatusCell({
           state.status === "moved" && "border-accent bg-accent/10 text-accent",
           state.status === "failed" && "border-danger bg-danger/10 text-danger",
           state.status === "planned" &&
-            (state.isAwaitingTransfer ? "border-accent bg-paper text-accent" : "border-line bg-paper text-muted"),
+            (state.isAwaitingTransfer
+              ? "border-accent bg-paper text-accent"
+              : "border-accent/50 bg-accent/5 text-accent"),
           state.isInteractive &&
             state.status !== "done" &&
             "hover:border-accent hover:bg-canvas",
@@ -258,9 +260,9 @@ function HabitCell({
     <div className={getDayCellClass(isLastDay, "flex items-start justify-center pt-1")}>
       <button
         className={cn(
-          "rounded-[10px] border transition-colors",
+          "flex items-center justify-center rounded-[10px] border text-sm transition-colors",
           isCompleted
-            ? "border-success bg-success shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]"
+            ? "border-success bg-success text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]"
             : "border-line bg-paper hover:border-accent hover:bg-canvas",
           isFuture && "pointer-events-none opacity-35",
         )}
@@ -268,7 +270,9 @@ function HabitCell({
         onClick={() => toggleHabitDay(monthKey, habitId, dayKey)}
         style={{ height: STATUS_BUTTON_SIZE, width: STATUS_BUTTON_SIZE }}
         type="button"
-      />
+      >
+        {isCompleted ? <span className="text-sm leading-none text-white">■</span> : null}
+      </button>
     </div>
   );
 }

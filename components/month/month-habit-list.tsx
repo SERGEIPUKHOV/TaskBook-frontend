@@ -175,10 +175,6 @@ export function MonthHabitList({ habits, monthKey }: MonthHabitListProps) {
   return (
     <>
       <section className="rounded-[28px] border border-line bg-canvas/65 p-4">
-        <div className="mb-3">
-          <div className="text-base font-semibold text-ink">Привычки месяца</div>
-          <div className="mt-0.5 text-[11px] uppercase tracking-[0.08em] text-muted">что добавляем и от чего отказываемся</div>
-        </div>
         <div className="space-y-1.5 border-y border-line/80 py-3">
           {habits.map((habit, index) => (
             <label key={habit.id} className="grid grid-cols-[20px_minmax(0,1fr)_32px] items-center gap-3">

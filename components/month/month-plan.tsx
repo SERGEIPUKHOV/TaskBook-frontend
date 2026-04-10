@@ -199,6 +199,7 @@ export function MonthPlan({ monthKey, month }: MonthPlanProps) {
   const updateMonthText = useAppStore((state) => state.updateMonthText);
   const hasMainGoal = month.mainGoal.trim().length > 0;
   const hasFocusAreas = month.focusAreas.some((value) => value.trim().length > 0);
+  const hasHabits = month.habits.length > 0;
   const hasNotes = month.notes.trim().length > 0;
 
   return (
@@ -236,7 +237,13 @@ export function MonthPlan({ monthKey, month }: MonthPlanProps) {
           />
         </CollapsibleSection>
 
-        <MonthHabitList habits={month.habits} monthKey={monthKey} />
+        <CollapsibleSection
+          initiallyOpen={hasHabits}
+          resetKey={`${monthKey}:habits`}
+          title="Привычки месяца"
+        >
+          <MonthHabitList habits={month.habits} monthKey={monthKey} />
+        </CollapsibleSection>
 
         <CollapsibleSection
           initiallyOpen={hasNotes}

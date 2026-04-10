@@ -7,6 +7,7 @@ import type { CalendarEvent, CalendarEventImportPayload, PlannerLinkTargetKind }
 // Description: Shared importability rules and payload builders for calendar event suggestions and bulk import UX.
 export type CalendarBulkImportRow = {
   checked: boolean;
+  error?: string;
   event: CalendarEvent;
   targetType: PlannerLinkTargetKind;
 };
@@ -57,6 +58,7 @@ export function isCalendarEventImportable(event: CalendarEvent): boolean {
 export function buildCalendarBulkImportRows(events: CalendarEvent[]): CalendarBulkImportRow[] {
   return events.map((event) => ({
     checked: true,
+    error: undefined,
     event,
     targetType: event.suggestedTargetType,
   }));
@@ -96,6 +98,20 @@ export function formatCalendarBulkEventMeta(event: CalendarEvent): string {
   }
 
   return `${format(parseISO(event.startsAt), "EEE, d MMM · HH:mm", { locale: ru })} – ${format(parseISO(event.endsAt), "HH:mm", {
+    locale: ru,
+  })}`;
+}
+
+export function formatCalendarBulkEventDate(event: CalendarEvent): string {
+  return format(parseISO(event.startsAt), "EEE, d MMM", { locale: ru });
+}
+
+export function formatCalendarBulkEventTime(event: CalendarEvent): string {
+  if (event.isAllDay) {
+    return "весь день";
+  }
+
+  return `${format(parseISO(event.startsAt), "HH:mm", { locale: ru })} – ${format(parseISO(event.endsAt), "HH:mm", {
     locale: ru,
   })}`;
 }

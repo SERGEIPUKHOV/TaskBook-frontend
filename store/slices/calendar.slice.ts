@@ -195,7 +195,18 @@ export const createCalendarSlice: AppSliceCreator<CalendarSlice> = (set, get) =>
       requests.map(({ eventId, payload }) => get().importCalendarEventToPlanner(eventId, payload)),
     );
 
+    const errors: Array<{ eventId: string; message: string }> = [];
+    results.forEach((result, index) => {
+      if (result.status === "rejected") {
+        errors.push({
+          eventId: requests[index].eventId,
+          message: result.reason instanceof Error ? result.reason.message : "Не удалось добавить событие.",
+        });
+      }
+    });
+
     return {
+      errors,
       failedCount: results.filter((result) => result.status === "rejected").length,
       importedCount: results.filter((result) => result.status === "fulfilled").length,
       requestedCount: requests.length,
