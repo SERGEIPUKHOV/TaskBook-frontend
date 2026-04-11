@@ -158,12 +158,13 @@ export const createTasksSlice: AppSliceCreator<TasksSlice> = (set, get) => ({
       }
 
       if (!taskId.startsWith("temp-")) {
-        void api.delete(`/tasks/${taskId}`);
+        void api.delete(`/tasks/${taskId}`).then(() => {
+          set(() => ({ ...invalidateCalendarRanges() }));
+        });
       }
 
       return {
         ...touchSave(),
-        ...invalidateCalendarRanges(),
         weeks: {
           ...state.weeks,
           [key]: {

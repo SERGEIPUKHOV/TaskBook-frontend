@@ -84,7 +84,7 @@ export function CalendarScreen() {
 
   useEffect(() => {
     void ensureCalendarRange(dateFrom, dateTo);
-  }, [dateFrom, dateTo, ensureCalendarRange]);
+  }, [dateFrom, dateTo, ensureCalendarRange, rangeStatus]);
 
   useEffect(() => {
     const nextWeekStart = formatIsoDate(weekStart);

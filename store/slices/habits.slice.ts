@@ -194,11 +194,12 @@ export const createHabitsSlice: AppSliceCreator<HabitsSlice> = (set, get) => ({
         return state;
       }
 
-      void api.delete(`/habits/${habitId}?year=${parsed.year}&month=${parsed.month}`);
+      void api.delete(`/habits/${habitId}?year=${parsed.year}&month=${parsed.month}`).then(() => {
+        set(() => ({ ...invalidateCalendarRanges() }));
+      });
 
       return {
         ...touchSave(),
-        ...invalidateCalendarRanges(),
         months: Object.fromEntries(
           Object.entries(state.months).map(([monthKey, month]) => {
             if (monthKey < key) {

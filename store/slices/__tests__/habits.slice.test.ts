@@ -6,7 +6,7 @@ import type { AppStore } from "@/store/slices/shared";
 import { createHabitsSlice } from "@/store/slices/habits.slice";
 
 const apiMock = vi.hoisted(() => ({
-  delete: vi.fn(),
+  delete: vi.fn().mockResolvedValue(undefined),
   patch: vi.fn(),
   post: vi.fn(),
 }));
@@ -127,7 +127,7 @@ describe("createHabitsSlice", () => {
     vi.clearAllMocks();
   });
 
-  it("removes habits and invalidates calendar ranges", () => {
+  it("removes habits and invalidates calendar ranges", async () => {
     const { monthKey, useStore } = createStore(
       buildMonth({
         habits: [{ id: "habit-1", name: "Weekly Piano", scheduleDays: [4] }],
@@ -150,6 +150,8 @@ describe("createHabitsSlice", () => {
     expect(apiMock.delete).toHaveBeenCalledWith("/habits/habit-1?year=2026&month=3");
     expect(useStore.getState().months[monthKey]?.habits).toEqual([]);
     expect(useStore.getState().months[monthKey]?.habitLogs).toEqual({});
+    // calendar ranges are cleared after the delete API call completes
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
     expect(useStore.getState().calendarRangeLoadStates).toEqual({});
     expect(useStore.getState().calendarRanges).toEqual({});
   });

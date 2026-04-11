@@ -6,7 +6,7 @@ import type { AppStore } from "@/store/slices/shared";
 import { createTasksSlice } from "@/store/slices/tasks.slice";
 
 const apiMock = vi.hoisted(() => ({
-  delete: vi.fn(),
+  delete: vi.fn().mockResolvedValue(undefined),
   patch: vi.fn(),
   post: vi.fn(),
   put: vi.fn(),
@@ -179,7 +179,7 @@ describe("createTasksSlice", () => {
     ]);
   });
 
-  it("removes persisted tasks and calls delete endpoint", () => {
+  it("removes persisted tasks and calls delete endpoint", async () => {
     const { useStore, weekKey } = createStore(buildWeek({ tasks: [buildTask()] }));
     useStore.setState({
       calendarRangeLoadStates: { "2026-03-09:2026-03-15": "ready" },
@@ -196,6 +196,8 @@ describe("createTasksSlice", () => {
 
     expect(apiMock.delete).toHaveBeenCalledWith("/tasks/task-1");
     expect(useStore.getState().weeks[weekKey]?.tasks).toEqual([]);
+    // calendar ranges are cleared after the delete API call completes
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
     expect(useStore.getState().calendarRangeLoadStates).toEqual({});
     expect(useStore.getState().calendarRanges).toEqual({});
   });
