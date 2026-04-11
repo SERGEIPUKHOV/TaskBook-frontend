@@ -80,9 +80,18 @@ export const createCalendarSlice: AppSliceCreator<CalendarSlice> = (set, get) =>
 
     try {
       const connections = await api.get<ApiCalendarConnection[]>("/calendar/connections");
+      const nextConnections = connections.map(mapApiCalendarConnection);
+
+      // If any connection was synced since last fetch — drop cached ranges so the grid re-fetches
+      const prevSyncedAt = new Map(get().calendarConnections.map((c) => [c.id, c.lastSyncedAt]));
+      const syncedAtChanged = nextConnections.some(
+        (c) => prevSyncedAt.has(c.id) && c.lastSyncedAt !== prevSyncedAt.get(c.id),
+      );
+
       set({
-        calendarConnections: connections.map(mapApiCalendarConnection),
+        calendarConnections: nextConnections,
         calendarConnectionsStatus: "ready",
+        ...(syncedAtChanged ? invalidateCalendarRanges() : {}),
       });
     } catch {
       set({ calendarConnectionsStatus: "error" });

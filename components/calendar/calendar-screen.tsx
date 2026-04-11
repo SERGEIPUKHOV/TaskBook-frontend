@@ -82,6 +82,23 @@ export function CalendarScreen() {
     void fetchCalendarConnections();
   }, [fetchCalendarConnections]);
 
+  // Auto-refresh: poll every 5 min + re-check when tab becomes visible
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void fetchCalendarConnections(true);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    const intervalId = window.setInterval(() => {
+      void fetchCalendarConnections(true);
+    }, 5 * 60 * 1000);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.clearInterval(intervalId);
+    };
+  }, [fetchCalendarConnections]);
+
   useEffect(() => {
     void ensureCalendarRange(dateFrom, dateTo);
   }, [dateFrom, dateTo, ensureCalendarRange, rangeStatus]);
