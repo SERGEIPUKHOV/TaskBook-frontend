@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { CalendarBulkImportModal } from "@/components/calendar/calendar-bulk-import-modal";
-import { isCalendarEventImportable } from "@/components/calendar/calendar-import-helpers";
+import { buildCalendarBulkImportRows, getCalendarImportBlockedReason } from "@/components/calendar/calendar-import-helpers";
 import { CalendarWeekGrid } from "@/components/calendar/calendar-week-grid";
 import { CalendarPlusIcon } from "@/components/ui/icons";
 import { formatIsoDate } from "@/lib/dates";
@@ -58,13 +58,24 @@ export function CalendarScreen() {
   }, [weekStart]);
   const rangeKey = getCalendarRangeKey(dateFrom, dateTo);
   const weekEvents = useAppStore((state) => state.calendarRanges[rangeKey]?.events ?? []);
-  const importableEvents = useMemo(
+  const bulkRows = useMemo(
     () =>
-      weekEvents.filter(
-        (event) => isCalendarEventImportable(event) && !dismissedImportIds.includes(event.id),
+      buildCalendarBulkImportRows(
+        weekEvents.filter(
+          (event) => !dismissedImportIds.includes(event.id) && !getCalendarImportBlockedReason(event),
+        ),
       ),
     [dismissedImportIds, weekEvents],
   );
+  const bulkModalEvents = useMemo(() => bulkRows.map((row) => row.event), [bulkRows]);
+  const bulkRowsCount = bulkRows.length;
+  const importableEventsCount = useMemo(
+    () => bulkRows.filter((row) => row.checked).length,
+    [bulkRows],
+  );
+  const bulkActionLabel = importableEventsCount > 0
+    ? `Перенести события в задачи и привычки (${importableEventsCount})`
+    : "Проверить события в плане";
   const rangeStatus = useAppStore((state) => state.calendarRangeLoadStates[rangeKey] ?? "idle");
 
   useEffect(() => {
@@ -97,10 +108,10 @@ export function CalendarScreen() {
   }, [bulkNotice]);
 
   useEffect(() => {
-    if (importableEvents.length === 0 && bulkModalOpen) {
+    if (bulkRowsCount === 0 && bulkModalOpen) {
       setBulkModalOpen(false);
     }
-  }, [bulkModalOpen, importableEvents.length]);
+  }, [bulkModalOpen, bulkRowsCount]);
 
   const weekLabel = `${format(weekStart, "d MMM", { locale: ru })} – ${format(addDays(weekStart, 6), "d MMM", {
     locale: ru,
@@ -168,18 +179,18 @@ export function CalendarScreen() {
         />
       )}
 
-      {connectionsStatus !== "loading" && calendarConnections.length > 0 && (importableEvents.length > 0 || bulkNotice) ? (
+      {connectionsStatus !== "loading" && calendarConnections.length > 0 && (bulkRowsCount > 0 || bulkNotice) ? (
         <div className="mt-3 space-y-2 px-1">
           {bulkNotice ? (
             <p className="text-center text-sm text-accent">{bulkNotice}</p>
           ) : null}
-          {importableEvents.length > 0 ? (
+          {bulkRowsCount > 0 ? (
             <button
               className="w-full rounded-[20px] border border-line bg-paper px-5 py-3.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
               onClick={() => setBulkModalOpen(true)}
               type="button"
             >
-              Перенести события в задачи и привычки ({importableEvents.length})
+              {bulkActionLabel}
             </button>
           ) : null}
         </div>
@@ -187,7 +198,7 @@ export function CalendarScreen() {
 
       {bulkModalOpen ? (
         <CalendarBulkImportModal
-          events={importableEvents}
+          events={bulkModalEvents}
           onClose={() => setBulkModalOpen(false)}
           onImported={(summary) => {
             setBulkNotice(

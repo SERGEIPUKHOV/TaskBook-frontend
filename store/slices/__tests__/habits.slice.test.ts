@@ -1,0 +1,156 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { create } from "zustand";
+
+import type { MonthData } from "@/lib/planner-types";
+import type { AppStore } from "@/store/slices/shared";
+import { createHabitsSlice } from "@/store/slices/habits.slice";
+
+const apiMock = vi.hoisted(() => ({
+  delete: vi.fn(),
+  patch: vi.fn(),
+  post: vi.fn(),
+}));
+
+vi.mock("@/lib/api", () => ({
+  api: apiMock,
+}));
+
+function buildMonth(overrides: Partial<MonthData> = {}): MonthData {
+  return {
+    year: 2026,
+    month: 3,
+    mainGoal: "",
+    focusAreas: [],
+    newHabits: [],
+    letGo: [],
+    notes: "",
+    dailyStates: [],
+    habits: [],
+    habitLogs: {},
+    ...overrides,
+  };
+}
+
+function createStore(initialMonth: MonthData) {
+  const monthKey = "2026-03";
+  const noopAsync = async () => ({ ok: true as const });
+  const noopCalendarImport = async () => ({
+    plannerLink: {
+      id: "",
+      linkMode: "import_copy" as const,
+      openPath: "",
+      targetId: "",
+      targetKind: "habit" as const,
+    },
+    status: "existing" as const,
+  });
+  const noopCalendarConnect = async () => ({
+    accountLabel: null,
+    color: null,
+    createdAt: "",
+    externalAccountId: "",
+    id: "",
+    lastError: null,
+    lastSyncedAt: null,
+    provider: "google" as const,
+    providerAccountLabel: null,
+    status: "active" as const,
+    tokenExpiresAt: null,
+    updatedAt: "",
+  });
+  const noopPromise = async () => {};
+  const noop = () => {};
+
+  const useStore = create<AppStore>()((...args) => ({
+    lastSavedAt: null,
+    monthLoadStates: { [monthKey]: "ready" },
+    months: { [monthKey]: initialMonth },
+    addMonthListItem: noop,
+    deleteMonthListItem: noop,
+    ensureMonth: noop,
+    updateMonthListItem: noop,
+    updateMonthText: noop,
+    setDailyMetric: noop,
+    setDailyMetrics: noop,
+    weekEntryMeta: {},
+    weekLoadStates: {},
+    weeks: {},
+    ensureWeek: noop,
+    updateWeekDayNote: noop,
+    updateWeekText: noop,
+    addTask: noop,
+    cycleTaskStatus: noop,
+    deleteTask: noop,
+    moveTask: noop,
+    setTaskStartDay: noop,
+    updateTask: noop,
+    calendarConnections: [],
+    calendarConnectionsStatus: "idle",
+    dismissedImportIds: [],
+    googleCalendarOptions: [],
+    googleCalendarOptionsStatus: "idle",
+    googleCalendarConnected: false,
+    googleCalendarAccountLabel: null,
+    taskExportFeeds: [],
+    taskExportFeedsStatus: "idle",
+    calendarRangeLoadStates: {},
+    calendarRanges: {},
+    connectAppleCalendar: noopCalendarConnect,
+    dismissImportEvent: noop,
+    disconnectGoogleCalendarAccount: noopPromise,
+    deleteCalendarConnection: noopPromise,
+    ensureCalendarRange: noopPromise,
+    fetchCalendarConnections: noopPromise,
+    fetchGoogleCalendarOptions: noopPromise,
+    fetchTaskExportFeeds: noopPromise,
+    bulkImportCalendarEventsToPlanner: async () => ({
+      errors: [],
+      failedCount: 0,
+      importedCount: 0,
+      requestedCount: 0,
+    }),
+    importCalendarEventToPlanner: noopCalendarImport,
+    saveGoogleCalendarSelections: noopPromise,
+    startGoogleCalendarConnect: async () => "",
+    syncCalendarConnection: noopPromise,
+    syncAllGoogleCalendars: noopPromise,
+    undismissImportEvent: noop,
+    updateConnectionColor: noopPromise,
+    ...createHabitsSlice(...args),
+  }));
+
+  return { monthKey, useStore };
+}
+
+describe("createHabitsSlice", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("removes habits and invalidates calendar ranges", () => {
+    const { monthKey, useStore } = createStore(
+      buildMonth({
+        habits: [{ id: "habit-1", name: "Weekly Piano", scheduleDays: [4] }],
+        habitLogs: { "habit-1": ["2026-03-12"] },
+      }),
+    );
+    useStore.setState({
+      calendarRangeLoadStates: { "2026-03-09:2026-03-15": "ready" },
+      calendarRanges: {
+        "2026-03-09:2026-03-15": {
+          dateFrom: "2026-03-09",
+          dateTo: "2026-03-15",
+          events: [],
+        },
+      },
+    });
+
+    useStore.getState().deleteHabit(monthKey, "habit-1");
+
+    expect(apiMock.delete).toHaveBeenCalledWith("/habits/habit-1?year=2026&month=3");
+    expect(useStore.getState().months[monthKey]?.habits).toEqual([]);
+    expect(useStore.getState().months[monthKey]?.habitLogs).toEqual({});
+    expect(useStore.getState().calendarRangeLoadStates).toEqual({});
+    expect(useStore.getState().calendarRanges).toEqual({});
+  });
+});

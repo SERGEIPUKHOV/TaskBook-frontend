@@ -10,6 +10,13 @@ import { parseWeekKey, touchSave, type TaskField } from "./shared";
 
 const taskSaveTimers: Record<string, number | undefined> = {};
 
+function invalidateCalendarRanges() {
+  return {
+    calendarRangeLoadStates: {},
+    calendarRanges: {},
+  };
+}
+
 async function persistTask(get: Parameters<AppSliceCreator<TasksSlice>>[1], key: string, taskId: string) {
   const week = get().weeks[key];
 
@@ -156,6 +163,7 @@ export const createTasksSlice: AppSliceCreator<TasksSlice> = (set, get) => ({
 
       return {
         ...touchSave(),
+        ...invalidateCalendarRanges(),
         weeks: {
           ...state.weeks,
           [key]: {

@@ -27,6 +27,13 @@ function updateHabitInAllMonths(
   );
 }
 
+function invalidateCalendarRanges() {
+  return {
+    calendarRangeLoadStates: {},
+    calendarRanges: {},
+  };
+}
+
 // BLOCK-START: HABITS_SLICE_MODULE
 // Description: Habit loading state and month-scoped habit CRUD/logging actions.
 export const createHabitsSlice: AppSliceCreator<HabitsSlice> = (set, get) => ({
@@ -191,6 +198,7 @@ export const createHabitsSlice: AppSliceCreator<HabitsSlice> = (set, get) => ({
 
       return {
         ...touchSave(),
+        ...invalidateCalendarRanges(),
         months: Object.fromEntries(
           Object.entries(state.months).map(([monthKey, month]) => {
             if (monthKey < key) {

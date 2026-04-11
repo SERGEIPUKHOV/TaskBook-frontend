@@ -181,11 +181,23 @@ describe("createTasksSlice", () => {
 
   it("removes persisted tasks and calls delete endpoint", () => {
     const { useStore, weekKey } = createStore(buildWeek({ tasks: [buildTask()] }));
+    useStore.setState({
+      calendarRangeLoadStates: { "2026-03-09:2026-03-15": "ready" },
+      calendarRanges: {
+        "2026-03-09:2026-03-15": {
+          dateFrom: "2026-03-09",
+          dateTo: "2026-03-15",
+          events: [],
+        },
+      },
+    });
 
     useStore.getState().deleteTask(weekKey, "task-1");
 
     expect(apiMock.delete).toHaveBeenCalledWith("/tasks/task-1");
     expect(useStore.getState().weeks[weekKey]?.tasks).toEqual([]);
+    expect(useStore.getState().calendarRangeLoadStates).toEqual({});
+    expect(useStore.getState().calendarRanges).toEqual({});
   });
 
   it("debounces updateTask persistence and clamps numeric values", async () => {
