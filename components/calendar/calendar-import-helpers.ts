@@ -159,10 +159,16 @@ const ISO_DAY_SHORT: Record<number, string> = {
 
 export function formatCalendarBulkHabitDays(event: CalendarEvent): string {
   const days = parseRruleScheduleDays(event.recurrence);
-  if (days.length === 0) {
-    return format(parseISO(event.startsAt), "EEE, d MMM", { locale: ru });
+  if (days.length > 0) {
+    return days.map((d) => ISO_DAY_SHORT[d]).join(", ");
   }
-  return days.map((d) => ISO_DAY_SHORT[d]).join(", ");
+  // RRULE:FREQ=WEEKLY без BYDAY — берём день недели из даты события
+  const hasWeeklyRrule = event.recurrence?.some((r) => r.includes("FREQ=WEEKLY"));
+  if (hasWeeklyRrule) {
+    const d = getCalendarEventStartDay(event);
+    return ISO_DAY_SHORT[d] ?? format(parseISO(event.startsAt), "EEE, d MMM", { locale: ru });
+  }
+  return format(parseISO(event.startsAt), "EEE, d MMM", { locale: ru });
 }
 
 export function formatCalendarBulkEventDate(event: CalendarEvent): string {
