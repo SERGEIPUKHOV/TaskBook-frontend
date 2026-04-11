@@ -10,6 +10,7 @@ import {
   buildCalendarEventImportPayload,
   formatCalendarBulkEventDate,
   formatCalendarBulkEventTime,
+  formatCalendarBulkHabitDays,
   type CalendarBulkImportRow,
 } from "@/components/calendar/calendar-import-helpers";
 
@@ -135,7 +136,9 @@ export function CalendarBulkImportModal({
 
               <div className="min-w-0">
                 <div className="truncate text-sm font-medium text-ink">{row.event.title}</div>
-                <div className="mt-1 text-xs text-muted">{formatCalendarBulkEventDate(row.event)}</div>
+                <div className="mt-1 text-xs text-muted">
+                  {row.targetType === "habit" ? formatCalendarBulkHabitDays(row.event) : formatCalendarBulkEventDate(row.event)}
+                </div>
                 <div className="text-xs text-muted">{formatCalendarBulkEventTime(row.event)}</div>
                 {row.error ? (
                   <div className="mt-1 text-xs text-danger">{row.error}</div>

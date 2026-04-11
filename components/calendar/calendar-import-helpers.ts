@@ -147,6 +147,24 @@ export function formatCalendarBulkEventMeta(event: CalendarEvent): string {
   })}`;
 }
 
+const ISO_DAY_SHORT: Record<number, string> = {
+  1: "Пн",
+  2: "Вт",
+  3: "Ср",
+  4: "Чт",
+  5: "Пт",
+  6: "Сб",
+  7: "Вс",
+};
+
+export function formatCalendarBulkHabitDays(event: CalendarEvent): string {
+  const days = parseRruleScheduleDays(event.recurrence);
+  if (days.length === 0) {
+    return format(parseISO(event.startsAt), "EEE, d MMM", { locale: ru });
+  }
+  return days.map((d) => ISO_DAY_SHORT[d]).join(", ");
+}
+
 export function formatCalendarBulkEventDate(event: CalendarEvent): string {
   return format(parseISO(event.startsAt), "EEE, d MMM", { locale: ru });
 }
