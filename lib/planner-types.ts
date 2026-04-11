@@ -89,6 +89,7 @@ export type CalendarEvent = {
   isAllDay: boolean;
   status: "confirmed" | "cancelled";
   plannerLink: CalendarPlannerLink | null;
+  seriesLinked: boolean;
   suggestedTargetType: PlannerLinkTargetKind;
   recurrence?: string[];
   recurringEventId?: string;

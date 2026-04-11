@@ -22,6 +22,7 @@ function buildEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
     location: null,
     plannerLink: null,
     provider: "google",
+    seriesLinked: false,
     sourceTimezone: "UTC",
     startsAt: "2026-04-09T09:00:00Z",
     status: "confirmed",

@@ -144,8 +144,8 @@ export function CalendarBulkImportModal({
                     {row.targetType === "habit" ? formatCalendarBulkHabitDays(row.event) : formatCalendarBulkEventDate(row.event)}
                   </div>
                   <div className="text-xs text-muted">{formatCalendarBulkEventTime(row.event)}</div>
-                  {row.event.plannerLink ? (
-                    <div className="mt-1 text-xs text-accent">Уже добавлено в план</div>
+                  {row.event.plannerLink || row.event.seriesLinked ? (
+                    <div className="mt-1 text-xs text-accent">Уже добавлено</div>
                   ) : null}
                   {row.error ? (
                     <div className="mt-1 text-xs text-danger">{row.error}</div>

@@ -321,28 +321,6 @@ export function CalendarWeekGrid({
 
     return map;
   }, [connections]);
-  const linkedSeriesIds = useMemo(
-    () =>
-      new Set(
-        events
-          .filter((event) => event.plannerLink && event.recurringEventId)
-          .map((event) => event.recurringEventId as string),
-      ),
-    [events],
-  );
-
-  function isEventImportableInGrid(event: CalendarEvent): boolean {
-    if (!isCalendarEventImportable(event)) {
-      return false;
-    }
-
-    if (event.recurringEventId && linkedSeriesIds.has(event.recurringEventId)) {
-      return false;
-    }
-
-    return true;
-  }
-
   useEffect(() => {
     scrollRef.current?.scrollTo({
       top: Math.max(nowTop - HOUR_HEIGHT * 2, 0),
@@ -399,10 +377,9 @@ export function CalendarWeekGrid({
     ? (colorMap.get(selectedEvent.connectionId)?.color ?? FALLBACK_COLOR)
     : FALLBACK_COLOR;
   const importBlockedReason = selectedEvent ? getCalendarImportBlockedReason(selectedEvent) : null;
+  const selectedEventSeriesLinked = selectedEvent?.seriesLinked ?? false;
   const selectedEventIsDismissed = selectedEvent ? dismissedImportIds.includes(selectedEvent.id) : false;
-  const showDismissToggle = selectedEvent
-    ? !selectedEvent.plannerLink && !importBlockedReason
-    : false;
+  const showDismissToggle = selectedEvent ? isCalendarEventImportable(selectedEvent) : false;
 
   async function handleImportSubmit() {
     if (!selectedEvent) {
@@ -532,7 +509,7 @@ export function CalendarWeekGrid({
                           key={event.id}
                           className={cn(
                             "w-full truncate rounded border px-1.5 py-0.5 text-left text-[11px] font-medium transition duration-150 cursor-pointer hover:brightness-95",
-                            isEventImportableInGrid(event) &&
+                            isCalendarEventImportable(event) &&
                               !dismissedImportIds.includes(event.id) &&
                               "importable-glow",
                           )}
@@ -600,7 +577,7 @@ export function CalendarWeekGrid({
                           key={event.id}
                           className={cn(
                             "absolute overflow-hidden rounded border px-1 py-0.5 text-left text-[11px] leading-tight shadow-sm transition duration-150 cursor-pointer hover:brightness-95",
-                            isEventImportableInGrid(event) &&
+                            isCalendarEventImportable(event) &&
                               !dismissedImportIds.includes(event.id) &&
                               "importable-glow",
                           )}
@@ -685,6 +662,8 @@ export function CalendarWeekGrid({
                 </button>
               ) : importBlockedReason ? (
                 <div className="max-w-full text-right text-sm text-muted">{importBlockedReason}</div>
+              ) : selectedEventSeriesLinked ? (
+                <div className="max-w-full text-right text-sm text-accent">Уже добавлено в план</div>
               ) : (
                 <>
                   {showDismissToggle ? (

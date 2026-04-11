@@ -62,7 +62,7 @@ export function getCalendarImportBlockedReason(event: CalendarEvent): string | n
 }
 
 export function isCalendarEventImportable(event: CalendarEvent): boolean {
-  return !event.plannerLink && !getCalendarImportBlockedReason(event);
+  return !event.plannerLink && !event.seriesLinked && !getCalendarImportBlockedReason(event);
 }
 
 function resolveHabitImportScheduleDays(event: CalendarEvent): number[] {
@@ -86,7 +86,7 @@ export function buildCalendarBulkImportRows(events: CalendarEvent[]): CalendarBu
       return 0;
     }
 
-    return Number(Boolean(right.plannerLink)) - Number(Boolean(left.plannerLink));
+    return Number(Boolean(right.plannerLink || right.seriesLinked)) - Number(Boolean(left.plannerLink || left.seriesLinked));
   });
 
   return sorted

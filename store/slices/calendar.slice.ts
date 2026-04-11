@@ -161,6 +161,9 @@ export const createCalendarSlice: AppSliceCreator<CalendarSlice> = (set, get) =>
     set((state) => {
       const nextWeekLoadStates = { ...state.weekLoadStates };
       const nextMonthLoadStates = { ...state.monthLoadStates };
+      const importedRecurringEventId = Object.values(state.calendarRanges)
+        .flatMap((range) => range.events)
+        .find((event) => event.id === eventId)?.recurringEventId;
 
       if (payload.targetType === "task" && payload.week) {
         nextWeekLoadStates[getWeekKey(payload.year, payload.week)] = "idle";
@@ -178,7 +181,15 @@ export const createCalendarSlice: AppSliceCreator<CalendarSlice> = (set, get) =>
             {
               ...range,
               events: range.events.map((event) =>
-                event.id === eventId ? { ...event, plannerLink: result.plannerLink } : event,
+                event.id === eventId
+                  ? {
+                      ...event,
+                      plannerLink: result.plannerLink,
+                      seriesLinked: event.seriesLinked || Boolean(importedRecurringEventId),
+                    }
+                  : importedRecurringEventId && event.recurringEventId === importedRecurringEventId
+                    ? { ...event, seriesLinked: true }
+                    : event,
               ),
             },
           ]),
@@ -199,9 +210,10 @@ export const createCalendarSlice: AppSliceCreator<CalendarSlice> = (set, get) =>
     const errors: Array<{ eventId: string; message: string }> = [];
     results.forEach((result, index) => {
       if (result.status === "rejected") {
+        const reason = result.reason as Error & { status?: number };
         errors.push({
           eventId: requests[index].eventId,
-          message: result.reason instanceof Error ? result.reason.message : "Не удалось добавить событие.",
+          message: reason?.message || "Не удалось добавить в план.",
         });
       }
     });

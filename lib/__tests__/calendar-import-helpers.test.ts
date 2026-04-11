@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildCalendarBulkImportRows,
   buildCalendarEventImportPayload,
+  isCalendarEventImportable,
   parseRruleScheduleDays,
 } from "@/components/calendar/calendar-import-helpers";
 import type { CalendarEvent } from "@/lib/planner-types";
@@ -20,6 +21,7 @@ function buildEvent(overrides: Partial<CalendarEvent> = {}): CalendarEvent {
     location: null,
     plannerLink: null,
     provider: "google",
+    seriesLinked: false,
     sourceTimezone: "UTC",
     startsAt: "2026-04-09T09:00:00Z",
     status: "confirmed",
@@ -110,5 +112,10 @@ describe("calendar import RRULE helpers", () => {
 
     expect(rows.map((row) => row.event.id)).toEqual(["event-2", "event-3"]);
     expect(rows.map((row) => row.checked)).toEqual([false, true]);
+  });
+
+  it("treats series-linked events as not importable", () => {
+    expect(isCalendarEventImportable(buildEvent({ seriesLinked: true }))).toBe(false);
+    expect(isCalendarEventImportable(buildEvent())).toBe(true);
   });
 });

@@ -132,6 +132,7 @@ describe("createCalendarSlice", () => {
           location: "Studio",
           planner_link: null,
           provider: "google",
+          series_linked: false,
           source_timezone: "UTC",
           starts_at: "2026-03-10T09:00:00Z",
           status: "confirmed",
@@ -150,6 +151,7 @@ describe("createCalendarSlice", () => {
       expect.objectContaining({
         accountLabel: "Google Calendar",
         plannerLink: null,
+        seriesLinked: false,
         startsAt: "2026-03-10T09:00:00Z",
         suggestedTargetType: "task",
         title: "Review",
@@ -177,6 +179,7 @@ describe("createCalendarSlice", () => {
               location: "Studio",
               plannerLink: null,
               provider: "google",
+              seriesLinked: false,
               sourceTimezone: "UTC",
               startsAt: "2026-03-10T09:00:00Z",
               status: "confirmed",
@@ -235,6 +238,92 @@ describe("createCalendarSlice", () => {
       result.plannerLink,
     );
     expect(store.getState().weekLoadStates["2026-W11"]).toBe("idle");
+  });
+
+  it("marks sibling events in the same recurring series as linked after import", async () => {
+    const store = createStore();
+    store.setState({
+      calendarRanges: {
+        "2026-03-10:2026-03-16": {
+          dateFrom: "2026-03-10",
+          dateTo: "2026-03-16",
+          events: [
+            {
+              accountLabel: "Google Calendar",
+              connectionId: "connection-1",
+              description: null,
+              endsAt: "2026-03-10T10:00:00Z",
+              externalCalendarId: "primary",
+              externalEventId: "event-1",
+              id: "event-1",
+              isAllDay: false,
+              location: null,
+              plannerLink: null,
+              provider: "google",
+              recurringEventId: "series-1",
+              seriesLinked: false,
+              sourceTimezone: "UTC",
+              startsAt: "2026-03-10T09:00:00Z",
+              status: "confirmed",
+              suggestedTargetType: "habit",
+              title: "Weekly Review",
+            },
+            {
+              accountLabel: "Google Calendar",
+              connectionId: "connection-1",
+              description: null,
+              endsAt: "2026-03-12T10:00:00Z",
+              externalCalendarId: "primary",
+              externalEventId: "event-2",
+              id: "event-2",
+              isAllDay: false,
+              location: null,
+              plannerLink: null,
+              provider: "google",
+              recurringEventId: "series-1",
+              seriesLinked: false,
+              sourceTimezone: "UTC",
+              startsAt: "2026-03-12T09:00:00Z",
+              status: "confirmed",
+              suggestedTargetType: "habit",
+              title: "Weekly Review",
+            },
+          ],
+        },
+      },
+      monthLoadStates: { "2026-03": "ready" },
+      weekLoadStates: {},
+    });
+    apiMock.post.mockResolvedValueOnce({
+      planner_link: {
+        id: "link-1",
+        link_mode: "import_copy",
+        open_path: "/month/2026/3",
+        target_id: "habit-1",
+        target_kind: "habit",
+      },
+      status: "created",
+    });
+
+    await store.getState().importCalendarEventToPlanner("event-1", {
+      month: 3,
+      targetType: "habit",
+      title: "Weekly Review",
+      year: 2026,
+    });
+
+    expect(store.getState().calendarRanges["2026-03-10:2026-03-16"]?.events).toEqual([
+      expect.objectContaining({
+        id: "event-1",
+        plannerLink: expect.objectContaining({ id: "link-1" }),
+        seriesLinked: true,
+      }),
+      expect.objectContaining({
+        id: "event-2",
+        plannerLink: null,
+        seriesLinked: true,
+      }),
+    ]);
   });
 
   it("bulk imports events with allSettled semantics and returns aggregate counts", async () => {

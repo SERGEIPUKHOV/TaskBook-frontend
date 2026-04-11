@@ -145,6 +145,7 @@ type ApiCalendarEvent = {
   is_all_day: boolean;
   status: CalendarEvent["status"];
   planner_link: ApiCalendarPlannerLink | null;
+  series_linked?: boolean | null;
   suggested_target_type: PlannerLinkTargetKind;
   recurrence?: string[] | null;
   recurring_event_id?: string | null;
@@ -372,6 +373,7 @@ export function mapApiCalendarEvent(entry: ApiCalendarEvent): CalendarEvent {
     isAllDay: entry.is_all_day,
     status: entry.status,
     plannerLink: entry.planner_link ? mapApiCalendarPlannerLink(entry.planner_link) : null,
+    seriesLinked: entry.series_linked ?? false,
     suggestedTargetType: entry.suggested_target_type,
     recurrence: entry.recurrence ?? undefined,
     recurringEventId: entry.recurring_event_id ?? undefined,
