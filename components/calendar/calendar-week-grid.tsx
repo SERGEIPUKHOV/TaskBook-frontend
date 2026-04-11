@@ -15,11 +15,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import {
+  buildCalendarEventImportPayload,
   estimateCalendarEventTimePlanned,
   getCalendarEventStartDay,
   getCalendarImportBlockedReason,
   isCalendarEventImportable,
-  parseRruleScheduleDays,
 } from "@/components/calendar/calendar-import-helpers";
 import { useAppStore } from "@/store/app-store";
 import type {
@@ -221,13 +221,12 @@ function buildTaskImportPayload(event: CalendarEvent): CalendarEventImportPayloa
 
 function buildHabitImportPayload(event: CalendarEvent): CalendarEventImportPayload & { targetType: "habit" } {
   const start = parseISO(event.startsAt);
-  return {
-    scheduleDays: parseRruleScheduleDays(event.recurrence),
-    targetType: "habit",
-    title: event.title,
-    year: start.getFullYear(),
-    month: start.getMonth() + 1,
-  };
+  return buildCalendarEventImportPayload(
+    event,
+    "habit",
+    getISOWeekYear(start),
+    getISOWeek(start),
+  ) as CalendarEventImportPayload & { targetType: "habit" };
 }
 
 function getSuggestionHint(event: CalendarEvent): string {
@@ -322,6 +321,27 @@ export function CalendarWeekGrid({
 
     return map;
   }, [connections]);
+  const linkedSeriesIds = useMemo(
+    () =>
+      new Set(
+        events
+          .filter((event) => event.plannerLink && event.recurringEventId)
+          .map((event) => event.recurringEventId as string),
+      ),
+    [events],
+  );
+
+  function isEventImportableInGrid(event: CalendarEvent): boolean {
+    if (!isCalendarEventImportable(event)) {
+      return false;
+    }
+
+    if (event.recurringEventId && linkedSeriesIds.has(event.recurringEventId)) {
+      return false;
+    }
+
+    return true;
+  }
 
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -512,7 +532,7 @@ export function CalendarWeekGrid({
                           key={event.id}
                           className={cn(
                             "w-full truncate rounded border px-1.5 py-0.5 text-left text-[11px] font-medium transition duration-150 cursor-pointer hover:brightness-95",
-                            isCalendarEventImportable(event) &&
+                            isEventImportableInGrid(event) &&
                               !dismissedImportIds.includes(event.id) &&
                               "importable-glow",
                           )}
@@ -580,7 +600,7 @@ export function CalendarWeekGrid({
                           key={event.id}
                           className={cn(
                             "absolute overflow-hidden rounded border px-1 py-0.5 text-left text-[11px] leading-tight shadow-sm transition duration-150 cursor-pointer hover:brightness-95",
-                            isCalendarEventImportable(event) &&
+                            isEventImportableInGrid(event) &&
                               !dismissedImportIds.includes(event.id) &&
                               "importable-glow",
                           )}

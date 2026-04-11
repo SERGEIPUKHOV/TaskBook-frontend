@@ -65,9 +65,31 @@ export function isCalendarEventImportable(event: CalendarEvent): boolean {
   return !event.plannerLink && !getCalendarImportBlockedReason(event);
 }
 
+function resolveHabitImportScheduleDays(event: CalendarEvent): number[] {
+  const scheduleDays = parseRruleScheduleDays(event.recurrence);
+  if (scheduleDays.length > 0) {
+    return scheduleDays;
+  }
+
+  const hasWeeklyRrule = event.recurrence?.some((item) => item.includes("FREQ=WEEKLY"));
+  if (hasWeeklyRrule) {
+    return [getCalendarEventStartDay(event)];
+  }
+
+  return [];
+}
+
 export function buildCalendarBulkImportRows(events: CalendarEvent[]): CalendarBulkImportRow[] {
   const seen = new Set<string>();
-  return events
+  const sorted = [...events].sort((left, right) => {
+    if (!left.recurringEventId || left.recurringEventId !== right.recurringEventId) {
+      return 0;
+    }
+
+    return Number(Boolean(right.plannerLink)) - Number(Boolean(left.plannerLink));
+  });
+
+  return sorted
     .filter((event) => {
       const key = event.recurringEventId;
       if (!key) return true;
@@ -76,7 +98,7 @@ export function buildCalendarBulkImportRows(events: CalendarEvent[]): CalendarBu
       return true;
     })
     .map((event) => ({
-      checked: true,
+      checked: isCalendarEventImportable(event),
       error: undefined,
       event,
       targetType: event.suggestedTargetType,
@@ -118,7 +140,7 @@ export function buildCalendarEventImportPayload(
     const start = parseISO(event.startsAt);
     return {
       month: start.getMonth() + 1,
-      scheduleDays: parseRruleScheduleDays(event.recurrence),
+      scheduleDays: resolveHabitImportScheduleDays(event),
       targetType: "habit",
       title: event.title,
       year: start.getFullYear(),
@@ -158,15 +180,9 @@ const ISO_DAY_SHORT: Record<number, string> = {
 };
 
 export function formatCalendarBulkHabitDays(event: CalendarEvent): string {
-  const days = parseRruleScheduleDays(event.recurrence);
+  const days = resolveHabitImportScheduleDays(event);
   if (days.length > 0) {
     return days.map((d) => ISO_DAY_SHORT[d]).join(", ");
-  }
-  // RRULE:FREQ=WEEKLY без BYDAY — берём день недели из даты события
-  const hasWeeklyRrule = event.recurrence?.some((r) => r.includes("FREQ=WEEKLY"));
-  if (hasWeeklyRrule) {
-    const d = getCalendarEventStartDay(event);
-    return ISO_DAY_SHORT[d] ?? format(parseISO(event.startsAt), "EEE, d MMM", { locale: ru });
   }
   return format(parseISO(event.startsAt), "EEE, d MMM", { locale: ru });
 }

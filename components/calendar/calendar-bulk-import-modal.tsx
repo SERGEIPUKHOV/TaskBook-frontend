@@ -11,6 +11,7 @@ import {
   formatCalendarBulkEventDate,
   formatCalendarBulkEventTime,
   formatCalendarBulkHabitDays,
+  isCalendarEventImportable,
   type CalendarBulkImportRow,
 } from "@/components/calendar/calendar-import-helpers";
 
@@ -111,72 +112,79 @@ export function CalendarBulkImportModal({
 
         <div className="flex-1 overflow-y-auto px-6">
         <div className="space-y-2 pb-2">
-          {rows.map((row) => (
-            <div
-              key={row.event.id}
-              className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-[24px] border border-line bg-canvas/50 px-4 py-3"
-            >
-              <label className="flex items-center justify-center">
-                <input
-                  checked={row.checked}
-                  className="h-4 w-4 rounded border-line text-accent focus:ring-accent"
-                  disabled={isSubmitting}
-                  onChange={(event) =>
-                    setRows((current) =>
-                      current.map((entry) =>
-                        entry.event.id === row.event.id
-                          ? { ...entry, checked: event.target.checked, error: undefined }
-                          : entry,
-                      ),
-                    )
-                  }
-                  type="checkbox"
-                />
-              </label>
+          {rows.map((row) => {
+            const isLocked = !isCalendarEventImportable(row.event);
 
-              <div className="min-w-0">
-                <div className="truncate text-sm font-medium text-ink">{row.event.title}</div>
-                <div className="mt-1 text-xs text-muted">
-                  {row.targetType === "habit" ? formatCalendarBulkHabitDays(row.event) : formatCalendarBulkEventDate(row.event)}
-                </div>
-                <div className="text-xs text-muted">{formatCalendarBulkEventTime(row.event)}</div>
-                {row.error ? (
-                  <div className="mt-1 text-xs text-danger">{row.error}</div>
-                ) : null}
-              </div>
-
-              <div className={cn("flex gap-1", !row.checked && "opacity-50")}>
-                {(["task", "habit"] as const).map((type) => (
-                  <button
-                    key={type}
-                    className={cn(
-                      "rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors",
-                      row.targetType === type
-                        ? "border-accent bg-accent/10 text-accent"
-                        : "border-line text-muted hover:border-accent/40 hover:text-ink",
-                    )}
-                    disabled={isSubmitting}
-                    onClick={() =>
+            return (
+              <div
+                key={row.event.id}
+                className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-[24px] border border-line bg-canvas/50 px-4 py-3"
+              >
+                <label className="flex items-center justify-center">
+                  <input
+                    checked={row.checked}
+                    className="h-4 w-4 rounded border-line text-accent focus:ring-accent"
+                    disabled={isSubmitting || isLocked}
+                    onChange={(event) =>
                       setRows((current) =>
                         current.map((entry) =>
                           entry.event.id === row.event.id
-                            ? {
-                                ...entry,
-                                error: undefined,
-                                targetType: type,
-                              }
+                            ? { ...entry, checked: event.target.checked, error: undefined }
                             : entry,
                         ),
                       )
                     }
-                    type="button"
-                  >
-                    {type === "task" ? "Задача" : "Привычка"}
-                  </button>
-                ))}
+                    type="checkbox"
+                  />
+                </label>
+
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-ink">{row.event.title}</div>
+                  <div className="mt-1 text-xs text-muted">
+                    {row.targetType === "habit" ? formatCalendarBulkHabitDays(row.event) : formatCalendarBulkEventDate(row.event)}
+                  </div>
+                  <div className="text-xs text-muted">{formatCalendarBulkEventTime(row.event)}</div>
+                  {row.event.plannerLink ? (
+                    <div className="mt-1 text-xs text-accent">Уже добавлено в план</div>
+                  ) : null}
+                  {row.error ? (
+                    <div className="mt-1 text-xs text-danger">{row.error}</div>
+                  ) : null}
+                </div>
+
+                <div className={cn("flex gap-1", !row.checked && "opacity-50")}>
+                  {(["task", "habit"] as const).map((type) => (
+                    <button
+                      key={type}
+                      className={cn(
+                        "rounded-xl border px-3 py-1.5 text-xs font-medium transition-colors",
+                        row.targetType === type
+                          ? "border-accent bg-accent/10 text-accent"
+                          : "border-line text-muted hover:border-accent/40 hover:text-ink",
+                      )}
+                      disabled={isSubmitting || isLocked}
+                      onClick={() =>
+                        setRows((current) =>
+                          current.map((entry) =>
+                            entry.event.id === row.event.id
+                              ? {
+                                  ...entry,
+                                  error: undefined,
+                                  targetType: type,
+                                }
+                              : entry,
+                          ),
+                        )
+                      }
+                      type="button"
+                    >
+                      {type === "task" ? "Задача" : "Привычка"}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         </div>
 
