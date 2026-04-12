@@ -98,7 +98,9 @@ export const createHabitsSlice: AppSliceCreator<HabitsSlice> = (set, get) => ({
       }
 
       const normalizedDays = normalizeScheduleDays(days);
-      void api.patch(`/habits/${habitId}`, { schedule_days: normalizedDays });
+      void api.patch(`/habits/${habitId}`, { schedule_days: normalizedDays }).then(() => {
+        set(() => ({ ...invalidateCalendarRanges() }));
+      });
 
       return {
         ...touchSave(),
