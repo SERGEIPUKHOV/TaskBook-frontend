@@ -34,11 +34,18 @@ function invalidateCalendarRanges() {
   };
 }
 
-function toIsoWithTime(isoBase: string, hhmm: string): string {
-  const [hours, minutes] = hhmm.split(":").map(Number);
+function toIsoWithTime(isoBase: string, localHhmm: string): string {
+  const [hours, minutes] = localHhmm.split(":").map(Number);
   const date = new Date(isoBase);
-  date.setUTCHours(hours, minutes, 0, 0);
+  date.setHours(hours, minutes, 0, 0);
   return date.toISOString().replace("Z", "+00:00");
+}
+
+function localHhmmToUtcHhmm(isoBase: string, localHhmm: string): string {
+  const [hours, minutes] = localHhmm.split(":").map(Number);
+  const date = new Date(isoBase);
+  date.setHours(hours, minutes, 0, 0);
+  return `${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}`;
 }
 
 // BLOCK-START: HABITS_SLICE_MODULE
@@ -124,10 +131,13 @@ export const createHabitsSlice: AppSliceCreator<HabitsSlice> = (set, get) => ({
         return state;
       }
 
+      const currentHabit = state.months[key]?.habits.find((h) => h.id === habitId);
+      const isoBase = currentHabit?.linkedEventTime?.startsAt ?? new Date().toISOString();
+
       void api
         .patch<{ starts_at: string; ends_at: string } | null>(`/habits/${habitId}/event-time`, {
-          starts_at: startsAt,
-          ends_at: endsAt,
+          starts_at: localHhmmToUtcHhmm(isoBase, startsAt),
+          ends_at: localHhmmToUtcHhmm(isoBase, endsAt),
         })
         .then((linkedEventTime) => {
           set((currentState) => ({
