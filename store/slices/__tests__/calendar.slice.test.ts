@@ -39,6 +39,7 @@ function createStore() {
     toggleHabitDay: noop,
     updateHabitName: noop,
     updateHabitSchedule: noop,
+    updateHabitEventTime: noop,
     weekEntryMeta: {},
     weekLoadStates: {},
     weeks: {},

@@ -111,13 +111,24 @@ function HabitScheduleDialog({
 }: {
   habit: Habit;
   onClose: () => void;
-  onSave: (days: number[]) => void;
+  onSave: (days: number[], eventTime?: { startsAt: string; endsAt: string }) => void;
 }) {
   const [selectedDays, setSelectedDays] = useState(() => normalizeScheduleDays(habit.scheduleDays));
+  const [startTime, setStartTime] = useState(() =>
+    habit.linkedEventTime ? formatEventTime(habit.linkedEventTime.startsAt) : "",
+  );
+  const [endTime, setEndTime] = useState(() =>
+    habit.linkedEventTime ? formatEventTime(habit.linkedEventTime.endsAt) : "",
+  );
 
   useEffect(() => {
     setSelectedDays(normalizeScheduleDays(habit.scheduleDays));
   }, [habit.id, habit.scheduleDays]);
+
+  useEffect(() => {
+    setStartTime(habit.linkedEventTime ? formatEventTime(habit.linkedEventTime.startsAt) : "");
+    setEndTime(habit.linkedEventTime ? formatEventTime(habit.linkedEventTime.endsAt) : "");
+  }, [habit.id, habit.linkedEventTime]);
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 px-4 backdrop-blur-sm">
@@ -125,9 +136,21 @@ function HabitScheduleDialog({
         <div className="text-xs uppercase tracking-[0.2em] text-muted">Расписание привычки</div>
         <h3 className="mt-3 break-words text-xl font-semibold text-ink">{habit.name || "Без названия"}</h3>
         {habit.linkedEventTime ? (
-          <p className="mt-1 text-sm text-accent/80">
-            {formatEventTime(habit.linkedEventTime.startsAt)} {"\u2013"} {formatEventTime(habit.linkedEventTime.endsAt)}
-          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              className="rounded-xl border border-line bg-paper px-3 py-2 text-sm text-accent tabular-nums focus:border-accent focus:outline-none"
+              onChange={(event) => setStartTime(event.target.value)}
+              type="time"
+              value={startTime}
+            />
+            <span className="text-sm text-muted">{"\u2013"}</span>
+            <input
+              className="rounded-xl border border-line bg-paper px-3 py-2 text-sm text-accent tabular-nums focus:border-accent focus:outline-none"
+              onChange={(event) => setEndTime(event.target.value)}
+              type="time"
+              value={endTime}
+            />
+          </div>
         ) : null}
         <p className="mt-2 text-sm leading-6 text-muted">
           Выберите дни недели. Если ничего не выбрано, привычка считается ежедневной.
@@ -172,7 +195,14 @@ function HabitScheduleDialog({
           </button>
           <button
             className="rounded-[20px] border border-accent bg-accent/10 px-4 py-3 text-sm font-medium text-accent transition-colors hover:bg-accent/15"
-            onClick={() => onSave(selectedDays)}
+            onClick={() =>
+              onSave(
+                selectedDays,
+                habit.linkedEventTime && startTime && endTime
+                  ? { startsAt: startTime, endsAt: endTime }
+                  : undefined,
+              )
+            }
             type="button"
           >
             Готово
@@ -187,6 +217,7 @@ function HabitScheduleDialog({
 export function MonthHabitList({ habits, monthKey }: MonthHabitListProps) {
   const addHabit = useAppStore((state) => state.addHabit);
   const deleteHabit = useAppStore((state) => state.deleteHabit);
+  const updateHabitEventTime = useAppStore((state) => state.updateHabitEventTime);
   const updateHabitName = useAppStore((state) => state.updateHabitName);
   const updateHabitSchedule = useAppStore((state) => state.updateHabitSchedule);
   const newHabitInputRef = useRef<HTMLInputElement | null>(null);
@@ -395,8 +426,11 @@ export function MonthHabitList({ habits, monthKey }: MonthHabitListProps) {
         <HabitScheduleDialog
           habit={scheduleTarget}
           onClose={() => setScheduleTarget(null)}
-          onSave={(days) => {
+          onSave={(days, eventTime) => {
             updateHabitSchedule(monthKey, scheduleTarget.id, days);
+            if (eventTime) {
+              updateHabitEventTime(monthKey, scheduleTarget.id, eventTime.startsAt, eventTime.endsAt);
+            }
             setScheduleTarget(null);
           }}
         />

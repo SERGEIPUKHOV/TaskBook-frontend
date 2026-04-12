@@ -34,6 +34,13 @@ function invalidateCalendarRanges() {
   };
 }
 
+function toIsoWithTime(isoBase: string, hhmm: string): string {
+  const [hours, minutes] = hhmm.split(":").map(Number);
+  const date = new Date(isoBase);
+  date.setUTCHours(hours, minutes, 0, 0);
+  return date.toISOString().replace("Z", "+00:00");
+}
+
 // BLOCK-START: HABITS_SLICE_MODULE
 // Description: Habit loading state and month-scoped habit CRUD/logging actions.
 export const createHabitsSlice: AppSliceCreator<HabitsSlice> = (set, get) => ({
@@ -107,6 +114,46 @@ export const createHabitsSlice: AppSliceCreator<HabitsSlice> = (set, get) => ({
         months: updateHabitInAllMonths(state.months, habitId, (habit) => ({
           ...habit,
           scheduleDays: normalizedDays,
+        })),
+      };
+    }),
+
+  updateHabitEventTime: (key, habitId, startsAt, endsAt) =>
+    set((state) => {
+      if (!state.months[key]) {
+        return state;
+      }
+
+      void api
+        .patch<{ starts_at: string; ends_at: string } | null>(`/habits/${habitId}/event-time`, {
+          starts_at: startsAt,
+          ends_at: endsAt,
+        })
+        .then((linkedEventTime) => {
+          set((currentState) => ({
+            ...invalidateCalendarRanges(),
+            months: updateHabitInAllMonths(currentState.months, habitId, (habit) => ({
+              ...habit,
+              linkedEventTime: linkedEventTime
+                ? {
+                    startsAt: linkedEventTime.starts_at,
+                    endsAt: linkedEventTime.ends_at,
+                  }
+                : habit.linkedEventTime,
+            })),
+          }));
+        });
+
+      return {
+        ...touchSave(),
+        months: updateHabitInAllMonths(state.months, habitId, (habit) => ({
+          ...habit,
+          linkedEventTime: habit.linkedEventTime
+            ? {
+                startsAt: toIsoWithTime(habit.linkedEventTime.startsAt, startsAt),
+                endsAt: toIsoWithTime(habit.linkedEventTime.endsAt, endsAt),
+              }
+            : habit.linkedEventTime,
         })),
       };
     }),

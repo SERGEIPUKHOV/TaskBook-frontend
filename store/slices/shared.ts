@@ -112,6 +112,7 @@ export type HabitsSlice = {
   toggleHabitDay: (key: string, habitId: string, dayKey: string) => void;
   updateHabitName: (key: string, habitId: string, value: string) => void;
   updateHabitSchedule: (key: string, habitId: string, days: number[]) => void;
+  updateHabitEventTime: (key: string, habitId: string, startsAt: string, endsAt: string) => void;
 };
 
 export type WeeksSlice = {
