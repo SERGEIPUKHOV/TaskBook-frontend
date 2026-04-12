@@ -29,6 +29,10 @@ export type Habit = {
   id: string;
   name: string;
   scheduleDays?: number[];
+  linkedEventTime?: {
+    startsAt: string;
+    endsAt: string;
+  } | null;
 };
 
 export type HabitLogMap = Record<string, string[]>;

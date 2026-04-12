@@ -167,7 +167,15 @@ export const createHabitsSlice: AppSliceCreator<HabitsSlice> = (set, get) => ({
               monthKey,
               {
                 ...month,
-                habits: [...month.habits, { id: habit.id, name: habit.name, scheduleDays: habit.schedule_days ?? [] }],
+                habits: [
+                  ...month.habits,
+                  {
+                    id: habit.id,
+                    name: habit.name,
+                    scheduleDays: habit.schedule_days ?? [],
+                    linkedEventTime: null,
+                  },
+                ],
                 habitLogs: {
                   ...month.habitLogs,
                   [habit.id]: month.habitLogs[habit.id] ?? [],

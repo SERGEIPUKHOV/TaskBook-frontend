@@ -91,6 +91,122 @@ describe("createCalendarSlice", () => {
     expect(store.getState().calendarConnectionsStatus).toBe("ready");
   });
 
+  it("invalidates cached ranges when connection sync timestamp changes", async () => {
+    const store = createStore();
+    store.setState({
+      calendarConnections: [
+        {
+          accountLabel: "Команда",
+          color: "#0B8043",
+          createdAt: "2026-04-05T08:00:00Z",
+          externalAccountId: "apple-1",
+          id: "connection-1",
+          lastError: null,
+          lastSyncedAt: "2026-04-05T09:00:00Z",
+          provider: "apple",
+          providerAccountLabel: null,
+          status: "active",
+          tokenExpiresAt: null,
+          updatedAt: "2026-04-05T09:00:00Z",
+        },
+      ],
+      calendarRangeLoadStates: { "2026-04-07:2026-04-13": "ready" },
+      calendarRanges: {
+        "2026-04-07:2026-04-13": {
+          dateFrom: "2026-04-07",
+          dateTo: "2026-04-13",
+          events: [],
+        },
+      },
+    });
+    apiMock.get.mockResolvedValueOnce([
+      {
+        account_label: "Команда",
+        created_at: "2026-04-05T08:00:00Z",
+        external_account_id: "apple-1",
+        id: "connection-1",
+        last_error: null,
+        last_synced_at: "2026-04-05T10:00:00Z",
+        color: "#0B8043",
+        provider: "apple",
+        status: "active",
+        token_expires_at: null,
+        updated_at: "2026-04-05T10:00:00Z",
+      },
+    ]);
+
+    await store.getState().fetchCalendarConnections(true);
+
+    expect(store.getState().calendarRanges).toEqual({});
+    expect(store.getState().calendarRangeLoadStates).toEqual({});
+  });
+
+  it("invalidates cached ranges when the connection list changes", async () => {
+    const store = createStore();
+    store.setState({
+      calendarConnections: [
+        {
+          accountLabel: "Личный",
+          color: "#4285F4",
+          createdAt: "2026-04-05T08:00:00Z",
+          externalAccountId: "google-primary",
+          id: "connection-1",
+          lastError: null,
+          lastSyncedAt: "2026-04-05T09:00:00Z",
+          provider: "google",
+          providerAccountLabel: "user@gmail.com",
+          status: "active",
+          tokenExpiresAt: null,
+          updatedAt: "2026-04-05T09:00:00Z",
+        },
+      ],
+      calendarRangeLoadStates: { "2026-04-07:2026-04-13": "ready" },
+      calendarRanges: {
+        "2026-04-07:2026-04-13": {
+          dateFrom: "2026-04-07",
+          dateTo: "2026-04-13",
+          events: [],
+        },
+      },
+    });
+    apiMock.get.mockResolvedValueOnce([
+      {
+        account_label: "Личный",
+        created_at: "2026-04-05T08:00:00Z",
+        external_account_id: "google-primary",
+        id: "connection-1",
+        last_error: null,
+        last_synced_at: "2026-04-05T09:00:00Z",
+        color: "#4285F4",
+        provider: "google",
+        provider_account_label: "user@gmail.com",
+        status: "active",
+        token_expires_at: null,
+        updated_at: "2026-04-05T09:00:00Z",
+      },
+      {
+        account_label: "Команда",
+        created_at: "2026-04-05T08:30:00Z",
+        external_account_id: "team@group.calendar.google.com",
+        id: "connection-2",
+        last_error: null,
+        last_synced_at: "2026-04-05T09:30:00Z",
+        color: "#33B679",
+        provider: "google",
+        provider_account_label: "user@gmail.com",
+        status: "active",
+        token_expires_at: null,
+        updated_at: "2026-04-05T09:30:00Z",
+      },
+    ]);
+
+    await store.getState().fetchCalendarConnections(true);
+
+    expect(store.getState().calendarRanges).toEqual({});
+    expect(store.getState().calendarRangeLoadStates).toEqual({});
+    expect(store.getState().calendarConnections).toHaveLength(2);
+  });
+
   it("dismisses import events without duplicating ids", () => {
     const store = createStore();
 

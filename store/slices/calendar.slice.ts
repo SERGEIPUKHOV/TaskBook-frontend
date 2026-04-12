@@ -24,6 +24,21 @@ function invalidateCalendarRanges() {
   };
 }
 
+function shouldInvalidateCalendarRanges(
+  prevConnections: CalendarSlice["calendarConnections"],
+  nextConnections: CalendarSlice["calendarConnections"],
+) {
+  if (prevConnections.length !== nextConnections.length) {
+    return true;
+  }
+
+  const prevSyncedAt = new Map(prevConnections.map((connection) => [connection.id, connection.lastSyncedAt]));
+  return nextConnections.some(
+    (connection) =>
+      !prevSyncedAt.has(connection.id) || prevSyncedAt.get(connection.id) !== connection.lastSyncedAt,
+  );
+}
+
 function upsertConnection(
   connections: CalendarSlice["calendarConnections"],
   nextConnection: CalendarSlice["calendarConnections"][number],
@@ -81,17 +96,13 @@ export const createCalendarSlice: AppSliceCreator<CalendarSlice> = (set, get) =>
     try {
       const connections = await api.get<ApiCalendarConnection[]>("/calendar/connections");
       const nextConnections = connections.map(mapApiCalendarConnection);
-
-      // If any connection was synced since last fetch — drop cached ranges so the grid re-fetches
-      const prevSyncedAt = new Map(get().calendarConnections.map((c) => [c.id, c.lastSyncedAt]));
-      const syncedAtChanged = nextConnections.some(
-        (c) => prevSyncedAt.has(c.id) && c.lastSyncedAt !== prevSyncedAt.get(c.id),
-      );
+      const prevConnections = get().calendarConnections;
+      const calendarChanged = shouldInvalidateCalendarRanges(prevConnections, nextConnections);
 
       set({
         calendarConnections: nextConnections,
         calendarConnectionsStatus: "ready",
-        ...(syncedAtChanged ? invalidateCalendarRanges() : {}),
+        ...(calendarChanged ? invalidateCalendarRanges() : {}),
       });
     } catch {
       set({ calendarConnectionsStatus: "error" });

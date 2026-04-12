@@ -49,6 +49,10 @@ type ApiHabit = {
   name: string;
   order: number;
   schedule_days?: number[] | null;
+  linked_event_time?: {
+    starts_at: string;
+    ends_at: string;
+  } | null;
 };
 
 type ApiHabitGrid = {
@@ -255,10 +259,13 @@ export function buildMonthPlanPayload(month: MonthData) {
 }
 
 export function mapMonthBundleToMonthData(year: number, month: number, bundle: ApiMonthBundle): MonthData {
-  const habits: Habit[] = bundle.grid.habits.map((habit) => ({
+  const habits: Habit[] = bundle.habits.map((habit) => ({
     id: habit.id,
     name: habit.name,
     scheduleDays: habit.schedule_days ?? [],
+    linkedEventTime: habit.linked_event_time
+      ? { startsAt: habit.linked_event_time.starts_at, endsAt: habit.linked_event_time.ends_at }
+      : null,
   }));
   const habitLogs = Object.fromEntries(
     habits.map((habit) => [

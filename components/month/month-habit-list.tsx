@@ -39,6 +39,16 @@ function scheduleSubtitle(days?: number[]): string | null {
   return normalizedDays.map((day) => WEEKDAY_LABELS[day - 1]).join(", ");
 }
 
+function formatEventTime(iso: string): string {
+  const date = new Date(iso);
+  return date.toLocaleTimeString("ru-RU", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "UTC",
+  });
+}
+
 function syncTextareaHeight(element: HTMLTextAreaElement | null) {
   if (!element) {
     return;
@@ -114,6 +124,11 @@ function HabitScheduleDialog({
       <div className="paper-panel w-full max-w-md rounded-[32px] p-6">
         <div className="text-xs uppercase tracking-[0.2em] text-muted">Расписание привычки</div>
         <h3 className="mt-3 break-words text-xl font-semibold text-ink">{habit.name || "Без названия"}</h3>
+        {habit.linkedEventTime ? (
+          <p className="mt-1 text-sm text-accent/80">
+            {formatEventTime(habit.linkedEventTime.startsAt)} {"\u2013"} {formatEventTime(habit.linkedEventTime.endsAt)}
+          </p>
+        ) : null}
         <p className="mt-2 text-sm leading-6 text-muted">
           Выберите дни недели. Если ничего не выбрано, привычка считается ежедневной.
         </p>
