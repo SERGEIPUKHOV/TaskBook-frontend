@@ -100,7 +100,7 @@ function getRightColumnClass(extra?: string) {
 // Description: Supporting UI components for legends, dialogs, status cells, habit cells, placeholders, and simple skeletons.
 function StatusLegend() {
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-muted">
+    <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs text-muted sm:flex sm:flex-wrap sm:items-center sm:gap-4">
       <div className="flex items-center gap-2">
         <span className="flex h-4 w-4 items-center justify-center rounded-[4px] border border-success-dark bg-success/10 text-[10px] text-success-dark">
           ✓
