@@ -82,7 +82,7 @@ export function CalendarScreen() {
     void fetchCalendarConnections();
   }, [fetchCalendarConnections]);
 
-  // Auto-refresh: poll every 5 min + re-check when tab becomes visible
+  // Auto-refresh: poll every 3 min + re-check when tab becomes visible
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
@@ -92,7 +92,7 @@ export function CalendarScreen() {
     document.addEventListener("visibilitychange", handleVisibility);
     const intervalId = window.setInterval(() => {
       void fetchCalendarConnections(true);
-    }, 5 * 60 * 1000);
+    }, 3 * 60 * 1000);
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
       window.clearInterval(intervalId);
