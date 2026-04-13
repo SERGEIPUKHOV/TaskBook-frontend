@@ -102,7 +102,7 @@ export const createCalendarSlice: AppSliceCreator<CalendarSlice> = (set, get) =>
       set({
         calendarConnections: nextConnections,
         calendarConnectionsStatus: "ready",
-        ...(calendarChanged ? invalidateCalendarRanges() : {}),
+        ...(calendarChanged ? { ...invalidateCalendarRanges(), monthLoadStates: {} } : {}),
       });
     } catch {
       set({ calendarConnectionsStatus: "error" });
