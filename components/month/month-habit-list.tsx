@@ -30,6 +30,16 @@ function normalizeScheduleDays(days?: number[]): number[] {
     .sort((left, right) => left - right);
 }
 
+function areSameScheduleDays(left?: number[], right?: number[]): boolean {
+  const normalizedLeft = normalizeScheduleDays(left);
+  const normalizedRight = normalizeScheduleDays(right);
+
+  return (
+    normalizedLeft.length === normalizedRight.length &&
+    normalizedLeft.every((day, index) => day === normalizedRight[index])
+  );
+}
+
 function scheduleSubtitle(days?: number[]): string | null {
   const normalizedDays = normalizeScheduleDays(days);
   if (!normalizedDays.length) {
@@ -425,10 +435,25 @@ export function MonthHabitList({ habits, monthKey }: MonthHabitListProps) {
         <HabitScheduleDialog
           habit={scheduleTarget}
           onClose={() => setScheduleTarget(null)}
-          onSave={(days, eventTime) => {
-            updateHabitSchedule(monthKey, scheduleTarget.id, days);
-            if (eventTime) {
-              updateHabitEventTime(monthKey, scheduleTarget.id, eventTime.startsAt, eventTime.endsAt);
+          onSave={async (days, eventTime) => {
+            const scheduleChanged = !areSameScheduleDays(scheduleTarget.scheduleDays, days);
+            const currentStartTime = scheduleTarget.linkedEventTime
+              ? formatEventTime(scheduleTarget.linkedEventTime.startsAt)
+              : null;
+            const currentEndTime = scheduleTarget.linkedEventTime
+              ? formatEventTime(scheduleTarget.linkedEventTime.endsAt)
+              : null;
+            const eventTimeChanged = Boolean(
+              eventTime &&
+                scheduleTarget.linkedEventTime &&
+                (eventTime.startsAt !== currentStartTime || eventTime.endsAt !== currentEndTime),
+            );
+
+            if (scheduleChanged) {
+              await updateHabitSchedule(monthKey, scheduleTarget.id, days);
+            }
+            if (eventTimeChanged && eventTime) {
+              await updateHabitEventTime(monthKey, scheduleTarget.id, eventTime.startsAt, eventTime.endsAt);
             }
             setScheduleTarget(null);
           }}

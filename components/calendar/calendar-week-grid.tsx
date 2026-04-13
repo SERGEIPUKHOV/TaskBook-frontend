@@ -787,30 +787,6 @@ export function CalendarWeekGrid({
                   </label>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-                  <label className="block space-y-1">
-                    <span className="text-sm font-medium text-ink">Ti</span>
-                    <input
-                      className="field-base w-full px-3 py-2 text-sm text-ink outline-none"
-                      inputMode="numeric"
-                      min={0}
-                      type="number"
-                      value={taskImport.timePlanned}
-                      onChange={(event) => setTaskImport((current) => ({ ...current, timePlanned: event.target.value }))}
-                    />
-                  </label>
-
-                  <label className="flex items-center gap-2 rounded-2xl border border-line px-3 py-2 text-sm text-ink">
-                    <input
-                      checked={taskImport.isPriority}
-                      type="checkbox"
-                      onChange={(event) =>
-                        setTaskImport((current) => ({ ...current, isPriority: event.target.checked }))
-                      }
-                    />
-                    <span>Приоритет</span>
-                  </label>
-                </div>
               </div>
             ) : (
               <div className="mt-4 space-y-4">
@@ -824,15 +800,6 @@ export function CalendarWeekGrid({
                   />
                 </label>
 
-                <label className="block space-y-1">
-                  <span className="text-sm font-medium text-ink">Месяц</span>
-                  <input
-                    className="field-base w-full px-3 py-2 text-sm text-ink outline-none"
-                    type="month"
-                    value={habitImport.monthValue}
-                    onChange={(event) => setHabitImport((current) => ({ ...current, monthValue: event.target.value }))}
-                  />
-                </label>
               </div>
             )}
 

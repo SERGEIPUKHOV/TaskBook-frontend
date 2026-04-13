@@ -41,13 +41,6 @@ function toIsoWithTime(isoBase: string, localHhmm: string): string {
   return date.toISOString().replace("Z", "+00:00");
 }
 
-function localHhmmToUtcHhmm(isoBase: string, localHhmm: string): string {
-  const [hours, minutes] = localHhmm.split(":").map(Number);
-  const date = new Date(isoBase);
-  date.setHours(hours, minutes, 0, 0);
-  return `${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}`;
-}
-
 // BLOCK-START: HABITS_SLICE_MODULE
 // Description: Habit loading state and month-scoped habit CRUD/logging actions.
 export const createHabitsSlice: AppSliceCreator<HabitsSlice> = (set, get) => ({
@@ -105,17 +98,16 @@ export const createHabitsSlice: AppSliceCreator<HabitsSlice> = (set, get) => ({
       };
     }),
 
-  updateHabitSchedule: (key, habitId, days) =>
+  updateHabitSchedule: async (key, habitId, days) => {
+    const normalizedDays = normalizeScheduleDays(days);
+    let hasMonth = false;
+
     set((state) => {
       if (!state.months[key]) {
         return state;
       }
 
-      const normalizedDays = normalizeScheduleDays(days);
-      void api.patch(`/habits/${habitId}`, { schedule_days: normalizedDays }).then(() => {
-        set(() => ({ ...invalidateCalendarRanges() }));
-      });
-
+      hasMonth = true;
       return {
         ...touchSave(),
         months: updateHabitInAllMonths(state.months, habitId, (habit) => ({
@@ -123,37 +115,25 @@ export const createHabitsSlice: AppSliceCreator<HabitsSlice> = (set, get) => ({
           scheduleDays: normalizedDays,
         })),
       };
-    }),
+    });
 
-  updateHabitEventTime: (key, habitId, startsAt, endsAt) =>
+    if (!hasMonth) {
+      return;
+    }
+
+    await api.patch(`/habits/${habitId}`, { schedule_days: normalizedDays });
+    set(() => ({ ...invalidateCalendarRanges() }));
+  },
+
+  updateHabitEventTime: async (key, habitId, startsAt, endsAt) => {
+    let hasMonth = false;
+
     set((state) => {
       if (!state.months[key]) {
         return state;
       }
 
-      const currentHabit = state.months[key]?.habits.find((h) => h.id === habitId);
-      const isoBase = currentHabit?.linkedEventTime?.startsAt ?? new Date().toISOString();
-
-      void api
-        .patch<{ starts_at: string; ends_at: string } | null>(`/habits/${habitId}/event-time`, {
-          starts_at: localHhmmToUtcHhmm(isoBase, startsAt),
-          ends_at: localHhmmToUtcHhmm(isoBase, endsAt),
-        })
-        .then((linkedEventTime) => {
-          set((currentState) => ({
-            ...invalidateCalendarRanges(),
-            months: updateHabitInAllMonths(currentState.months, habitId, (habit) => ({
-              ...habit,
-              linkedEventTime: linkedEventTime
-                ? {
-                    startsAt: linkedEventTime.starts_at,
-                    endsAt: linkedEventTime.ends_at,
-                  }
-                : habit.linkedEventTime,
-            })),
-          }));
-        });
-
+      hasMonth = true;
       return {
         ...touchSave(),
         months: updateHabitInAllMonths(state.months, habitId, (habit) => ({
@@ -166,7 +146,33 @@ export const createHabitsSlice: AppSliceCreator<HabitsSlice> = (set, get) => ({
             : habit.linkedEventTime,
         })),
       };
-    }),
+    });
+
+    if (!hasMonth) {
+      return;
+    }
+
+    const linkedEventTime = await api.patch<{ starts_at: string; ends_at: string } | null>(
+      `/habits/${habitId}/event-time`,
+      {
+        starts_at: startsAt,
+        ends_at: endsAt,
+      },
+    );
+
+    set((currentState) => ({
+      ...invalidateCalendarRanges(),
+      months: updateHabitInAllMonths(currentState.months, habitId, (habit) => ({
+        ...habit,
+        linkedEventTime: linkedEventTime
+          ? {
+              startsAt: linkedEventTime.starts_at,
+              endsAt: linkedEventTime.ends_at,
+            }
+          : habit.linkedEventTime,
+      })),
+    }));
+  },
 
   addHabit: async (key, name) => {
     const trimmedName = name.trim();
