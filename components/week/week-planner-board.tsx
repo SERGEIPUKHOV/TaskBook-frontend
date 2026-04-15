@@ -441,12 +441,34 @@ function TaskScheduleDialog({
                 ))}
               </select>
             )}
+            <div className="space-y-1">
+              <div className="text-xs text-muted">Время события (необязательно)</div>
+              <div className="flex items-center gap-2">
+                <input
+                  className="rounded-xl border border-line bg-paper px-3 py-2 text-sm text-accent tabular-nums focus:border-accent focus:outline-none"
+                  type="time"
+                  value={startsHhmm}
+                  onChange={(e) => setStartsHhmm(e.target.value)}
+                />
+                <span className="text-sm text-muted">–</span>
+                <input
+                  className="rounded-xl border border-line bg-paper px-3 py-2 text-sm text-accent tabular-nums focus:border-accent focus:outline-none"
+                  type="time"
+                  value={endsHhmm}
+                  onChange={(e) => setEndsHhmm(e.target.value)}
+                />
+              </div>
+              <div className="text-xs text-muted">Оставьте пустым — событие займёт весь день</div>
+            </div>
             <button
               className="w-full rounded-[20px] border border-accent bg-accent/10 py-3 text-sm font-medium text-accent transition-colors hover:bg-accent/15 disabled:opacity-50"
               disabled={busy || !selectedConnectionId}
               onClick={async () => {
                 setBusy(true);
                 await exportTaskToGoogle(weekKey, task.id, selectedConnectionId);
+                if (startsHhmm && endsHhmm) {
+                  await updateTaskEventTime(weekKey, task.id, startsHhmm, endsHhmm);
+                }
                 setBusy(false);
                 onClose();
               }}
@@ -1142,13 +1164,21 @@ export function WeekPlannerBoard({
                   >
                     + Добавить задачу
                   </button>
-                  {hasGoogleConnection && exportableCount > 0 && (
+                  {hasGoogleConnection && (
                     <button
-                      className="flex-shrink-0 rounded-[18px] border border-accent/50 bg-paper px-3 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent/10"
-                      onClick={() => setShowExportModal(true)}
+                      className={cn(
+                        "flex-shrink-0 rounded-[18px] border px-3 py-2 text-sm font-medium transition-colors",
+                        exportableCount > 0
+                          ? "border-accent/50 bg-paper text-accent hover:bg-accent/10"
+                          : "cursor-default border-line bg-paper text-muted",
+                      )}
+                      disabled={exportableCount === 0}
+                      onClick={() => exportableCount > 0 && setShowExportModal(true)}
                       type="button"
                     >
-                      В календарь ({exportableCount})
+                      {exportableCount > 0
+                        ? `В Google Calendar (${exportableCount})`
+                        : "Все задачи в Google Calendar"}
                     </button>
                   )}
                 </div>
