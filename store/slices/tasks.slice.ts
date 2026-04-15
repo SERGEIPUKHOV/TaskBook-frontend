@@ -365,6 +365,7 @@ export const createTasksSlice: AppSliceCreator<TasksSlice> = (set, get) => ({
         },
       };
     });
+    set(() => ({ ...invalidateCalendarRanges() }));
   },
 
   unlinkTaskFromGoogle: async (key, taskId) => {
@@ -384,6 +385,7 @@ export const createTasksSlice: AppSliceCreator<TasksSlice> = (set, get) => ({
         },
       };
     });
+    set(() => ({ ...invalidateCalendarRanges() }));
   },
 
   updateTaskEventTime: async (key, taskId, startsHhmm, endsHhmm) => {
