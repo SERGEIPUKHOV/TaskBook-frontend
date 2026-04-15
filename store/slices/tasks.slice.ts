@@ -347,5 +347,70 @@ export const createTasksSlice: AppSliceCreator<TasksSlice> = (set, get) => ({
         },
       };
     }),
+
+  exportTaskToGoogle: async (key, taskId, connectionId) => {
+    await api.post(`/tasks/${taskId}/calendar-export`, { connection_id: connectionId });
+    set((state) => {
+      const current = state.weeks[key];
+      if (!current) return state;
+      return {
+        weeks: {
+          ...state.weeks,
+          [key]: {
+            ...current,
+            tasks: current.tasks.map((t) =>
+              t.id === taskId ? { ...t, calendarConnectionId: connectionId, linkedEventTime: null } : t,
+            ),
+          },
+        },
+      };
+    });
+  },
+
+  unlinkTaskFromGoogle: async (key, taskId) => {
+    await api.delete(`/tasks/${taskId}/calendar-export`);
+    set((state) => {
+      const current = state.weeks[key];
+      if (!current) return state;
+      return {
+        weeks: {
+          ...state.weeks,
+          [key]: {
+            ...current,
+            tasks: current.tasks.map((t) =>
+              t.id === taskId ? { ...t, linkedEventTime: null, calendarConnectionId: null } : t,
+            ),
+          },
+        },
+      };
+    });
+  },
+
+  updateTaskEventTime: async (key, taskId, startsHhmm, endsHhmm) => {
+    const res = await api
+      .patch<{ starts_at: string; ends_at: string }>(`/tasks/${taskId}/event-time`, {
+        starts_hhmm: startsHhmm,
+        ends_hhmm: endsHhmm,
+      })
+      .catch(() => null);
+    if (!res) return;
+    set((state) => {
+      const current = state.weeks[key];
+      if (!current) return state;
+      return {
+        weeks: {
+          ...state.weeks,
+          [key]: {
+            ...current,
+            tasks: current.tasks.map((t) =>
+              t.id === taskId
+                ? { ...t, linkedEventTime: { startsAt: res.starts_at, endsAt: res.ends_at } }
+                : t,
+            ),
+          },
+        },
+      };
+    });
+  },
 });
 // BLOCK-END: TASKS_SLICE_MODULE

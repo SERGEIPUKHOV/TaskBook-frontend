@@ -159,6 +159,8 @@ export type WeekTask = {
   startDayKey: string;
   statusTrail: TaskStatus[];
   carriedFromTaskId?: string | null;
+  linkedEventTime?: { startsAt: string; endsAt: string } | null;
+  calendarConnectionId?: string | null;
 };
 
 export type WeekReflection = {

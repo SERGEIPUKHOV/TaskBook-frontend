@@ -131,6 +131,9 @@ export type TasksSlice = {
   moveTask: (key: string, activeId: string, targetId: string) => void;
   setTaskStartDay: (key: string, taskId: string, dayKey: string) => void;
   updateTask: (key: string, taskId: string, field: TaskField, value: string | number | boolean | null) => void;
+  exportTaskToGoogle: (key: string, taskId: string, connectionId: string) => Promise<void>;
+  unlinkTaskFromGoogle: (key: string, taskId: string) => Promise<void>;
+  updateTaskEventTime: (key: string, taskId: string, startsHhmm: string, endsHhmm: string) => Promise<void>;
 };
 
 export type AppStore = StoreMeta & MonthsSlice & DaysSlice & HabitsSlice & WeeksSlice & TasksSlice & CalendarSlice;

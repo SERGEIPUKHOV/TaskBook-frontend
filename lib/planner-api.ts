@@ -90,6 +90,8 @@ type ApiTask = {
   calendar_export_bucket: TaskCalendarExportBucket | null;
   carried_from_task_id: string | null;
   statuses: Record<string, string>;
+  linked_event_time?: { starts_at: string; ends_at: string } | null;
+  calendar_connection_id?: string | null;
 };
 
 type ApiWeekEntry = {
@@ -245,6 +247,10 @@ export function mapApiTaskToWeekTask(task: ApiTask, weekStartDate: string): Week
     startDayKey: dayKeys[startIndex] ?? weekStartDate,
     statusTrail,
     carriedFromTaskId: task.carried_from_task_id,
+    linkedEventTime: task.linked_event_time
+      ? { startsAt: task.linked_event_time.starts_at, endsAt: task.linked_event_time.ends_at }
+      : null,
+    calendarConnectionId: task.calendar_connection_id ?? null,
   };
 }
 

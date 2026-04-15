@@ -52,6 +52,9 @@ function createStore() {
     moveTask: noop,
     setTaskStartDay: noop,
     updateTask: noop,
+    exportTaskToGoogle: async () => {},
+    unlinkTaskFromGoogle: async () => {},
+    updateTaskEventTime: async () => {},
     ...createCalendarSlice(...args),
   }));
 }

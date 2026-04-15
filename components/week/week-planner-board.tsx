@@ -332,6 +332,265 @@ function HabitRow({
 }
 // BLOCK-END: WEEK_PLANNER_AUX_COMPONENTS
 
+// BLOCK-START: WEEK_PLANNER_TASK_SCHEDULE_DIALOG
+// Description: Per-task Google Calendar sync dialog — export, unlink, and event time edit.
+function TaskScheduleDialog({
+  task,
+  weekKey,
+  onClose,
+  anchorRef,
+}: {
+  task: WeekTask;
+  weekKey: string;
+  onClose: () => void;
+  anchorRef: React.RefObject<HTMLButtonElement | null>;
+}) {
+  const connections = useAppStore((state) => state.calendarConnections);
+  const exportTaskToGoogle = useAppStore((state) => state.exportTaskToGoogle);
+  const unlinkTaskFromGoogle = useAppStore((state) => state.unlinkTaskFromGoogle);
+  const updateTaskEventTime = useAppStore((state) => state.updateTaskEventTime);
+  const googleConnections = connections.filter((c) => c.provider === "google" && c.status === "active");
+  const isLinked = Boolean(task.calendarConnectionId);
+
+  const [startsHhmm, setStartsHhmm] = useState(() => {
+    if (!task.linkedEventTime) return "";
+    return task.linkedEventTime.startsAt.slice(11, 16);
+  });
+  const [endsHhmm, setEndsHhmm] = useState(() => {
+    if (!task.linkedEventTime) return "";
+    return task.linkedEventTime.endsAt.slice(11, 16);
+  });
+  const [selectedConnectionId, setSelectedConnectionId] = useState(googleConnections[0]?.id ?? "");
+  const [busy, setBusy] = useState(false);
+
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (
+        ref.current &&
+        !ref.current.contains(e.target as Node) &&
+        anchorRef.current &&
+        !anchorRef.current.contains(e.target as Node)
+      ) {
+        onClose();
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [onClose, anchorRef]);
+
+  const anchor = anchorRef.current?.getBoundingClientRect();
+  const top = anchor ? anchor.bottom + window.scrollY + 4 : 0;
+  const left = anchor ? anchor.left + window.scrollX : 0;
+
+  return createPortal(
+    <div
+      ref={ref}
+      className="fixed z-50 w-72 rounded-2xl border border-line bg-paper p-4 shadow-lg"
+      style={{ top, left }}
+    >
+      <div className="mb-3 text-sm font-medium text-ink">Синхронизация с Google</div>
+
+      {isLinked ? (
+        <>
+          {task.linkedEventTime && (
+            <div className="mb-3 space-y-2">
+              <div className="text-xs text-muted">Время события</div>
+              <div className="flex items-center gap-2">
+                <input
+                  className="field-base w-full px-2 py-1 text-sm"
+                  type="time"
+                  value={startsHhmm}
+                  onChange={(e) => setStartsHhmm(e.target.value)}
+                />
+                <span className="text-muted">–</span>
+                <input
+                  className="field-base w-full px-2 py-1 text-sm"
+                  type="time"
+                  value={endsHhmm}
+                  onChange={(e) => setEndsHhmm(e.target.value)}
+                />
+              </div>
+              <button
+                className="w-full rounded-[14px] border border-accent bg-accent/10 py-1.5 text-sm text-accent transition-colors hover:bg-accent/20 disabled:opacity-50"
+                disabled={busy || !startsHhmm || !endsHhmm}
+                onClick={async () => {
+                  setBusy(true);
+                  await updateTaskEventTime(weekKey, task.id, startsHhmm, endsHhmm);
+                  setBusy(false);
+                  onClose();
+                }}
+                type="button"
+              >
+                Сохранить время
+              </button>
+            </div>
+          )}
+          <button
+            className="w-full rounded-[14px] border border-danger/40 py-1.5 text-sm text-danger transition-colors hover:bg-danger/10 disabled:opacity-50"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              await unlinkTaskFromGoogle(weekKey, task.id);
+              setBusy(false);
+              onClose();
+            }}
+            type="button"
+          >
+            Отвязать от Google
+          </button>
+        </>
+      ) : (
+        <>
+          {googleConnections.length === 0 ? (
+            <p className="text-xs text-muted">Нет подключённых Google аккаунтов</p>
+          ) : (
+            <div className="space-y-2">
+              {googleConnections.length > 1 && (
+                <select
+                  className="field-base w-full px-2 py-1 text-sm"
+                  value={selectedConnectionId}
+                  onChange={(e) => setSelectedConnectionId(e.target.value)}
+                >
+                  {googleConnections.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.providerAccountLabel ?? c.accountLabel ?? c.id}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <button
+                className="w-full rounded-[14px] border border-accent bg-accent/10 py-1.5 text-sm text-accent transition-colors hover:bg-accent/20 disabled:opacity-50"
+                disabled={busy || !selectedConnectionId}
+                onClick={async () => {
+                  setBusy(true);
+                  await exportTaskToGoogle(weekKey, task.id, selectedConnectionId);
+                  setBusy(false);
+                  onClose();
+                }}
+                type="button"
+              >
+                Добавить в Google Calendar
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>,
+    document.body,
+  );
+}
+// BLOCK-END: WEEK_PLANNER_TASK_SCHEDULE_DIALOG
+
+// BLOCK-START: WEEK_PLANNER_TASK_CALENDAR_EXPORT_MODAL
+// Description: Bulk export modal — adds all non-linked week tasks to Google Calendar.
+function TaskCalendarExportModal({
+  tasks,
+  weekKey,
+  onClose,
+}: {
+  tasks: WeekTask[];
+  weekKey: string;
+  onClose: () => void;
+}) {
+  const connections = useAppStore((state) => state.calendarConnections);
+  const exportTaskToGoogle = useAppStore((state) => state.exportTaskToGoogle);
+  const googleConnections = connections.filter((c) => c.provider === "google" && c.status === "active");
+  const exportableTasks = tasks.filter((t) => !t.calendarConnectionId && !t.id.startsWith("temp-"));
+  const [selectedConnectionId, setSelectedConnectionId] = useState(googleConnections[0]?.id ?? "");
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+  const [errors, setErrors] = useState<string[]>([]);
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/30 p-4 sm:items-center">
+      <div className="w-full max-w-sm rounded-2xl border border-line bg-paper p-5 shadow-xl">
+        <div className="mb-4 text-sm font-medium text-ink">Экспорт задач в Google Calendar</div>
+
+        {done ? (
+          <div className="space-y-3">
+            <p className="text-sm text-muted">
+              {exportableTasks.length - errors.length} задач добавлено.
+              {errors.length > 0 && ` ${errors.length} ошибок.`}
+            </p>
+            <button
+              className="w-full rounded-[14px] border border-line py-2 text-sm text-ink"
+              onClick={onClose}
+              type="button"
+            >
+              Закрыть
+            </button>
+          </div>
+        ) : googleConnections.length === 0 ? (
+          <div className="space-y-3">
+            <p className="text-sm text-muted">Нет подключённых Google аккаунтов</p>
+            <button className="w-full rounded-[14px] border border-line py-2 text-sm" onClick={onClose} type="button">
+              Закрыть
+            </button>
+          </div>
+        ) : exportableTasks.length === 0 ? (
+          <div className="space-y-3">
+            <p className="text-sm text-muted">Все задачи уже привязаны к Google Calendar</p>
+            <button className="w-full rounded-[14px] border border-line py-2 text-sm" onClick={onClose} type="button">
+              Закрыть
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {googleConnections.length > 1 && (
+              <select
+                className="field-base w-full px-2 py-1 text-sm"
+                value={selectedConnectionId}
+                onChange={(e) => setSelectedConnectionId(e.target.value)}
+              >
+                {googleConnections.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.providerAccountLabel ?? c.accountLabel ?? c.id}
+                  </option>
+                ))}
+              </select>
+            )}
+            <p className="text-xs text-muted">{exportableTasks.length} задач будут добавлены в Google Calendar</p>
+            <div className="flex gap-2">
+              <button
+                className="flex-1 rounded-[14px] border border-line py-2 text-sm text-ink"
+                disabled={busy}
+                onClick={onClose}
+                type="button"
+              >
+                Отмена
+              </button>
+              <button
+                className="flex-1 rounded-[14px] border border-accent bg-accent/10 py-2 text-sm text-accent disabled:opacity-50"
+                disabled={busy || !selectedConnectionId}
+                onClick={async () => {
+                  setBusy(true);
+                  const errs: string[] = [];
+                  await Promise.allSettled(
+                    exportableTasks.map((t) =>
+                      exportTaskToGoogle(weekKey, t.id, selectedConnectionId).catch(() => {
+                        errs.push(t.title || t.id);
+                      }),
+                    ),
+                  );
+                  setErrors(errs);
+                  setBusy(false);
+                  setDone(true);
+                }}
+                type="button"
+              >
+                {busy ? "Экспорт..." : "Добавить"}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body,
+  );
+}
+// BLOCK-END: WEEK_PLANNER_TASK_CALENDAR_EXPORT_MODAL
+
 // BLOCK-START: WEEK_PLANNER_TASK_ROW
 // Description: Editable week task row with status cells, priority toggle, title editing, and delayed title persistence.
 /**
@@ -367,6 +626,8 @@ function TaskRow({
   const [draft, setDraft] = useState<TaskDraft>({
     title: task.title,
   });
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const gearButtonRef = useRef<HTMLButtonElement | null>(null);
   const saveTimerRef = useRef<number | undefined>(undefined);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -443,6 +704,20 @@ function TaskRow({
           />
         </div>
         <button
+          ref={gearButtonRef}
+          aria-label="Синхронизация с Google Calendar"
+          className={cn(
+            "mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-xs transition-colors md:opacity-0 md:transition-opacity md:group-hover:opacity-100",
+            task.calendarConnectionId
+              ? "text-accent opacity-100"
+              : "text-muted opacity-100 hover:bg-canvas hover:text-ink",
+          )}
+          onClick={() => setScheduleOpen((v) => !v)}
+          type="button"
+        >
+          ⚙
+        </button>
+        <button
           aria-label={`Удалить задачу ${draft.title || "без названия"}`}
           className="mt-0.5 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm text-muted opacity-100 transition-colors hover:bg-danger/10 hover:text-danger md:opacity-0 md:transition-opacity md:group-hover:opacity-100"
           onClick={() => onDelete(task)}
@@ -451,6 +726,14 @@ function TaskRow({
           ✕
         </button>
       </div>
+      {scheduleOpen && (
+        <TaskScheduleDialog
+          anchorRef={gearButtonRef}
+          task={task}
+          weekKey={weekKey}
+          onClose={() => setScheduleOpen(false)}
+        />
+      )}
 
       <div className={getRightColumnClass("flex items-center justify-center")}>
         <button
@@ -626,7 +909,11 @@ export function WeekPlannerBoard({
   const habitLoadState = useAppStore((state) => state.habitLoadStates[monthKey]);
   const months = useAppStore((state) => state.months);
   const month = months[monthKey];
+  const connections = useAppStore((state) => state.calendarConnections);
+  const hasGoogleConnection = connections.some((c) => c.provider === "google" && c.status === "active");
+  const exportableCount = week.tasks.filter((t) => !t.calendarConnectionId && !t.id.startsWith("temp-")).length;
   const [pendingDelete, setPendingDelete] = useState<PendingDeleteState | null>(null);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [newTaskText, setNewTaskText] = useState("");
   const newTaskInputRef = useRef<HTMLInputElement | null>(null);
   const shouldFocusNewTaskRef = useRef(false);
@@ -815,6 +1102,15 @@ export function WeekPlannerBoard({
                   >
                     + Добавить задачу
                   </button>
+                  {hasGoogleConnection && exportableCount > 0 && (
+                    <button
+                      className="flex-shrink-0 rounded-[18px] border border-accent/50 bg-paper px-3 py-2 text-sm font-medium text-accent transition-colors hover:bg-accent/10"
+                      onClick={() => setShowExportModal(true)}
+                      type="button"
+                    >
+                      В календарь ({exportableCount})
+                    </button>
+                  )}
                 </div>
                 <PlaceholderCell />
               </div>
@@ -864,6 +1160,13 @@ export function WeekPlannerBoard({
           state={pendingDelete}
         />
       ) : null}
+      {showExportModal && (
+        <TaskCalendarExportModal
+          tasks={week.tasks}
+          weekKey={weekKey}
+          onClose={() => setShowExportModal(false)}
+        />
+      )}
     </>
   );
 }
