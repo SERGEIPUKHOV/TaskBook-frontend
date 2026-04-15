@@ -334,6 +334,8 @@ function HabitRow({
 
 // BLOCK-START: WEEK_PLANNER_TASK_SCHEDULE_DIALOG
 // Description: Per-task Google Calendar sync dialog — full-screen modal mirroring HabitScheduleDialog.
+const WEEKDAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
 function TaskScheduleDialog({
   task,
   weekKey,
@@ -357,6 +359,7 @@ function TaskScheduleDialog({
     task.linkedEventTime ? task.linkedEventTime.endsAt.slice(11, 16) : "",
   );
   const [selectedConnectionId, setSelectedConnectionId] = useState(googleConnections[0]?.id ?? "");
+  const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
 
   return createPortal(
@@ -436,7 +439,7 @@ function TaskScheduleDialog({
               >
                 {googleConnections.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.providerAccountLabel ?? c.accountLabel ?? c.id}
+                    {c.accountLabel ?? c.providerAccountLabel ?? c.id}
                   </option>
                 ))}
               </select>
@@ -460,15 +463,46 @@ function TaskScheduleDialog({
               </div>
               <div className="text-xs text-muted">Оставьте пустым — событие займёт весь день</div>
             </div>
+            <div className="space-y-1">
+              <div className="text-xs text-muted">Повторение (необязательно)</div>
+              <div className="flex flex-wrap gap-1">
+                {WEEKDAY_LABELS.map((label, idx) => {
+                  const day = idx + 1;
+                  const isSelected = selectedDays.includes(day);
+                  return (
+                    <button
+                      key={day}
+                      className={cn(
+                        "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                        isSelected
+                          ? "border-accent bg-accent/15 text-accent"
+                          : "border-line bg-paper text-muted hover:border-accent hover:text-accent",
+                      )}
+                      disabled={busy}
+                      onClick={() =>
+                        setSelectedDays((current) =>
+                          isSelected ? current.filter((d) => d !== day) : [...current, day],
+                        )
+                      }
+                      type="button"
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="text-xs text-muted">Не выбрано — разовое событие</div>
+            </div>
             <button
               className="w-full rounded-[20px] border border-accent bg-accent/10 py-3 text-sm font-medium text-accent transition-colors hover:bg-accent/15 disabled:opacity-50"
               disabled={busy || !selectedConnectionId}
               onClick={async () => {
                 setBusy(true);
-                await exportTaskToGoogle(weekKey, task.id, selectedConnectionId);
-                if (startsHhmm && endsHhmm) {
-                  await updateTaskEventTime(weekKey, task.id, startsHhmm, endsHhmm);
-                }
+                await exportTaskToGoogle(weekKey, task.id, selectedConnectionId, {
+                  scheduleDays: selectedDays.length > 0 ? selectedDays : undefined,
+                  startsHhmm: startsHhmm || undefined,
+                  endsHhmm: endsHhmm || undefined,
+                });
                 setBusy(false);
                 onClose();
               }}
@@ -512,7 +546,7 @@ function TaskCalendarExportModal({
   const googleConnections = connections.filter((c) => c.provider === "google" && c.status === "active");
   const exportableTasks = tasks.filter((t) => !t.calendarConnectionId && !t.id.startsWith("temp-"));
 
-  const [rows, setRows] = useState(() => exportableTasks.map((t) => ({ task: t, checked: true })));
+  const [rows, setRows] = useState(() => exportableTasks.map((t) => ({ task: t, checked: true, startsHhmm: "", endsHhmm: "" })));
   const [selectedConnectionId, setSelectedConnectionId] = useState(googleConnections[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -526,7 +560,12 @@ function TaskCalendarExportModal({
     setError(null);
     try {
       await Promise.allSettled(
-        selected.map((r) => exportTaskToGoogle(weekKey, r.task.id, selectedConnectionId)),
+        selected.map((r) =>
+          exportTaskToGoogle(weekKey, r.task.id, selectedConnectionId, {
+            startsHhmm: r.startsHhmm || undefined,
+            endsHhmm: r.endsHhmm || undefined,
+          }),
+        ),
       );
       onClose();
     } catch {
@@ -560,7 +599,7 @@ function TaskCalendarExportModal({
               >
                 {googleConnections.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.providerAccountLabel ?? c.accountLabel ?? c.id}
+                    {c.accountLabel ?? c.providerAccountLabel ?? c.id}
                   </option>
                 ))}
               </select>
@@ -613,6 +652,36 @@ function TaskCalendarExportModal({
                       </div>
                       <div className="mt-0.5 text-xs text-muted">
                         {format(parseISO(row.task.startDayKey), "EEE, d MMM", { locale: ru })}
+                      </div>
+                      <div className="mt-1 flex items-center gap-1">
+                        <input
+                          className="rounded-lg border border-line bg-paper px-2 py-1 text-xs text-accent tabular-nums focus:border-accent focus:outline-none"
+                          disabled={busy}
+                          onChange={(e) =>
+                            setRows((current) =>
+                              current.map((r) =>
+                                r.task.id === row.task.id ? { ...r, startsHhmm: e.target.value } : r,
+                              ),
+                            )
+                          }
+                          type="time"
+                          value={row.startsHhmm}
+                        />
+                        <span className="text-xs text-muted">–</span>
+                        <input
+                          className="rounded-lg border border-line bg-paper px-2 py-1 text-xs text-accent tabular-nums focus:border-accent focus:outline-none"
+                          disabled={busy}
+                          onChange={(e) =>
+                            setRows((current) =>
+                              current.map((r) =>
+                                r.task.id === row.task.id ? { ...r, endsHhmm: e.target.value } : r,
+                              ),
+                            )
+                          }
+                          type="time"
+                          value={row.endsHhmm}
+                        />
+                        <span className="text-xs text-muted/60">необязательно</span>
                       </div>
                     </div>
                   </div>
@@ -1213,6 +1282,23 @@ export function WeekPlannerBoard({
             >
               + Добавить задачу
             </button>
+            {hasGoogleConnection && (
+              <button
+                className={cn(
+                  "rounded-[18px] border px-4 py-2.5 text-sm font-medium transition-colors",
+                  exportableCount > 0
+                    ? "border-accent/50 text-accent hover:bg-accent/10"
+                    : "cursor-default border-line text-muted",
+                )}
+                disabled={exportableCount === 0}
+                onClick={() => exportableCount > 0 && setShowExportModal(true)}
+                type="button"
+              >
+                {exportableCount > 0
+                  ? `В Google Calendar (${exportableCount})`
+                  : "Все задачи в Google Calendar"}
+              </button>
+            )}
           </form>
         </article>
 

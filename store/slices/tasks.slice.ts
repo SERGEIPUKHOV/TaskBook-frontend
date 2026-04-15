@@ -348,8 +348,13 @@ export const createTasksSlice: AppSliceCreator<TasksSlice> = (set, get) => ({
       };
     }),
 
-  exportTaskToGoogle: async (key, taskId, connectionId) => {
-    await api.post(`/tasks/${taskId}/calendar-export`, { connection_id: connectionId });
+  exportTaskToGoogle: async (key, taskId, connectionId, opts) => {
+    await api.post(`/tasks/${taskId}/calendar-export`, {
+      connection_id: connectionId,
+      schedule_days: opts?.scheduleDays ?? null,
+      starts_hhmm: opts?.startsHhmm || null,
+      ends_hhmm: opts?.endsHhmm || null,
+    });
     set((state) => {
       const current = state.weeks[key];
       if (!current) return state;
