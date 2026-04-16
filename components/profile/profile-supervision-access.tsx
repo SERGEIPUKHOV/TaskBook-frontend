@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import type { SupervisionGrant, SupervisionSection } from "@/lib/planner-types";
+import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
 
 const SECTION_OPTIONS: Array<{ label: string; value: SupervisionSection }> = [
@@ -17,35 +18,52 @@ function sectionLabel(section: SupervisionSection): string {
   return SECTION_OPTIONS.find((option) => option.value === section)?.label ?? section;
 }
 
-function GrantSectionEditor({
-  disabled = false,
-  onToggle,
-  sections,
+type PendingRevoke = {
+  countdown: number;
+  grantId: string;
+  supervisorEmail: string;
+};
+
+function RevokeDialog({
+  onCancel,
+  onConfirm,
+  state,
 }: {
-  disabled?: boolean;
-  onToggle: (section: SupervisionSection, checked: boolean) => void;
-  sections: SupervisionSection[];
+  onCancel: () => void;
+  onConfirm: () => void;
+  state: PendingRevoke;
 }) {
   return (
-    <div className="flex flex-wrap gap-2">
-      {SECTION_OPTIONS.map((option) => {
-        const checked = sections.includes(option.value);
-        return (
-          <label
-            key={option.value}
-            className="inline-flex items-center gap-2 rounded-full border border-line bg-paper px-3 py-2 text-xs font-medium text-ink"
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 px-4 backdrop-blur-sm">
+      <div className="paper-panel w-full max-w-md rounded-[32px] p-6">
+        <div className="text-xs uppercase tracking-[0.2em] text-danger">Отзыв доступа</div>
+        <h3 className="mt-3 break-all text-xl font-semibold text-ink">{state.supervisorEmail}</h3>
+        <p className="mt-3 text-sm leading-7 text-muted">
+          Супервайзер потеряет доступ к аккаунту. Кнопка подтверждения станет активной после обратного отсчёта.
+        </p>
+        <div className="mt-6 flex items-center justify-end gap-3">
+          <button
+            className="rounded-[20px] border border-line bg-paper px-4 py-3 text-sm font-medium text-muted transition-colors hover:text-ink"
+            onClick={onCancel}
+            type="button"
           >
-            <input
-              checked={checked}
-              className="h-4 w-4 rounded border-line text-accent focus:ring-accent"
-              disabled={disabled}
-              onChange={(event) => onToggle(option.value, event.target.checked)}
-              type="checkbox"
-            />
-            {option.label}
-          </label>
-        );
-      })}
+            Отмена
+          </button>
+          <button
+            className={cn(
+              "rounded-[20px] px-4 py-3 text-sm font-medium transition-colors",
+              state.countdown > 0
+                ? "cursor-not-allowed border border-line bg-canvas text-muted"
+                : "border border-danger bg-danger text-white",
+            )}
+            disabled={state.countdown > 0}
+            onClick={onConfirm}
+            type="button"
+          >
+            {state.countdown > 0 ? `Отозвать (${state.countdown})` : "Отозвать"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -63,7 +81,8 @@ export function ProfileSupervisionAccess() {
   const [draftSections, setDraftSections] = useState<Record<string, SupervisionSection[]>>({});
   const [submitting, setSubmitting] = useState(false);
   const [savingGrantId, setSavingGrantId] = useState<string | null>(null);
-  const [deletingGrantId, setDeletingGrantId] = useState<string | null>(null);
+  const [editingGrantId, setEditingGrantId] = useState<string | null>(null);
+  const [pendingRevoke, setPendingRevoke] = useState<PendingRevoke | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -80,6 +99,18 @@ export function ProfileSupervisionAccess() {
       return next;
     });
   }, [grants]);
+
+  useEffect(() => {
+    if (!pendingRevoke || pendingRevoke.countdown === 0) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      setPendingRevoke((current) =>
+        current ? { ...current, countdown: Math.max(0, current.countdown - 1) } : current,
+      );
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, [pendingRevoke]);
 
   const hasAnyGrant = grants.length > 0;
   const sortedGrants = useMemo(() => grants.slice(), [grants]);
@@ -132,6 +163,7 @@ export function ProfileSupervisionAccess() {
     setSuccessMessage(null);
     try {
       await updateSupervisorGrant(grant.id, sections);
+      setEditingGrantId(null);
       setSuccessMessage("Разделы обновлены.");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Не удалось обновить разделы.");
@@ -140,22 +172,32 @@ export function ProfileSupervisionAccess() {
     }
   }
 
-  async function handleDeleteGrant(grantId: string) {
-    setDeletingGrantId(grantId);
+  async function handleConfirmRevoke() {
+    if (!pendingRevoke) {
+      return;
+    }
+    const { grantId } = pendingRevoke;
+    setPendingRevoke(null);
     setErrorMessage(null);
     setSuccessMessage(null);
     try {
       await deleteSupervisorGrant(grantId);
-      setSuccessMessage("Доступ удалён.");
+      setSuccessMessage("Доступ отозван.");
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Не удалось удалить доступ.");
-    } finally {
-      setDeletingGrantId(null);
+      setErrorMessage(error instanceof Error ? error.message : "Не удалось отозвать доступ.");
     }
   }
 
   return (
     <div className="space-y-5">
+      {pendingRevoke ? (
+        <RevokeDialog
+          onCancel={() => setPendingRevoke(null)}
+          onConfirm={() => void handleConfirmRevoke()}
+          state={pendingRevoke}
+        />
+      ) : null}
+
       <div className="rounded-[28px] border border-line bg-canvas/50 p-5">
         <div className="text-sm font-semibold text-ink">Добавить супервайзера</div>
         <p className="mt-1 text-sm leading-6 text-muted">
@@ -180,14 +222,29 @@ export function ProfileSupervisionAccess() {
           </button>
         </div>
 
-        <div className="mt-4">
-          <GrantSectionEditor
-            disabled={submitting}
-            onToggle={(section, checked) => {
-              setCreateSections((current) => toggleSection(current, section, checked));
-            }}
-            sections={createSections}
-          />
+        <div className="mt-4 flex flex-wrap gap-2">
+          {SECTION_OPTIONS.map((option) => {
+            const checked = createSections.includes(option.value);
+            return (
+              <label
+                key={option.value}
+                className="inline-flex items-center gap-2 rounded-full border border-line bg-paper px-3 py-2 text-xs font-medium text-ink"
+              >
+                <input
+                  checked={checked}
+                  className="h-4 w-4 rounded border-line text-accent focus:ring-accent"
+                  disabled={submitting}
+                  onChange={(event) => {
+                    setCreateSections((current) =>
+                      toggleSection(current, option.value, event.target.checked),
+                    );
+                  }}
+                  type="checkbox"
+                />
+                {option.label}
+              </label>
+            );
+          })}
         </div>
       </div>
 
@@ -207,7 +264,9 @@ export function ProfileSupervisionAccess() {
         <div className="text-sm font-semibold text-ink">Текущие доступы</div>
 
         {grantsStatus === "loading" && !hasAnyGrant ? (
-          <div className="rounded-[24px] border border-line bg-paper/70 px-4 py-4 text-sm text-muted">Загружаем доступы...</div>
+          <div className="rounded-[24px] border border-line bg-paper/70 px-4 py-4 text-sm text-muted">
+            Загружаем доступы...
+          </div>
         ) : null}
 
         {grantsStatus !== "loading" && !hasAnyGrant ? (
@@ -217,59 +276,111 @@ export function ProfileSupervisionAccess() {
         ) : null}
 
         {sortedGrants.map((grant) => {
-          const sections = draftSections[grant.id] ?? grant.sections;
-          const isDirty = JSON.stringify(sections) !== JSON.stringify(grant.sections);
+          const isEditing = editingGrantId === grant.id;
           const isSaving = savingGrantId === grant.id;
-          const isDeleting = deletingGrantId === grant.id;
+          const sections = draftSections[grant.id] ?? grant.sections;
 
           return (
-            <article key={grant.id} className="rounded-[24px] border border-line bg-paper/70 p-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <div className="break-all text-sm font-semibold text-ink">{grant.supervisorEmail}</div>
-                  <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted">
-                    <span className="rounded-full border border-line bg-canvas px-2.5 py-1">
-                      {grant.status === "active" ? "Активен" : "Ожидает регистрации"}
-                    </span>
+            <article key={grant.id} className="rounded-[24px] border border-line bg-paper/70">
+              <div className="flex items-center gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <span className="block break-all text-sm text-ink">{grant.supervisorEmail}</span>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
                     {grant.sections.map((section) => (
-                      <span key={section} className="rounded-full border border-line bg-canvas px-2.5 py-1">
+                      <span
+                        key={section}
+                        className="rounded-full border border-line bg-canvas px-2 py-0.5 text-xs text-muted"
+                      >
                         {sectionLabel(section)}
                       </span>
                     ))}
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    className="rounded-[14px] border border-line bg-canvas px-3 py-2 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"
-                    disabled={!isDirty || isSaving}
-                    onClick={() => void handleSaveGrant(grant)}
-                    type="button"
-                  >
-                    {isSaving ? "Сохраняем..." : "Сохранить"}
-                  </button>
-                  <button
-                    className="rounded-[14px] border border-line bg-canvas px-3 py-2 text-sm font-medium text-ink transition-colors hover:border-danger hover:text-danger disabled:cursor-not-allowed disabled:opacity-60"
-                    disabled={isDeleting}
-                    onClick={() => void handleDeleteGrant(grant.id)}
-                    type="button"
-                  >
-                    {isDeleting ? "Удаляем..." : "Удалить"}
-                  </button>
-                </div>
+
+                <button
+                  aria-label="Редактировать доступы"
+                  className={cn(
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-[12px] border text-sm transition-colors",
+                    isEditing
+                      ? "border-accent bg-accent/10 text-accent"
+                      : "border-line bg-canvas text-muted hover:border-accent hover:text-accent",
+                  )}
+                  onClick={() => setEditingGrantId(isEditing ? null : grant.id)}
+                  type="button"
+                >
+                  ⚙
+                </button>
+
+                <button
+                  aria-label="Отозвать доступ"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[12px] border border-line bg-canvas text-sm text-muted transition-colors hover:border-danger hover:text-danger"
+                  onClick={() => {
+                    setEditingGrantId(null);
+                    setPendingRevoke({
+                      countdown: 5,
+                      grantId: grant.id,
+                      supervisorEmail: grant.supervisorEmail,
+                    });
+                  }}
+                  type="button"
+                >
+                  ✕
+                </button>
               </div>
 
-              <div className="mt-4">
-                <GrantSectionEditor
-                  disabled={isSaving || isDeleting}
-                  onToggle={(section, checked) => {
-                    setDraftSections((current) => ({
-                      ...current,
-                      [grant.id]: toggleSection(current[grant.id] ?? grant.sections, section, checked),
-                    }));
-                  }}
-                  sections={sections}
-                />
-              </div>
+              {isEditing ? (
+                <div className="border-t border-line px-4 pb-4 pt-3">
+                  <div className="flex flex-wrap gap-2">
+                    {SECTION_OPTIONS.map((option) => {
+                      const checked = sections.includes(option.value);
+                      return (
+                        <label
+                          key={option.value}
+                          className="inline-flex items-center gap-2 rounded-full border border-line bg-paper px-3 py-2 text-xs font-medium text-ink"
+                        >
+                          <input
+                            checked={checked}
+                            className="h-4 w-4 rounded border-line text-accent focus:ring-accent"
+                            disabled={isSaving}
+                            onChange={(event) => {
+                              setDraftSections((current) => ({
+                                ...current,
+                                [grant.id]: toggleSection(
+                                  current[grant.id] ?? grant.sections,
+                                  option.value,
+                                  event.target.checked,
+                                ),
+                              }));
+                            }}
+                            type="checkbox"
+                          />
+                          {option.label}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-3 flex justify-end gap-2">
+                    <button
+                      className="rounded-[14px] border border-line bg-canvas px-3 py-2 text-sm font-medium text-muted transition-colors hover:text-ink"
+                      onClick={() => {
+                        setEditingGrantId(null);
+                        setDraftSections((current) => ({ ...current, [grant.id]: grant.sections }));
+                      }}
+                      type="button"
+                    >
+                      Отмена
+                    </button>
+                    <button
+                      className="rounded-[14px] border border-line bg-canvas px-3 py-2 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={isSaving}
+                      onClick={() => void handleSaveGrant(grant)}
+                      type="button"
+                    >
+                      {isSaving ? "Сохраняем..." : "Сохранить"}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </article>
           );
         })}
