@@ -652,7 +652,8 @@ export function ProfileCalendarIntegrations({
         </ProviderCard>
       </div>
 
-      <section className="rounded-[28px] border border-line bg-canvas/50 p-5 sm:p-6">
+      {/* HIDDEN: Экспорт задач — временно скрыт */}
+      <section className="hidden rounded-[28px] border border-line bg-canvas/50 p-5 sm:p-6">
         <div className="text-base font-semibold text-ink">Экспорт задач</div>
         <div className="mt-2 text-sm leading-6 text-muted">
           Выбери bucket для задачи в planner и подпиши нужный ICS URL во внешний календарь. Так можно развести рабочие и личные задачи по разным календарям без write-доступа к Google или Apple.
