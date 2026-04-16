@@ -463,12 +463,13 @@ export function ProfileScreen({
     }
   }
 
-  function handleStartViewingAs() {
-    if (!selectedOwnerId) {
+  function handleStartViewingAs(ownerId?: string) {
+    const id = ownerId ?? selectedOwnerId;
+    if (!id) {
       return;
     }
 
-    const owner = accessibleOwners.find((item) => item.ownerId === selectedOwnerId);
+    const owner = accessibleOwners.find((item) => item.ownerId === id);
     if (!owner) {
       return;
     }
@@ -571,27 +572,18 @@ export function ProfileScreen({
               </button>
             </div>
           ) : (
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-              <select
-                className="h-11 flex-1 rounded-[16px] border border-line bg-paper px-3 text-sm text-ink outline-none transition-colors focus:border-accent"
-                onChange={(event) => setSelectedOwnerId(event.target.value)}
-                value={selectedOwnerId}
-              >
-                <option value="">Выбрать аккаунт...</option>
-                {accessibleOwners.map((owner) => (
-                  <option key={owner.ownerId} value={owner.ownerId}>
-                    {owner.ownerEmail}
-                  </option>
-                ))}
-              </select>
-              <button
-                className="rounded-[16px] border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={!selectedOwnerId}
-                onClick={handleStartViewingAs}
-                type="button"
-              >
-                Перейти
-              </button>
+            <div className="flex flex-col gap-2">
+              {accessibleOwners.map((owner) => (
+                <button
+                  key={owner.ownerId}
+                  className="flex w-full items-center justify-between rounded-[16px] border border-line bg-paper px-4 py-3 text-left text-sm text-ink transition-colors hover:border-accent hover:text-accent"
+                  onClick={() => handleStartViewingAs(owner.ownerId)}
+                  type="button"
+                >
+                  <span className="break-all">{owner.ownerEmail}</span>
+                  <span className="ml-3 shrink-0 text-muted">→</span>
+                </button>
+              ))}
             </div>
           )}
         </Section>
