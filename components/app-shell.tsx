@@ -43,6 +43,7 @@ function sectionTitle(pathname: string): string {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const lastSavedAt = useAppStore((state) => state.lastSavedAt);
+  const viewingAs = useAppStore((state) => state.viewingAs);
   const clearSession = useAuthStore((state) => state.clearSession);
   const hasHydrated = useAuthStore((state) => state.hasHydrated);
   const syncUser = useAuthStore((state) => state.syncUser);
@@ -132,7 +133,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
           </header>
-          <main className="page-content flex-1 pb-24 md:pb-8">
+          <main className={`page-content flex-1 md:pb-8 ${viewingAs ? "pb-40" : "pb-24"}`}>
             <div className="mx-auto min-w-0 max-w-[1200px] overflow-x-hidden px-4 py-6 sm:px-6 lg:px-8">
               {children}
             </div>
