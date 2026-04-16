@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
 import type { SupervisionGrant, SupervisionSection } from "@/lib/planner-types";
 import { cn } from "@/lib/utils";
@@ -242,15 +243,16 @@ export function ProfileSupervisionAccess() {
 
   return (
     <div className="space-y-5">
-      {pendingRevoke ? (
+      {pendingRevoke ? createPortal(
         <RevokeDialog
           onCancel={() => setPendingRevoke(null)}
           onConfirm={() => void handleConfirmRevoke()}
           state={pendingRevoke}
-        />
+        />,
+        document.body,
       ) : null}
 
-      {editingGrant ? (
+      {editingGrant ? createPortal(
         <EditDialog
           isSaving={savingGrantId === editingGrant.grant.id}
           onCancel={() => setEditingGrant(null)}
@@ -263,7 +265,8 @@ export function ProfileSupervisionAccess() {
             );
           }}
           state={editingGrant}
-        />
+        />,
+        document.body,
       ) : null}
 
       <div className="rounded-[28px] border border-line bg-canvas/50 p-5">

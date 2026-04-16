@@ -285,6 +285,7 @@ export function ProfileScreen({
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [selectedOwnerId, setSelectedOwnerId] = useState("");
+  const [dropdownOpen, setDropdownOpen] = useState(false);
 
   useEffect(() => {
     let isCancelled = false;
@@ -572,18 +573,41 @@ export function ProfileScreen({
               </button>
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
-              {accessibleOwners.map((owner) => (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <div className="relative flex-1">
                 <button
-                  key={owner.ownerId}
-                  className="flex w-full items-center justify-between rounded-[16px] border border-line bg-paper px-4 py-3 text-left text-sm text-ink transition-colors hover:border-accent hover:text-accent"
-                  onClick={() => handleStartViewingAs(owner.ownerId)}
+                  className="flex h-11 w-full items-center justify-between rounded-[16px] border border-line bg-paper px-4 text-sm text-ink outline-none transition-colors hover:border-accent focus:border-accent"
+                  onClick={() => setDropdownOpen((v) => !v)}
                   type="button"
                 >
-                  <span className="break-all">{owner.ownerEmail}</span>
-                  <span className="ml-3 shrink-0 text-muted">→</span>
+                  <span className={selectedOwnerId ? "text-ink" : "text-muted"}>
+                    {accessibleOwners.find((o) => o.ownerId === selectedOwnerId)?.ownerEmail ?? "Выбрать аккаунт..."}
+                  </span>
+                  <span className="ml-2 shrink-0 text-muted">∨</span>
                 </button>
-              ))}
+                {dropdownOpen ? (
+                  <div className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-[16px] border border-line bg-paper shadow-paper">
+                    {accessibleOwners.map((owner) => (
+                      <button
+                        key={owner.ownerId}
+                        className="flex w-full items-center px-4 py-3 text-left text-sm text-ink transition-colors hover:bg-canvas"
+                        onClick={() => { setSelectedOwnerId(owner.ownerId); setDropdownOpen(false); }}
+                        type="button"
+                      >
+                        {owner.ownerEmail}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+              <button
+                className="h-11 shrink-0 rounded-[16px] border border-line bg-paper px-5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!selectedOwnerId}
+                onClick={() => handleStartViewingAs()}
+                type="button"
+              >
+                Посмотреть
+              </button>
             </div>
           )}
         </Section>
