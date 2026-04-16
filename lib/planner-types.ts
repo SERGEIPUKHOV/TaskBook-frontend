@@ -128,6 +128,24 @@ export type CalendarTaskExportFeed = {
   taskCount: number;
 };
 
+export type SupervisionSection = "dashboard" | "month" | "week" | "day" | "calendar";
+
+export type SupervisionGrant = {
+  id: string;
+  supervisorEmail: string;
+  supervisorId: string | null;
+  sections: SupervisionSection[];
+  status: "active" | "pending" | "revoked";
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SupervisionOwner = {
+  ownerId: string;
+  ownerEmail: string;
+  sections: SupervisionSection[];
+};
+
 export type CalendarBulkImportSummary = {
   errors: Array<{ eventId: string; message: string }>;
   failedCount: number;

@@ -9,6 +9,7 @@ import type {
   RegisterRequest,
   ResetPasswordRequest,
 } from "@/lib/auth-types";
+import { getViewAsOwnerId, shouldAttachViewAsHeader } from "@/lib/view-as";
 
 type ApiEnvelope<T> = {
   data: T;
@@ -35,10 +36,15 @@ function shouldAttemptRefresh(path: string): boolean {
     !path.startsWith("/auth/refresh");
 }
 
-function buildHeaders(init?: RequestInit): Headers {
+function buildHeaders(path: string, init?: RequestInit): Headers {
   const headers = new Headers(init?.headers);
   if (!headers.has("Content-Type") && init?.body) {
     headers.set("Content-Type", "application/json");
+  }
+
+  const viewAsOwnerId = getViewAsOwnerId();
+  if (viewAsOwnerId && shouldAttachViewAsHeader(path)) {
+    headers.set("X-View-As", viewAsOwnerId);
   }
 
   return headers;
@@ -48,7 +54,7 @@ async function performRequest<T>(path: string, init?: RequestInit): Promise<ApiE
   const response = await fetch(`${API_BASE}${path}`, {
     ...init,
     credentials: "include",
-    headers: buildHeaders(init),
+    headers: buildHeaders(path, init),
   });
 
   if (!response.ok) {

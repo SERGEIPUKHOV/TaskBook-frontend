@@ -12,6 +12,9 @@ import type {
   GoogleCalendarOptionsState,
   MetricName,
   MonthData,
+  SupervisionGrant,
+  SupervisionOwner,
+  SupervisionSection,
   WeekData,
 } from "@/lib/planner-types";
 
@@ -104,6 +107,22 @@ export type CalendarSlice = {
   updateConnectionColor: (connectionId: string, color: string) => Promise<void>;
 };
 
+export type SupervisionSlice = {
+  accessibleOwners: SupervisionOwner[];
+  accessibleOwnersStatus: LoadStatus;
+  supervisionGrants: SupervisionGrant[];
+  supervisionGrantsStatus: LoadStatus;
+  viewingAs: SupervisionOwner | null;
+  fetchSupervisionGrants: (force?: boolean) => Promise<void>;
+  fetchAccessibleOwners: (force?: boolean) => Promise<void>;
+  addSupervisorGrant: (supervisorEmail: string, sections: SupervisionSection[]) => Promise<SupervisionGrant>;
+  updateSupervisorGrant: (grantId: string, sections: SupervisionSection[]) => Promise<SupervisionGrant>;
+  deleteSupervisorGrant: (grantId: string) => Promise<void>;
+  startViewingAs: (ownerId: string) => void;
+  stopViewingAs: () => void;
+  resetSupervisionState: () => void;
+};
+
 export type HabitsSlice = {
   habitLoadStates: Record<string, HabitLoadState>;
   addHabit: (key: string, name: string) => Promise<AddHabitResult>;
@@ -140,7 +159,7 @@ export type TasksSlice = {
   updateTaskEventTime: (key: string, taskId: string, startsHhmm: string, endsHhmm: string) => Promise<void>;
 };
 
-export type AppStore = StoreMeta & MonthsSlice & DaysSlice & HabitsSlice & WeeksSlice & TasksSlice & CalendarSlice;
+export type AppStore = StoreMeta & MonthsSlice & DaysSlice & HabitsSlice & WeeksSlice & TasksSlice & CalendarSlice & SupervisionSlice;
 
 export type AppSliceCreator<T> = StateCreator<AppStore, [], [], T>;
 

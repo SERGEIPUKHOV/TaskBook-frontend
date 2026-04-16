@@ -5,6 +5,8 @@ import { persist } from "zustand/middleware";
 
 import { api } from "@/lib/api";
 import type { AuthResponse, AuthUser } from "@/lib/auth-types";
+import { setViewAsOwnerId } from "@/lib/view-as";
+import { useAppStore } from "@/store/app-store";
 
 type AuthState = {
   hasHydrated: boolean;
@@ -23,10 +25,14 @@ export const useAuthStore = create<AuthState>()(
       hasHydrated: false,
       user: null,
       clearSession: () => {
+        setViewAsOwnerId(null);
+        useAppStore.getState().resetSupervisionState();
         set({ user: null });
       },
       login: async (email, password) => {
         const response = await api.post<AuthResponse>("/auth/login", { email, password });
+        setViewAsOwnerId(null);
+        useAppStore.getState().resetSupervisionState();
         set({ user: response.user });
       },
       logout: async () => {
@@ -35,12 +41,16 @@ export const useAuthStore = create<AuthState>()(
         } catch {
           // Ignore remote logout failures and still clear the local user state.
         } finally {
+          setViewAsOwnerId(null);
+          useAppStore.getState().resetSupervisionState();
           set({ user: null });
         }
       },
       markHydrated: () => set({ hasHydrated: true }),
       register: async (email, password) => {
         const response = await api.post<AuthResponse>("/auth/register", { email, password });
+        setViewAsOwnerId(null);
+        useAppStore.getState().resetSupervisionState();
         set({ user: response.user });
       },
       syncUser: async () => {

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 
 import { AuthBanner, AuthPasswordField } from "@/components/auth/auth-fields";
 import { ProfileCalendarIntegrations } from "@/components/profile/profile-calendar-integrations";
+import { ProfileSupervisionAccess } from "@/components/profile/profile-supervision-access";
 import { api } from "@/lib/api";
 import type { ApiError, AuthUser } from "@/lib/auth-types";
 import { PASSWORD_MIN_LENGTH } from "@/lib/auth-validation";
@@ -503,6 +504,10 @@ export function ProfileScreen({
           googleProvider={googleProvider}
           googleStatus={googleStatus}
         />
+      </Section>
+
+      <Section title="Доступы">
+        <ProfileSupervisionAccess />
       </Section>
 
       <div className="grid gap-4 xl:grid-cols-2">

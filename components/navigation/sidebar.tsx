@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { isValid, parseISO, startOfISOWeek } from "date-fns";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   formatIsoDate,
@@ -17,6 +17,7 @@ import {
   getWeeksForMonth,
 } from "@/lib/dates";
 import { currentContext, getDayNavHref, getMonthNavHref, getWeekNavHref } from "@/lib/nav-hrefs";
+import { getSupervisionSectionForPath, getSupervisionTargetHref } from "@/lib/supervision-nav";
 import {
   CalendarIcon,
   CalendarSyncIcon,
@@ -29,6 +30,7 @@ import {
   WeekIcon,
 } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/store/app-store";
 import { useAuthStore } from "@/store/auth-store";
 import { useNavStore } from "@/store/nav-store";
 
@@ -86,6 +88,12 @@ export function Sidebar() {
   const searchParams = useSearchParams();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const accessibleOwners = useAppStore((state) => state.accessibleOwners);
+  const accessibleOwnersStatus = useAppStore((state) => state.accessibleOwnersStatus);
+  const fetchAccessibleOwners = useAppStore((state) => state.fetchAccessibleOwners);
+  const startViewingAs = useAppStore((state) => state.startViewingAs);
+  const stopViewingAs = useAppStore((state) => state.stopViewingAs);
+  const viewingAs = useAppStore((state) => state.viewingAs);
   const lastDay = useNavStore((state) => state.lastDay);
   const lastMonth = useNavStore((state) => state.lastMonth);
   const lastWeek = useNavStore((state) => state.lastWeek);
@@ -130,6 +138,15 @@ export function Sidebar() {
   const primaryMonthHref = getMonthNavHref({ context, lastDay, lastMonth, lastWeek, pathname, today });
   const primaryDayHref = getDayNavHref({ context, lastDay, pathname, today });
   const primaryWeekHref = getWeekNavHref({ context, lastDay, lastWeek, pathname, today });
+  const currentHref = useMemo(() => {
+    const query = searchParams.toString();
+    return query ? `${pathname}?${query}` : pathname;
+  }, [pathname, searchParams]);
+  const currentSection = getSupervisionSectionForPath(pathname);
+
+  useEffect(() => {
+    void fetchAccessibleOwners();
+  }, [fetchAccessibleOwners]);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -140,6 +157,32 @@ export function Sidebar() {
       router.replace("/login");
       setIsLoggingOut(false);
     }
+  }
+
+  function handleViewSelection(ownerId: string) {
+    if (!ownerId) {
+      stopViewingAs();
+      router.replace(currentHref);
+      return;
+    }
+
+    const owner = accessibleOwners.find((item) => item.ownerId === ownerId);
+    if (!owner) {
+      return;
+    }
+
+    startViewingAs(owner.ownerId);
+    router.replace(
+      getSupervisionTargetHref({
+        allowedSections: owner.sections,
+        calendarHref: "/calendar",
+        currentHref,
+        currentSection,
+        dayHref: primaryDayHref,
+        monthHref: primaryMonthHref,
+        weekHref: primaryWeekHref,
+      }),
+    );
   }
 
   return (
@@ -179,6 +222,38 @@ export function Sidebar() {
             <span className="hidden xl:inline">Календарь</span>
           </Link>
         </nav>
+
+        {(accessibleOwnersStatus === "loading" || accessibleOwners.length > 0 || viewingAs) ? (
+          <div className="mt-8 rounded-[28px] border border-line bg-canvas/70 p-4">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-muted">Наблюдение</div>
+            <div className="mt-2 text-sm font-medium text-ink">
+              {viewingAs ? `Сейчас: ${viewingAs.ownerEmail}` : "Выбери аккаунт для чтения"}
+            </div>
+            <div className="mt-3">
+              <select
+                className="h-11 w-full rounded-[16px] border border-line bg-paper px-3 text-sm text-ink outline-none transition-colors focus:border-accent"
+                onChange={(event) => handleViewSelection(event.target.value)}
+                value={viewingAs?.ownerId ?? ""}
+              >
+                <option value="">Мой аккаунт</option>
+                {accessibleOwners.map((owner) => (
+                  <option key={owner.ownerId} value={owner.ownerId}>
+                    {owner.ownerEmail}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {viewingAs ? (
+              <button
+                className="mt-3 w-full rounded-[16px] border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
+                onClick={() => handleViewSelection("")}
+                type="button"
+              >
+                Вернуться к себе
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
         <div className="mt-8 hidden rounded-[28px] border border-line bg-canvas/70 p-4 xl:block">
           <div className="flex items-center justify-between text-muted">

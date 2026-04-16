@@ -15,6 +15,8 @@ import type {
   Habit,
   MonthData,
   PlannerLinkTargetKind,
+  SupervisionGrant,
+  SupervisionOwner,
   TaskCalendarExportBucket,
   TaskStatus,
   WeekData,
@@ -185,6 +187,22 @@ type ApiCalendarTaskExportFeed = {
   bucket: TaskCalendarExportBucket;
   feed_path: string;
   task_count: number;
+};
+
+type ApiSupervisionGrant = {
+  id: string;
+  supervisor_email: string;
+  supervisor_id: string | null;
+  sections: SupervisionGrant["sections"];
+  status: SupervisionGrant["status"];
+  created_at: string;
+  updated_at: string;
+};
+
+type ApiSupervisionOwner = {
+  owner_id: string;
+  owner_email: string;
+  sections: SupervisionOwner["sections"];
 };
 
 export type WeekEntryMeta = {
@@ -426,6 +444,26 @@ export function mapApiCalendarTaskExportFeed(entry: ApiCalendarTaskExportFeed): 
   };
 }
 
+export function mapApiSupervisionGrant(entry: ApiSupervisionGrant): SupervisionGrant {
+  return {
+    id: entry.id,
+    supervisorEmail: entry.supervisor_email,
+    supervisorId: entry.supervisor_id,
+    sections: entry.sections,
+    status: entry.status,
+    createdAt: entry.created_at,
+    updatedAt: entry.updated_at,
+  };
+}
+
+export function mapApiSupervisionOwner(entry: ApiSupervisionOwner): SupervisionOwner {
+  return {
+    ownerId: entry.owner_id,
+    ownerEmail: entry.owner_email,
+    sections: entry.sections,
+  };
+}
+
 export type {
   ApiCalendarConnection,
   ApiCalendarEvent,
@@ -438,6 +476,8 @@ export type {
   ApiHabitGrid,
   ApiMonthBundle,
   ApiMonthPlan,
+  ApiSupervisionGrant,
+  ApiSupervisionOwner,
   ApiTask,
   ApiWeek,
   ApiWeekBundle,
