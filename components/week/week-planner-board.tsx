@@ -333,7 +333,7 @@ function HabitRow({
 // BLOCK-END: WEEK_PLANNER_AUX_COMPONENTS
 
 // BLOCK-START: WEEK_PLANNER_TASK_SCHEDULE_DIALOG
-// Description: Per-task Google Calendar sync dialog — full-screen modal mirroring HabitScheduleDialog.
+// Description: Per-task Google Calendar sync dialog — mirrors HabitScheduleDialog layout exactly.
 const WEEKDAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
 function TaskScheduleDialog({
@@ -346,6 +346,8 @@ function TaskScheduleDialog({
   onClose: () => void;
 }) {
   const connections = useAppStore((state) => state.calendarConnections);
+  const calendarConnectionsStatus = useAppStore((state) => state.calendarConnectionsStatus);
+  const fetchCalendarConnections = useAppStore((state) => state.fetchCalendarConnections);
   const exportTaskToGoogle = useAppStore((state) => state.exportTaskToGoogle);
   const unlinkTaskFromGoogle = useAppStore((state) => state.unlinkTaskFromGoogle);
   const updateTaskEventTime = useAppStore((state) => state.updateTaskEventTime);
@@ -362,6 +364,18 @@ function TaskScheduleDialog({
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
 
+  // Fetch connections on open — user may not have visited profile/calendar yet
+  useEffect(() => {
+    void fetchCalendarConnections();
+  }, [fetchCalendarConnections]);
+
+  // Set connection once loaded
+  useEffect(() => {
+    if (!selectedConnectionId && googleConnections.length > 0) {
+      setSelectedConnectionId(googleConnections[0].id);
+    }
+  }, [googleConnections, selectedConnectionId]);
+
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 px-4 backdrop-blur-sm"
@@ -376,9 +390,10 @@ function TaskScheduleDialog({
           {task.title || "Без названия"}
         </h3>
 
-        {isLinked && task.linkedEventTime && (
-          <div className="mt-4 space-y-3">
-            <div className="flex items-center gap-2">
+        {/* ── LINKED ── */}
+        {isLinked && (
+          <>
+            <div className="mt-3 flex items-center gap-2">
               <input
                 className="rounded-xl border border-line bg-paper px-3 py-2 text-sm text-accent tabular-nums focus:border-accent focus:outline-none"
                 type="time"
@@ -393,47 +408,56 @@ function TaskScheduleDialog({
                 onChange={(e) => setEndsHhmm(e.target.value)}
               />
             </div>
-            <button
-              className="w-full rounded-[20px] border border-accent bg-accent/10 py-3 text-sm font-medium text-accent transition-colors hover:bg-accent/15 disabled:opacity-50"
-              disabled={busy || !startsHhmm || !endsHhmm}
-              onClick={async () => {
-                setBusy(true);
-                await updateTaskEventTime(weekKey, task.id, startsHhmm, endsHhmm);
-                setBusy(false);
-                onClose();
-              }}
-              type="button"
-            >
-              Сохранить время
-            </button>
-          </div>
+            <p className="mt-2 text-sm leading-6 text-muted">
+              Время события в Google Calendar. Чтобы изменить повторение — отвяжите и добавьте заново.
+            </p>
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                className="rounded-[20px] border border-danger/40 px-4 py-3 text-sm font-medium text-danger transition-colors hover:bg-danger/10 disabled:opacity-50"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  await unlinkTaskFromGoogle(weekKey, task.id);
+                  setBusy(false);
+                  onClose();
+                }}
+                type="button"
+              >
+                Отвязать
+              </button>
+              <button
+                className="rounded-[20px] border border-accent bg-accent/10 px-4 py-3 text-sm font-medium text-accent transition-colors hover:bg-accent/15 disabled:opacity-50"
+                disabled={busy || !startsHhmm || !endsHhmm}
+                onClick={async () => {
+                  setBusy(true);
+                  await updateTaskEventTime(weekKey, task.id, startsHhmm, endsHhmm);
+                  setBusy(false);
+                  onClose();
+                }}
+                type="button"
+              >
+                Сохранить
+              </button>
+            </div>
+          </>
         )}
 
-        {isLinked && (
-          <button
-            className="mt-3 w-full rounded-[20px] border border-danger/40 py-3 text-sm font-medium text-danger transition-colors hover:bg-danger/10 disabled:opacity-50"
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              await unlinkTaskFromGoogle(weekKey, task.id);
-              setBusy(false);
-              onClose();
-            }}
-            type="button"
-          >
-            Отвязать от Google
-          </button>
+        {/* ── NOT LINKED: loading ── */}
+        {!isLinked && calendarConnectionsStatus === "loading" && (
+          <p className="mt-4 text-sm text-muted">Загрузка аккаунтов…</p>
         )}
 
-        {!isLinked && googleConnections.length === 0 && (
+        {/* ── NOT LINKED: no accounts ── */}
+        {!isLinked && calendarConnectionsStatus !== "loading" && googleConnections.length === 0 && (
           <p className="mt-4 text-sm text-muted">Нет подключённых Google аккаунтов</p>
         )}
 
+        {/* ── NOT LINKED: export form ── */}
         {!isLinked && googleConnections.length > 0 && (
-          <div className="mt-4 space-y-3">
+          <>
             {googleConnections.length > 1 && (
               <select
-                className="field-base w-full px-2 py-1 text-sm"
+                className="field-base mt-3 w-full px-2 py-1 text-sm"
                 value={selectedConnectionId}
                 onChange={(e) => setSelectedConnectionId(e.target.value)}
               >
@@ -444,85 +468,87 @@ function TaskScheduleDialog({
                 ))}
               </select>
             )}
-            <div className="space-y-1">
-              <div className="text-xs text-muted">Время события (необязательно)</div>
-              <div className="flex items-center gap-2">
-                <input
-                  className="rounded-xl border border-line bg-paper px-3 py-2 text-sm text-accent tabular-nums focus:border-accent focus:outline-none"
-                  type="time"
-                  value={startsHhmm}
-                  onChange={(e) => setStartsHhmm(e.target.value)}
-                />
-                <span className="text-sm text-muted">–</span>
-                <input
-                  className="rounded-xl border border-line bg-paper px-3 py-2 text-sm text-accent tabular-nums focus:border-accent focus:outline-none"
-                  type="time"
-                  value={endsHhmm}
-                  onChange={(e) => setEndsHhmm(e.target.value)}
-                />
-              </div>
-              <div className="text-xs text-muted">Оставьте пустым — событие займёт весь день</div>
-            </div>
-            <div className="space-y-1">
-              <div className="text-xs text-muted">Повторение (необязательно)</div>
-              <div className="flex flex-wrap gap-1">
-                {WEEKDAY_LABELS.map((label, idx) => {
-                  const day = idx + 1;
-                  const isSelected = selectedDays.includes(day);
-                  return (
-                    <button
-                      key={day}
-                      className={cn(
-                        "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
-                        isSelected
-                          ? "border-accent bg-accent/15 text-accent"
-                          : "border-line bg-paper text-muted hover:border-accent hover:text-accent",
-                      )}
-                      disabled={busy}
-                      onClick={() =>
-                        setSelectedDays((current) =>
-                          isSelected ? current.filter((d) => d !== day) : [...current, day],
-                        )
-                      }
-                      type="button"
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="text-xs text-muted">Не выбрано — разовое событие</div>
-            </div>
-            <button
-              className="w-full rounded-[20px] border border-accent bg-accent/10 py-3 text-sm font-medium text-accent transition-colors hover:bg-accent/15 disabled:opacity-50"
-              disabled={busy || !selectedConnectionId}
-              onClick={async () => {
-                setBusy(true);
-                await exportTaskToGoogle(weekKey, task.id, selectedConnectionId, {
-                  scheduleDays: selectedDays.length > 0 ? selectedDays : undefined,
-                  startsHhmm: startsHhmm || undefined,
-                  endsHhmm: endsHhmm || undefined,
-                });
-                setBusy(false);
-                onClose();
-              }}
-              type="button"
-            >
-              Добавить в Google Calendar
-            </button>
-          </div>
-        )}
 
-        <div className="mt-6 flex justify-end">
-          <button
-            className="rounded-[20px] border border-line bg-paper px-4 py-3 text-sm font-medium text-muted transition-colors hover:text-ink"
-            disabled={busy}
-            onClick={onClose}
-            type="button"
-          >
-            Закрыть
-          </button>
-        </div>
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                className="rounded-xl border border-line bg-paper px-3 py-2 text-sm text-accent tabular-nums focus:border-accent focus:outline-none"
+                type="time"
+                value={startsHhmm}
+                onChange={(e) => setStartsHhmm(e.target.value)}
+              />
+              <span className="text-sm text-muted">–</span>
+              <input
+                className="rounded-xl border border-line bg-paper px-3 py-2 text-sm text-accent tabular-nums focus:border-accent focus:outline-none"
+                type="time"
+                value={endsHhmm}
+                onChange={(e) => setEndsHhmm(e.target.value)}
+              />
+            </div>
+            <p className="mt-2 text-sm leading-6 text-muted">
+              Оставьте пустым — событие займёт весь день
+            </p>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {WEEKDAY_LABELS.map((label, idx) => {
+                const day = idx + 1;
+                const isSelected = selectedDays.includes(day);
+                return (
+                  <button
+                    key={day}
+                    className={cn(
+                      "rounded-full border px-3 py-2 text-sm font-medium transition-colors",
+                      isSelected
+                        ? "border-accent bg-accent/10 text-accent"
+                        : "border-line bg-paper text-ink hover:border-accent hover:text-accent",
+                    )}
+                    disabled={busy}
+                    onClick={() =>
+                      setSelectedDays((current) =>
+                        isSelected
+                          ? current.filter((d) => d !== day)
+                          : [...current, day].sort((a, b) => a - b),
+                      )
+                    }
+                    type="button"
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-sm leading-6 text-muted">
+              Выберите дни повторения. Если не выбраны — разовое событие.
+            </p>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                className="rounded-[20px] border border-line bg-paper px-4 py-3 text-sm font-medium text-muted transition-colors hover:text-ink disabled:opacity-50"
+                disabled={busy}
+                onClick={onClose}
+                type="button"
+              >
+                Отмена
+              </button>
+              <button
+                className="rounded-[20px] border border-accent bg-accent/10 px-4 py-3 text-sm font-medium text-accent transition-colors hover:bg-accent/15 disabled:opacity-50"
+                disabled={busy || !selectedConnectionId}
+                onClick={async () => {
+                  setBusy(true);
+                  await exportTaskToGoogle(weekKey, task.id, selectedConnectionId, {
+                    scheduleDays: selectedDays.length > 0 ? selectedDays : undefined,
+                    startsHhmm: startsHhmm || undefined,
+                    endsHhmm: endsHhmm || undefined,
+                  });
+                  setBusy(false);
+                  onClose();
+                }}
+                type="button"
+              >
+                Готово
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>,
     document.body,
@@ -839,10 +865,10 @@ function TaskRow({
         <button
           aria-label="Синхронизация с Google Calendar"
           className={cn(
-            "mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border transition-colors md:opacity-0 md:transition-opacity md:group-hover:opacity-100",
+            "mt-1 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border transition-colors",
             task.calendarConnectionId
-              ? "border-accent text-accent opacity-100"
-              : "border-line text-muted opacity-100 hover:border-accent hover:text-accent",
+              ? "border-accent text-accent"
+              : "border-line text-muted hover:border-accent hover:text-accent",
           )}
           onClick={() => setScheduleOpen((v) => !v)}
           type="button"
