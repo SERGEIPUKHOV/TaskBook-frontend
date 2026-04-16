@@ -11,7 +11,10 @@ import { ProfileSupervisionAccess } from "@/components/profile/profile-supervisi
 import { api } from "@/lib/api";
 import type { ApiError, AuthUser } from "@/lib/auth-types";
 import { PASSWORD_MIN_LENGTH } from "@/lib/auth-validation";
+import { getISOWeekReference } from "@/lib/dates";
+import { getSupervisionTargetHref } from "@/lib/supervision-nav";
 import { cn } from "@/lib/utils";
+import { useAppStore } from "@/store/app-store";
 import { useAuthStore } from "@/store/auth-store";
 
 type ChangePasswordErrors = {
@@ -260,6 +263,11 @@ export function ProfileScreen({
   const logout = useAuthStore((state) => state.logout);
   const initialUser = useAuthStore((state) => state.user);
   const syncUser = useAuthStore((state) => state.syncUser);
+  const accessibleOwners = useAppStore((state) => state.accessibleOwners);
+  const fetchAccessibleOwners = useAppStore((state) => state.fetchAccessibleOwners);
+  const viewingAs = useAppStore((state) => state.viewingAs);
+  const startViewingAs = useAppStore((state) => state.startViewingAs);
+  const stopViewingAs = useAppStore((state) => state.stopViewingAs);
   const [user, setUser] = useState<AuthUser | null>(initialUser);
   const [isLoading, setIsLoading] = useState(!initialUser);
   const [loadError, setLoadError] = useState("");
@@ -276,6 +284,7 @@ export function ProfileScreen({
   const [deletePassword, setDeletePassword] = useState("");
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [selectedOwnerId, setSelectedOwnerId] = useState("");
 
   useEffect(() => {
     let isCancelled = false;
@@ -319,6 +328,19 @@ export function ProfileScreen({
       isCancelled = true;
     };
   }, [clearSession, router, syncUser]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    void fetchAccessibleOwners();
+  }, [fetchAccessibleOwners]);
+
+  useEffect(() => {
+    if (viewingAs) {
+      setSelectedOwnerId(viewingAs.ownerId);
+      return;
+    }
+
+    setSelectedOwnerId("");
+  }, [viewingAs]);
 
   async function handleRetry() {
     setIsLoading(true);
@@ -441,6 +463,32 @@ export function ProfileScreen({
     }
   }
 
+  function handleStartViewingAs() {
+    if (!selectedOwnerId) {
+      return;
+    }
+
+    const owner = accessibleOwners.find((item) => item.ownerId === selectedOwnerId);
+    if (!owner) {
+      return;
+    }
+
+    startViewingAs(owner.ownerId);
+    const today = new Date();
+    const weekRef = getISOWeekReference(today);
+    router.push(
+      getSupervisionTargetHref({
+        allowedSections: owner.sections,
+        calendarHref: "/calendar",
+        currentHref: "/profile",
+        currentSection: null,
+        dayHref: `/day/${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`,
+        monthHref: `/month/${today.getFullYear()}/${today.getMonth() + 1}`,
+        weekHref: `/week/${weekRef.year}/${weekRef.week}`,
+      }),
+    );
+  }
+
   if (isLoading && !user) {
     return <ProfileSkeleton />;
   }
@@ -505,6 +553,49 @@ export function ProfileScreen({
           googleStatus={googleStatus}
         />
       </Section>
+
+      {(accessibleOwners.length > 0 || viewingAs) ? (
+        <Section title="Наблюдение">
+          {viewingAs ? (
+            <div className="flex flex-col gap-3 rounded-[22px] border border-accent/30 bg-accent/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-ink">Просматриваете аккаунт</p>
+                <p className="mt-0.5 break-all text-sm text-muted">{viewingAs.ownerEmail}</p>
+              </div>
+              <button
+                className="shrink-0 rounded-[16px] border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
+                onClick={() => stopViewingAs()}
+                type="button"
+              >
+                Вернуться к себе
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <select
+                className="h-11 flex-1 rounded-[16px] border border-line bg-paper px-3 text-sm text-ink outline-none transition-colors focus:border-accent"
+                onChange={(event) => setSelectedOwnerId(event.target.value)}
+                value={selectedOwnerId}
+              >
+                <option value="">Выбрать аккаунт...</option>
+                {accessibleOwners.map((owner) => (
+                  <option key={owner.ownerId} value={owner.ownerId}>
+                    {owner.ownerEmail}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="rounded-[16px] border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!selectedOwnerId}
+                onClick={handleStartViewingAs}
+                type="button"
+              >
+                Перейти
+              </button>
+            </div>
+          )}
+        </Section>
+      ) : null}
 
       <Section title="Доступы">
         <ProfileSupervisionAccess />
