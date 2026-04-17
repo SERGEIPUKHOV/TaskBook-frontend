@@ -1,16 +1,21 @@
-export type AuthUser = {
+export type ApiAuthUser = {
   created_at: string;
   email: string;
   id: string;
   is_active: boolean;
   is_admin: boolean;
   role: "admin" | "user";
+  tasktracker_enabled?: boolean;
 };
 
 export type AuthResponse = {
   access_token: string;
   refresh_token: string;
-  user: AuthUser;
+  user: ApiAuthUser;
+};
+
+export type AuthUser = Omit<ApiAuthUser, "tasktracker_enabled"> & {
+  tasktrackerEnabled: boolean;
 };
 
 export type ChangePasswordRequest = {

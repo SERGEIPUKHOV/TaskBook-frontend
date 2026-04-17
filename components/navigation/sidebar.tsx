@@ -26,6 +26,7 @@ import {
   DayIcon,
   DashboardIcon,
   LogOutIcon,
+  TrackerIcon,
   UserIcon,
   WeekIcon,
 } from "@/components/ui/icons";
@@ -221,6 +222,12 @@ export function Sidebar() {
             <CalendarSyncIcon className="h-5 w-5 md:h-6 md:w-6 xl:h-5 xl:w-5" />
             <span className="hidden xl:inline">Календарь</span>
           </Link>
+          {user?.tasktrackerEnabled && !viewingAs ? (
+            <Link className={navClassName(pathname.startsWith("/tracker"))} href="/tracker">
+              <TrackerIcon className="h-5 w-5 md:h-6 md:w-6 xl:h-5 xl:w-5" />
+              <span className="hidden xl:inline">Трекер</span>
+            </Link>
+          ) : null}
         </nav>
 
         {(accessibleOwnersStatus === "loading" || accessibleOwners.length > 0 || viewingAs) ? (

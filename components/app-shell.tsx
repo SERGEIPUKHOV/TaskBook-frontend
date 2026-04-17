@@ -51,6 +51,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [isOnline, setIsOnline] = useState(true);
   const [showSaved, setShowSaved] = useState(false);
   const isAuthRoute = isPublicAuthPath(pathname);
+  const isTrackerRoute = pathname.startsWith("/tracker");
 
   useEffect(() => {
     const syncStatus = () => setIsOnline(window.navigator.onLine);
@@ -106,6 +107,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {children}
       </div>
     );
+  }
+
+  if (isTrackerRoute) {
+    return <div className="relative min-h-screen overflow-x-hidden">{children}</div>;
   }
 
   return (

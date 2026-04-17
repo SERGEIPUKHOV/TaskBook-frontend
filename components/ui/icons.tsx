@@ -349,6 +349,28 @@ export function CalendarSyncIcon({ className }: IconProps) {
   );
 }
 
+export function TrackerIcon({ className }: IconProps) {
+  return (
+    <svg
+      className={iconClassName(className)}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M5 6.5h14" />
+      <path d="M5 12h14" />
+      <path d="M5 17.5h9" />
+      <circle cx="17.5" cy="17.5" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="8" cy="6.5" r="1.5" fill="currentColor" stroke="none" />
+      <circle cx="13" cy="12" r="1.5" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function PlusIcon({ className }: IconProps) {
   return (
     <svg

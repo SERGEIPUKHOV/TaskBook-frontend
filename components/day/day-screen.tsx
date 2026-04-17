@@ -7,6 +7,7 @@ import { DayHabitList } from "@/components/day/day-habit-list";
 import { DayNavigator } from "@/components/day/day-navigator";
 import { DayReflection } from "@/components/day/day-reflection";
 import { DayTaskList } from "@/components/day/day-task-list";
+import { TrackerDeadlinesForDay } from "@/components/tracker/tracker-deadlines-for-day";
 import { DayStateBlock } from "@/components/ui/day-state-block";
 import { formatIsoDate, getISOWeekReference, getMonthKey, getWeekKey, isValidCalendarDate } from "@/lib/dates";
 import { useAppStore } from "@/store/app-store";
@@ -66,6 +67,7 @@ export function DayScreen({ day, month, year }: DayScreenProps) {
   return (
     <div className="space-y-6">
       <DayNavigator date={targetDate} />
+      <TrackerDeadlinesForDay date={dayKey} />
       <DayTaskList dayKey={dayKey} week={weekData} weekKey={weekKey} />
       <DayHabitList dayKey={dayKey} month={monthData} monthKey={monthKey} />
       <section className="paper-panel rounded-[32px] p-5">

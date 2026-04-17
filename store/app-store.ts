@@ -8,6 +8,7 @@ import { createDaysSlice } from "@/store/slices/days.slice";
 import { createHabitsSlice } from "@/store/slices/habits.slice";
 import { createMonthsSlice } from "@/store/slices/months.slice";
 import { createSupervisionSlice } from "@/store/slices/supervision.slice";
+import { createTrackerSlice } from "@/store/slices/tracker.slice";
 import type { AppStore } from "@/store/slices/shared";
 import { createTasksSlice } from "@/store/slices/tasks.slice";
 import { createWeeksSlice } from "@/store/slices/weeks.slice";
@@ -37,6 +38,7 @@ export const useAppStore = create<AppStore>()(
       ...createCalendarSlice(...args),
       ...createMonthsSlice(...args),
       ...createSupervisionSlice(...args),
+      ...createTrackerSlice(...args),
     }),
     {
       name: "taskbook-app-store",

@@ -15,6 +15,11 @@ import type {
   SupervisionGrant,
   SupervisionOwner,
   SupervisionSection,
+  TrackerDeadline,
+  TrackerGoal,
+  TrackerGoalStatus,
+  TrackerSection,
+  TrackerSprint,
   WeekData,
 } from "@/lib/planner-types";
 
@@ -123,6 +128,48 @@ export type SupervisionSlice = {
   resetSupervisionState: () => void;
 };
 
+export type TrackerSlice = {
+  trackerDayDeadlines: Record<string, TrackerDeadline[]>;
+  trackerDayDeadlinesStatus: Record<string, LoadStatus>;
+  trackerGoalsBySprint: Record<string, TrackerGoal[]>;
+  trackerGoalsStatus: Record<string, LoadStatus>;
+  trackerSprints: TrackerSprint[];
+  trackerSprintsStatus: LoadStatus;
+  trackerWeekDeadlines: Record<string, TrackerDeadline[]>;
+  trackerWeekDeadlinesStatus: Record<string, LoadStatus>;
+  createTrackerGoal: (sprintId: string, data: {
+    deadlineDate?: string | null;
+    hypothesis?: string | null;
+    level: 1 | 2 | 3;
+    parentId?: string | null;
+    section: TrackerSection;
+    sortOrder?: number;
+    title: string;
+  }) => Promise<TrackerGoal>;
+  createTrackerSprint: (title: string, startDate: string, endDate: string) => Promise<TrackerSprint>;
+  deleteTrackerGoal: (sprintId: string, goalId: string) => Promise<void>;
+  deleteTrackerSprint: (sprintId: string) => Promise<void>;
+  fetchTrackerDayDeadlines: (date: string, force?: boolean) => Promise<void>;
+  fetchTrackerGoals: (sprintId: string, force?: boolean) => Promise<void>;
+  fetchTrackerSprints: (force?: boolean) => Promise<void>;
+  fetchTrackerWeekDeadlines: (weekYear: number, weekNum: number, force?: boolean) => Promise<void>;
+  patchTrackerGoal: (goalId: string, patch: {
+    deadlineDate?: string | null;
+    hypothesis?: string | null;
+    sortOrder?: number;
+    status?: TrackerGoalStatus;
+    title?: string;
+  }) => Promise<TrackerGoal>;
+  patchTrackerGoalStatus: (goalId: string, status: TrackerGoalStatus) => Promise<TrackerGoal>;
+  patchTrackerSprint: (sprintId: string, patch: {
+    endDate?: string;
+    isActive?: boolean;
+    startDate?: string;
+    title?: string;
+  }) => Promise<TrackerSprint>;
+  setActiveTrackerSprint: (sprintId: string) => Promise<TrackerSprint>;
+};
+
 export type HabitsSlice = {
   habitLoadStates: Record<string, HabitLoadState>;
   addHabit: (key: string, name: string) => Promise<AddHabitResult>;
@@ -159,7 +206,7 @@ export type TasksSlice = {
   updateTaskEventTime: (key: string, taskId: string, startsHhmm: string, endsHhmm: string) => Promise<void>;
 };
 
-export type AppStore = StoreMeta & MonthsSlice & DaysSlice & HabitsSlice & WeeksSlice & TasksSlice & CalendarSlice & SupervisionSlice;
+export type AppStore = StoreMeta & MonthsSlice & DaysSlice & HabitsSlice & WeeksSlice & TasksSlice & CalendarSlice & SupervisionSlice & TrackerSlice;
 
 export type AppSliceCreator<T> = StateCreator<AppStore, [], [], T>;
 

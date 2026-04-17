@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import { api } from "@/lib/api";
-import type { AuthResponse, AuthUser } from "@/lib/auth-types";
+import type { ApiAuthUser, AuthResponse, AuthUser } from "@/lib/auth-types";
 import { setViewAsOwnerId } from "@/lib/view-as";
 import { useAppStore } from "@/store/app-store";
 
@@ -18,6 +18,15 @@ type AuthState = {
   register: (email: string, password: string) => Promise<void>;
   syncUser: () => Promise<AuthUser>;
 };
+
+function normalizeAuthUser(user: ApiAuthUser | AuthUser): AuthUser {
+  return {
+    ...user,
+    tasktrackerEnabled: Boolean(
+      "tasktrackerEnabled" in user ? user.tasktrackerEnabled : user.tasktracker_enabled,
+    ),
+  };
+}
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -33,7 +42,7 @@ export const useAuthStore = create<AuthState>()(
         const response = await api.post<AuthResponse>("/auth/login", { email, password });
         setViewAsOwnerId(null);
         useAppStore.getState().resetSupervisionState();
-        set({ user: response.user });
+        set({ user: normalizeAuthUser(response.user) });
       },
       logout: async () => {
         try {
@@ -51,10 +60,10 @@ export const useAuthStore = create<AuthState>()(
         const response = await api.post<AuthResponse>("/auth/register", { email, password });
         setViewAsOwnerId(null);
         useAppStore.getState().resetSupervisionState();
-        set({ user: response.user });
+        set({ user: normalizeAuthUser(response.user) });
       },
       syncUser: async () => {
-        const user = await api.get<AuthUser>("/users/me");
+        const user = normalizeAuthUser(await api.get<ApiAuthUser>("/users/me"));
         set({ user });
         return user;
       },

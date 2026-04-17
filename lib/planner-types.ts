@@ -129,6 +129,8 @@ export type CalendarTaskExportFeed = {
 };
 
 export type SupervisionSection = "dashboard" | "month" | "week" | "day" | "calendar";
+export type TrackerSection = "money" | "health" | "state" | "communications" | "relations";
+export type TrackerGoalStatus = "done" | "not_done" | "done_with_delay" | null;
 
 export type SupervisionGrant = {
   id: string;
@@ -151,6 +153,42 @@ export type CalendarBulkImportSummary = {
   failedCount: number;
   importedCount: number;
   requestedCount: number;
+};
+
+export type TrackerSprint = {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type TrackerGoal = {
+  id: string;
+  sprintId: string;
+  section: TrackerSection;
+  level: 1 | 2 | 3;
+  parentId: string | null;
+  title: string;
+  hypothesis: string | null;
+  deadlineDate: string | null;
+  status: TrackerGoalStatus;
+  sortOrder: number;
+  children: TrackerGoal[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type TrackerDeadline = {
+  goalId: string;
+  sprintId: string;
+  section: TrackerSection;
+  title: string;
+  deadlineDate: string;
+  status: TrackerGoalStatus;
+  breadcrumb: string[];
 };
 
 export type MonthData = {

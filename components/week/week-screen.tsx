@@ -8,6 +8,7 @@ import { WeekPlannerBoard } from "@/components/week/week-planner-board";
 import { WeekReflection } from "@/components/week/week-reflection";
 import { WeekStatePanel } from "@/components/week/week-state-panel";
 import { WeekSummary } from "@/components/week/week-summary";
+import { TrackerDeadlinesForWeek } from "@/components/tracker/tracker-deadlines-for-week";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/ui/icons";
 import {
   formatWeekDateRange,
@@ -108,6 +109,7 @@ export function WeekScreen({ year, week }: WeekScreenProps) {
       </header>
 
       <WeekSummary week={weekData} weekKey={weekKey} />
+      <TrackerDeadlinesForWeek weekNum={week} weekYear={year} />
       <WeekPlannerBoard
         monthKey={habitMonthKey}
         monthNumber={habitMonthRef.month}
