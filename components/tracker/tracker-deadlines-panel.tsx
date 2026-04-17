@@ -7,7 +7,7 @@ import type { TrackerDeadline, TrackerGoalStatus } from "@/lib/planner-types";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
 
-import { TRACKER_SECTION_ITEMS, TRACKER_STATUS_OPTIONS } from "./tracker-meta";
+import { TRACKER_SECTION_COLORS, TRACKER_SECTION_ITEMS, TRACKER_STATUS_OPTIONS } from "./tracker-meta";
 
 const STATUS_CYCLE: TrackerGoalStatus[] = [null, "done", "not_done", "done_with_delay"];
 
@@ -34,7 +34,7 @@ export function TrackerDeadlinesPanel({ deadlines }: { deadlines: TrackerDeadlin
           return (
             <div key={deadline.goalId} className="py-2.5">
               <div className="flex items-center gap-2">
-                <span className="shrink-0 text-base leading-none text-muted">{sectionItem?.icon}</span>
+                <span className={cn("inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold", TRACKER_SECTION_COLORS[deadline.section])}>{sectionItem?.icon}</span>
                 <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{deadline.title}</span>
                 <button
                   className={cn(
