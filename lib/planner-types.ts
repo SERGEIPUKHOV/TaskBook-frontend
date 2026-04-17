@@ -172,7 +172,8 @@ export type TrackerGoal = {
   level: 1 | 2 | 3;
   parentId: string | null;
   title: string;
-  hypothesis: string | null;
+  targetBaseline: string | null;
+  targetStretch: string | null;
   deadlineDate: string | null;
   status: TrackerGoalStatus;
   sortOrder: number;

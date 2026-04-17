@@ -19,7 +19,6 @@ type ApiTrackerGoal = {
   children: ApiTrackerGoal[];
   created_at: string;
   deadline_date: string | null;
-  hypothesis: string | null;
   id: string;
   level: 1 | 2 | 3;
   parent_id: string | null;
@@ -27,6 +26,8 @@ type ApiTrackerGoal = {
   sort_order: number;
   sprint_id: string;
   status: Exclude<TrackerGoalStatus, null> | null;
+  target_baseline: string | null;
+  target_stretch: string | null;
   title: string;
   updated_at: string;
 };
@@ -61,7 +62,8 @@ function mapTrackerGoal(entry: ApiTrackerGoal): TrackerGoal {
     level: entry.level,
     parentId: entry.parent_id,
     title: entry.title,
-    hypothesis: entry.hypothesis,
+    targetBaseline: entry.target_baseline,
+    targetStretch: entry.target_stretch,
     deadlineDate: entry.deadline_date,
     status: entry.status,
     sortOrder: entry.sort_order,
@@ -281,11 +283,12 @@ export const createTrackerSlice: AppSliceCreator<TrackerSlice> = (set, get) => (
     const goal = mapTrackerGoal(
       await api.post<ApiTrackerGoal>(`/tracker/sprints/${sprintId}/goals`, {
         deadline_date: data.deadlineDate ?? null,
-        hypothesis: data.hypothesis ?? null,
         level: data.level,
         parent_id: data.parentId ?? null,
         section: data.section,
         sort_order: data.sortOrder ?? 0,
+        target_baseline: data.targetBaseline ?? null,
+        target_stretch: data.targetStretch ?? null,
         title: data.title,
       }),
     );
@@ -297,9 +300,10 @@ export const createTrackerSlice: AppSliceCreator<TrackerSlice> = (set, get) => (
     const goal = mapTrackerGoal(
       await api.patch<ApiTrackerGoal>(`/tracker/goals/${goalId}`, {
         ...(patch.deadlineDate !== undefined ? { deadline_date: patch.deadlineDate } : {}),
-        ...(patch.hypothesis !== undefined ? { hypothesis: patch.hypothesis } : {}),
         ...(patch.sortOrder !== undefined ? { sort_order: patch.sortOrder } : {}),
         ...(patch.status !== undefined ? { status: patch.status } : {}),
+        ...(patch.targetBaseline !== undefined ? { target_baseline: patch.targetBaseline } : {}),
+        ...(patch.targetStretch !== undefined ? { target_stretch: patch.targetStretch } : {}),
         ...(patch.title !== undefined ? { title: patch.title } : {}),
       }),
     );

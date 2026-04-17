@@ -139,11 +139,12 @@ export type TrackerSlice = {
   trackerWeekDeadlinesStatus: Record<string, LoadStatus>;
   createTrackerGoal: (sprintId: string, data: {
     deadlineDate?: string | null;
-    hypothesis?: string | null;
     level: 1 | 2 | 3;
     parentId?: string | null;
     section: TrackerSection;
     sortOrder?: number;
+    targetBaseline?: string | null;
+    targetStretch?: string | null;
     title: string;
   }) => Promise<TrackerGoal>;
   createTrackerSprint: (title: string, startDate: string, endDate: string) => Promise<TrackerSprint>;
@@ -155,9 +156,10 @@ export type TrackerSlice = {
   fetchTrackerWeekDeadlines: (weekYear: number, weekNum: number, force?: boolean) => Promise<void>;
   patchTrackerGoal: (goalId: string, patch: {
     deadlineDate?: string | null;
-    hypothesis?: string | null;
     sortOrder?: number;
     status?: TrackerGoalStatus;
+    targetBaseline?: string | null;
+    targetStretch?: string | null;
     title?: string;
   }) => Promise<TrackerGoal>;
   patchTrackerGoalStatus: (goalId: string, status: TrackerGoalStatus) => Promise<TrackerGoal>;
