@@ -2,34 +2,62 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import type { TrackerGoal, TrackerSection } from "@/lib/planner-types";
+import type { TrackerGoal, TrackerGoalStatus, TrackerSection } from "@/lib/planner-types";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
 
 import {
   TRACKER_SECTION_COLORS,
   TRACKER_SECTION_ITEMS,
-  TRACKER_SECTION_LABELS,
   TRACKER_STATUS_OPTIONS,
 } from "./tracker-meta";
 
 const SECTION_ORDER: TrackerSection[] = ["money", "health", "state", "communications", "relations"];
 
+// Shared grid template — header + every row use the same columns
+const COLS = "grid-cols-[28px_1fr_32px_36px] md:grid-cols-[28px_1fr_80px_80px_118px_32px_60px]";
+
 function nextSortOrder(goals: TrackerGoal[]): number {
-  return goals.reduce((maxValue, goal) => Math.max(maxValue, goal.sortOrder), -1) + 1;
+  return goals.reduce((max, g) => Math.max(max, g.sortOrder), -1) + 1;
 }
 
-function SectionBadge({ section }: { section: TrackerSection }) {
+function cycleStatus(current: TrackerGoalStatus): TrackerGoalStatus {
+  const order: TrackerGoalStatus[] = [null, "done", "not_done", "done_with_delay"];
+  const idx = order.indexOf(current);
+  return order[(idx + 1) % order.length] ?? null;
+}
+
+function SectionIcon({ section }: { section: TrackerSection }) {
   const item = TRACKER_SECTION_ITEMS.find((s) => s.id === section);
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-semibold",
+        "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-sm font-bold",
         TRACKER_SECTION_COLORS[section],
       )}
     >
-      {item?.icon} {TRACKER_SECTION_LABELS[section]}
+      {item?.icon}
     </span>
+  );
+}
+
+function StatusPill({
+  status,
+  onChange,
+}: {
+  status: TrackerGoalStatus;
+  onChange: (next: TrackerGoalStatus) => void;
+}) {
+  const opt = TRACKER_STATUS_OPTIONS.find((o) => o.value === status) ?? TRACKER_STATUS_OPTIONS[3]!;
+  return (
+    <button
+      className={cn("h-7 w-7 shrink-0 rounded-full border text-xs font-medium transition-colors", opt.className)}
+      onClick={() => onChange(cycleStatus(status))}
+      title={opt.icon}
+      type="button"
+    >
+      {opt.icon}
+    </button>
   );
 }
 
@@ -47,9 +75,7 @@ function InlineText({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
 
-  useEffect(() => {
-    setDraft(value);
-  }, [value]);
+  useEffect(() => { setDraft(value); }, [value]);
 
   function commit() {
     setEditing(false);
@@ -100,14 +126,11 @@ function MetricInput({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value ?? "");
 
-  useEffect(() => {
-    setDraft(value ?? "");
-  }, [value]);
+  useEffect(() => { setDraft(value ?? ""); }, [value]);
 
   function commit() {
     setEditing(false);
-    const normalized = draft.trim();
-    onSave(normalized || null);
+    onSave(draft.trim() || null);
   }
 
   if (editing) {
@@ -140,167 +163,221 @@ function MetricInput({
   );
 }
 
-function GoalRow({
+// Single goal row — shared by all levels; prefix slot carries icon or level label
+function GoalRowInner({
   goal,
-  siblings,
   sprintId,
-  depth,
+  bold,
+  prefix,
+  isDragOver,
+  dragHandlers,
 }: {
   goal: TrackerGoal;
-  siblings: TrackerGoal[];
   sprintId: string;
-  depth: number;
+  bold?: boolean;
+  prefix: React.ReactNode;
+  isDragOver?: boolean;
+  dragHandlers?: React.HTMLAttributes<HTMLDivElement>;
 }) {
-  const createTrackerGoal = useAppStore((state) => state.createTrackerGoal);
-  const patchTrackerGoal = useAppStore((state) => state.patchTrackerGoal);
-  const patchTrackerGoalStatus = useAppStore((state) => state.patchTrackerGoalStatus);
-  const deleteTrackerGoal = useAppStore((state) => state.deleteTrackerGoal);
-
-  async function handleAddChild() {
-    const childLevel = (goal.level < 3 ? goal.level + 1 : 3) as 2 | 3;
-    await createTrackerGoal(sprintId, {
-      level: childLevel,
-      parentId: goal.id,
-      section: goal.section,
-      sortOrder: nextSortOrder(goal.children),
-      title: childLevel === 2 ? "Новая цель" : "Новая подцель",
-    });
-  }
-
-  async function move(delta: -1 | 1) {
-    const index = siblings.findIndex((item) => item.id === goal.id);
-    const target = siblings[index + delta];
-    if (!target) return;
-    await patchTrackerGoal(goal.id, { sortOrder: target.sortOrder });
-    await patchTrackerGoal(target.id, { sortOrder: goal.sortOrder });
-  }
-
-  const levelLabel = goal.level === 1 ? "МЕТА" : goal.level === 2 ? "ЦЕЛЬ" : "ПОДЦЕЛЬ";
+  const patchTrackerGoal = useAppStore((s) => s.patchTrackerGoal);
+  const patchTrackerGoalStatus = useAppStore((s) => s.patchTrackerGoalStatus);
+  const deleteTrackerGoal = useAppStore((s) => s.deleteTrackerGoal);
+  const createTrackerGoal = useAppStore((s) => s.createTrackerGoal);
 
   return (
-    <div className={cn("space-y-1", depth > 0 && "border-l border-line/60 pl-3")}>
-      {/* Row */}
-      <div className="flex items-center gap-2 rounded-[16px] border border-line bg-paper/80 px-3 py-2.5">
-        {/* Level label (desktop) / section badge (level 1) */}
-        <div className="hidden w-14 shrink-0 sm:block">
-          {goal.level === 1 ? (
-            <SectionBadge section={goal.section} />
-          ) : (
-            <span className="text-[10px] uppercase tracking-[0.14em] text-muted">{levelLabel}</span>
-          )}
-        </div>
+    <div
+      className={cn(
+        "grid cursor-grab items-center gap-2 rounded-[14px] border px-3 py-2 active:cursor-grabbing",
+        COLS,
+        bold ? "border-line bg-paper" : "border-line/60 bg-paper/80",
+        isDragOver && "border-accent/60 bg-accent/5",
+      )}
+      draggable
+      {...dragHandlers}
+    >
+      {/* Prefix: section icon (level 1) or level label (level 2/3) */}
+      <div className="flex items-center justify-center">{prefix}</div>
 
-        {/* Description — flex grow */}
-        <div className="min-w-0 flex-1">
-          <InlineText
-            bold={goal.level === 1}
-            onSave={(v) => void patchTrackerGoal(goal.id, { title: v })}
-            placeholder="Описание цели"
-            value={goal.title}
-          />
-        </div>
-
-        {/* Цель 1.0 */}
-        <div className="hidden w-24 shrink-0 md:block">
-          <MetricInput
-            onSave={(v) => void patchTrackerGoal(goal.id, { targetBaseline: v })}
-            placeholder="Цель 1.0"
-            value={goal.targetBaseline}
-          />
-        </div>
-
-        {/* Цель 1.2 */}
-        <div className="hidden w-24 shrink-0 lg:block">
-          <MetricInput
-            onSave={(v) => void patchTrackerGoal(goal.id, { targetStretch: v })}
-            placeholder="Цель 1.2"
-            value={goal.targetStretch}
-          />
-        </div>
-
-        {/* Дедлайн */}
-        <div className="hidden w-32 shrink-0 md:block">
-          <input
-            className="w-full rounded-[10px] border border-line/60 bg-paper px-2 py-1 text-sm text-ink outline-none transition-colors focus:border-accent"
-            onChange={(e) => void patchTrackerGoal(goal.id, { deadlineDate: e.target.value || null })}
-            type="date"
-            value={goal.deadlineDate ?? ""}
-          />
-        </div>
-
-        {/* Статус */}
-        <div className="flex shrink-0 items-center gap-1">
-          {TRACKER_STATUS_OPTIONS.map((option) => {
-            const isActive = option.value === goal.status;
-            return (
-              <button
-                key={`${goal.id}-${option.icon}`}
-                className={cn(
-                  "h-7 w-7 rounded-full border text-xs font-medium transition-colors",
-                  option.className,
-                  !isActive && "opacity-40 hover:opacity-80",
-                )}
-                onClick={() => void patchTrackerGoalStatus(goal.id, option.value)}
-                title={option.icon}
-                type="button"
-              >
-                {option.icon}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Actions */}
-        <div className="flex shrink-0 items-center gap-1">
-          {goal.level < 3 && (
-            <button
-              className="rounded-[10px] border border-line px-2 py-1 text-xs text-muted transition-colors hover:border-accent hover:text-accent"
-              onClick={() => void handleAddChild()}
-              title={goal.level === 1 ? "Добавить цель" : "Добавить подцель"}
-              type="button"
-            >
-              +
-            </button>
-          )}
-          <button className="rounded-[10px] border border-line px-1.5 py-1 text-xs text-muted transition-colors hover:text-ink" onClick={() => void move(-1)} type="button">↑</button>
-          <button className="rounded-[10px] border border-line px-1.5 py-1 text-xs text-muted transition-colors hover:text-ink" onClick={() => void move(1)} type="button">↓</button>
-          <button
-            className="rounded-[10px] border border-line px-1.5 py-1 text-xs text-muted transition-colors hover:border-danger hover:text-danger"
-            onClick={() => void deleteTrackerGoal(sprintId, goal.id)}
-            type="button"
-          >
-            ✕
-          </button>
-        </div>
+      {/* Description */}
+      <div className="min-w-0">
+        <InlineText
+          bold={bold}
+          onSave={(v) => void patchTrackerGoal(goal.id, { title: v })}
+          placeholder="Описание"
+          value={goal.title}
+        />
       </div>
 
-      {/* Mobile metrics row */}
-      <div className="flex gap-2 px-3 md:hidden">
+      {/* Цель 1.0 — hidden on mobile */}
+      <div className="hidden md:block">
         <MetricInput
           onSave={(v) => void patchTrackerGoal(goal.id, { targetBaseline: v })}
           placeholder="Цель 1.0"
           value={goal.targetBaseline}
         />
+      </div>
+
+      {/* Цель 1.2 — hidden on mobile */}
+      <div className="hidden md:block">
         <MetricInput
           onSave={(v) => void patchTrackerGoal(goal.id, { targetStretch: v })}
           placeholder="Цель 1.2"
           value={goal.targetStretch}
         />
+      </div>
+
+      {/* Дедлайн — hidden on mobile */}
+      <div className="hidden md:block">
         <input
-          className="w-32 shrink-0 rounded-[10px] border border-line/60 bg-paper px-2 py-1 text-sm text-ink outline-none"
+          className="w-full rounded-[10px] border border-line/60 bg-paper px-2 py-1 text-sm text-ink outline-none transition-colors focus:border-accent"
           onChange={(e) => void patchTrackerGoal(goal.id, { deadlineDate: e.target.value || null })}
           type="date"
           value={goal.deadlineDate ?? ""}
         />
       </div>
 
-      {/* Children */}
-      {goal.children.length > 0 && (
-        <div className="space-y-1 pt-1">
-          {goal.children.map((child) => (
-            <GoalRow key={child.id} depth={depth + 1} goal={child} siblings={goal.children} sprintId={sprintId} />
-          ))}
+      {/* Статус — cycling pill */}
+      <StatusPill
+        onChange={(next) => void patchTrackerGoalStatus(goal.id, next)}
+        status={goal.status}
+      />
+
+      {/* Actions */}
+      <div className="flex shrink-0 items-center gap-1">
+        {goal.level < 3 && (
+          <button
+            className="rounded-[8px] border border-line px-1.5 py-1 text-xs text-muted transition-colors hover:border-accent hover:text-accent"
+            onClick={() =>
+              void createTrackerGoal(sprintId, {
+                level: (goal.level + 1) as 2 | 3,
+                parentId: goal.id,
+                section: goal.section,
+                sortOrder: nextSortOrder(goal.children),
+                title: goal.level === 1 ? "Новая цель" : "Новая подцель",
+              })
+            }
+            title="Добавить дочернюю"
+            type="button"
+          >
+            +
+          </button>
+        )}
+        <button
+          className="rounded-[8px] border border-line px-1.5 py-1 text-xs text-muted transition-colors hover:border-danger hover:text-danger"
+          onClick={() => void deleteTrackerGoal(sprintId, goal.id)}
+          type="button"
+        >
+          ✕
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Sortable list of child goals (depth 1 = level 2, depth 2 = level 3)
+function ChildList({
+  goals,
+  sprintId,
+  depth,
+}: {
+  goals: TrackerGoal[];
+  sprintId: string;
+  depth: number;
+}) {
+  const patchTrackerGoal = useAppStore((s) => s.patchTrackerGoal);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+
+  const sorted = useMemo(() => [...goals].sort((a, b) => a.sortOrder - b.sortOrder), [goals]);
+
+  async function handleDrop(targetId: string) {
+    if (!draggingId || draggingId === targetId) return;
+    const from = sorted.find((g) => g.id === draggingId);
+    const to = sorted.find((g) => g.id === targetId);
+    if (!from || !to) return;
+    const fromOrder = from.sortOrder;
+    await patchTrackerGoal(from.id, { sortOrder: to.sortOrder });
+    await patchTrackerGoal(to.id, { sortOrder: fromOrder });
+    setDraggingId(null);
+    setDragOverId(null);
+  }
+
+  const levelLabel = depth === 1 ? "ЦЕЛЬ" : "ПОДЦЕЛЬ";
+  const indentClass =
+    depth === 1
+      ? "ml-6 border-l border-line/40 pl-3"
+      : "ml-10 border-l border-line/30 pl-3";
+
+  return (
+    <div className={cn("space-y-1", indentClass)}>
+      {sorted.map((goal) => (
+        <div key={goal.id} className="space-y-1">
+          <GoalRowInner
+            bold={false}
+            dragHandlers={{
+              onDragStart: () => setDraggingId(goal.id),
+              onDragEnd: () => { setDraggingId(null); setDragOverId(null); },
+              onDragOver: (e) => { e.preventDefault(); setDragOverId(goal.id); },
+              onDragLeave: () => setDragOverId(null),
+              onDrop: (e) => { e.preventDefault(); void handleDrop(goal.id); },
+            }}
+            goal={goal}
+            isDragOver={dragOverId === goal.id}
+            prefix={
+              <span className="text-center text-[9px] uppercase leading-tight tracking-[0.12em] text-muted/70">
+                {levelLabel}
+              </span>
+            }
+            sprintId={sprintId}
+          />
+          {goal.children.length > 0 && (
+            <ChildList depth={depth + 1} goals={goal.children} sprintId={sprintId} />
+          )}
         </div>
+      ))}
+    </div>
+  );
+}
+
+// Meta-goal card: level-1 row + all descendants wrapped in a rounded card
+function MetaGoalCard({
+  goal,
+  sprintId,
+  isDragOver,
+  onDragStart,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  onDragEnd,
+}: {
+  goal: TrackerGoal;
+  sprintId: string;
+  isDragOver: boolean;
+  onDragStart: () => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDragLeave: () => void;
+  onDrop: (e: React.DragEvent) => void;
+  onDragEnd: () => void;
+}) {
+  return (
+    <div
+      className={cn(
+        "space-y-1.5 rounded-[20px] border p-2 transition-colors",
+        isDragOver ? "border-accent/60 bg-accent/5" : "border-line bg-paper/40",
+      )}
+      onDragLeave={onDragLeave}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+    >
+      <GoalRowInner
+        bold
+        dragHandlers={{ onDragStart, onDragEnd }}
+        goal={goal}
+        prefix={<SectionIcon section={goal.section} />}
+        sprintId={sprintId}
+      />
+      {goal.children.length > 0 && (
+        <ChildList depth={1} goals={goal.children} sprintId={sprintId} />
       )}
     </div>
   );
@@ -340,7 +417,7 @@ function AddMetaGoalPicker({ sprintId, allGoals }: { sprintId: string; allGoals:
         <button
           key={section.id}
           className={cn(
-            "rounded-full border px-3 py-1 text-xs font-semibold transition-colors hover:opacity-90",
+            "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold transition-colors hover:opacity-90",
             TRACKER_SECTION_COLORS[section.id],
           )}
           onClick={() => void add(section.id)}
@@ -362,8 +439,12 @@ function AddMetaGoalPicker({ sprintId, allGoals }: { sprintId: string; allGoals:
 
 export function TrackerGoalsGrid({ sprintId }: { sprintId: string }) {
   const fetchTrackerGoals = useAppStore((state) => state.fetchTrackerGoals);
+  const patchTrackerGoal = useAppStore((state) => state.patchTrackerGoal);
   const goals = useAppStore((state) => state.trackerGoalsBySprint[sprintId] ?? []);
   const goalsStatus = useAppStore((state) => state.trackerGoalsStatus[sprintId] ?? "idle");
+
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   useEffect(() => {
     void fetchTrackerGoals(sprintId);
@@ -379,21 +460,34 @@ export function TrackerGoalsGrid({ sprintId }: { sprintId: string }) {
     [goals],
   );
 
+  async function handleRootDrop(targetId: string) {
+    if (!draggingId || draggingId === targetId) return;
+    const from = sortedRoots.find((g) => g.id === draggingId);
+    const to = sortedRoots.find((g) => g.id === targetId);
+    // Only reorder within the same section
+    if (!from || !to || from.section !== to.section) return;
+    const fromOrder = from.sortOrder;
+    await patchTrackerGoal(from.id, { sortOrder: to.sortOrder });
+    await patchTrackerGoal(to.id, { sortOrder: fromOrder });
+    setDraggingId(null);
+    setDragOverId(null);
+  }
+
   if (goalsStatus === "loading" && goals.length === 0) {
     return <div className="h-[480px] animate-pulse rounded-[24px] border border-line bg-paper/60" />;
   }
 
   return (
     <div className="space-y-4">
-      {/* Column headers (desktop) */}
-      <div className="hidden items-center gap-2 px-3 md:flex">
-        <div className="w-14 shrink-0" />
-        <div className="flex-1 text-xs uppercase tracking-[0.14em] text-muted">Описание</div>
-        <div className="w-24 shrink-0 text-xs uppercase tracking-[0.14em] text-muted">Цель 1.0</div>
-        <div className="hidden w-24 shrink-0 text-xs uppercase tracking-[0.14em] text-muted lg:block">Цель 1.2</div>
-        <div className="w-32 shrink-0 text-xs uppercase tracking-[0.14em] text-muted">Дедлайн</div>
-        <div className="w-28 shrink-0 text-xs uppercase tracking-[0.14em] text-muted">Статус</div>
-        <div className="w-20 shrink-0" />
+      {/* Column headers — desktop only */}
+      <div className={cn("hidden items-center gap-2 px-3 md:grid", COLS)}>
+        <div />
+        <div className="text-xs uppercase tracking-[0.14em] text-muted">Описание</div>
+        <div className="text-xs uppercase tracking-[0.14em] text-muted">Цель 1.0</div>
+        <div className="text-xs uppercase tracking-[0.14em] text-muted">Цель 1.2</div>
+        <div className="text-xs uppercase tracking-[0.14em] text-muted">Дедлайн</div>
+        <div className="text-xs uppercase tracking-[0.14em] text-muted">Ст.</div>
+        <div />
       </div>
 
       {sortedRoots.length === 0 && (
@@ -402,13 +496,23 @@ export function TrackerGoalsGrid({ sprintId }: { sprintId: string }) {
         </div>
       )}
 
-      <div className="space-y-2">
+      <div className="space-y-3">
         {sortedRoots.map((goal) => (
-          <GoalRow key={goal.id} depth={0} goal={goal} siblings={sortedRoots} sprintId={sprintId} />
+          <MetaGoalCard
+            key={goal.id}
+            goal={goal}
+            isDragOver={dragOverId === goal.id}
+            sprintId={sprintId}
+            onDragEnd={() => { setDraggingId(null); setDragOverId(null); }}
+            onDragLeave={() => setDragOverId(null)}
+            onDragOver={(e) => { e.preventDefault(); setDragOverId(goal.id); }}
+            onDragStart={() => setDraggingId(goal.id)}
+            onDrop={(e) => { e.preventDefault(); void handleRootDrop(goal.id); }}
+          />
         ))}
       </div>
 
-      <AddMetaGoalPicker sprintId={sprintId} allGoals={goals} />
+      <AddMetaGoalPicker allGoals={goals} sprintId={sprintId} />
     </div>
   );
 }

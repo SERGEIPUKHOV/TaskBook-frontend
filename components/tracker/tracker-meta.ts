@@ -2,10 +2,10 @@ import type { TrackerGoalStatus, TrackerSection } from "@/lib/planner-types";
 
 export const TRACKER_SECTION_ITEMS: Array<{ id: TrackerSection; icon: string; label: string }> = [
   { id: "money", icon: "$", label: "Деньги" },
-  { id: "health", icon: "H", label: "Здоровье" },
-  { id: "state", icon: "S", label: "Состояние" },
-  { id: "communications", icon: "C", label: "Коммуникации" },
-  { id: "relations", icon: "R", label: "Отношения" },
+  { id: "health", icon: "♥", label: "Здоровье" },
+  { id: "state", icon: "◎", label: "Состояние" },
+  { id: "communications", icon: "🤝", label: "Коммуникации" },
+  { id: "relations", icon: "♡", label: "Отношения" },
 ];
 
 export const TRACKER_SECTION_LABELS: Record<TrackerSection, string> = Object.fromEntries(
@@ -13,8 +13,8 @@ export const TRACKER_SECTION_LABELS: Record<TrackerSection, string> = Object.fro
 ) as Record<TrackerSection, string>;
 
 export const TRACKER_SECTION_COLORS: Record<TrackerSection, string> = {
-  money: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  health: "border-rose-200 bg-rose-50 text-rose-700",
+  money: "border-rose-200 bg-rose-50 text-rose-700",
+  health: "border-emerald-200 bg-emerald-50 text-emerald-700",
   state: "border-violet-200 bg-violet-50 text-violet-700",
   communications: "border-sky-200 bg-sky-50 text-sky-700",
   relations: "border-amber-200 bg-amber-50 text-amber-700",
