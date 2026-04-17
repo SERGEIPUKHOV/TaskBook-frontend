@@ -9,11 +9,30 @@ import { useAppStore } from "@/store/app-store";
 
 import { TRACKER_SECTION_COLORS, TRACKER_SECTION_ITEMS, TRACKER_STATUS_OPTIONS } from "./tracker-meta";
 
-const STATUS_CYCLE: TrackerGoalStatus[] = [null, "done", "not_done", "done_with_delay"];
+function getTodayKey() {
+  return format(new Date(), "yyyy-MM-dd");
+}
 
-function nextStatus(current: TrackerGoalStatus): TrackerGoalStatus {
-  const idx = STATUS_CYCLE.indexOf(current);
-  return STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length] ?? null;
+function getStatusCycle(deadlineDate: string, status: TrackerGoalStatus): TrackerGoalStatus[] | null {
+  const today = getTodayKey();
+  if (deadlineDate >= today) {
+    return [null, "done", "not_done"];
+  }
+  if (status === "not_done") return ["not_done", "done_with_delay"];
+  if (status === "done_with_delay") return ["done_with_delay", "not_done"];
+  return null;
+}
+
+function nextStatusFor(deadlineDate: string, current: TrackerGoalStatus): TrackerGoalStatus {
+  const cycle = getStatusCycle(deadlineDate, current);
+  if (!cycle) {
+    return current;
+  }
+  const idx = cycle.indexOf(current);
+  if (idx === -1) {
+    return cycle[0] ?? current;
+  }
+  return cycle[(idx + 1) % cycle.length] ?? current;
 }
 
 export function TrackerDeadlinesPanel({ deadlines }: { deadlines: TrackerDeadline[] }) {
@@ -30,6 +49,8 @@ export function TrackerDeadlinesPanel({ deadlines }: { deadlines: TrackerDeadlin
         {deadlines.map((deadline) => {
           const sectionItem = TRACKER_SECTION_ITEMS.find((s) => s.id === deadline.section);
           const statusOpt = TRACKER_STATUS_OPTIONS.find((o) => o.value === deadline.status) ?? TRACKER_STATUS_OPTIONS[3]!;
+          const cycle = getStatusCycle(deadline.deadlineDate, deadline.status);
+          const isTerminal = cycle === null;
 
           return (
             <div key={deadline.goalId} className="py-2.5">
@@ -40,8 +61,15 @@ export function TrackerDeadlinesPanel({ deadlines }: { deadlines: TrackerDeadlin
                   className={cn(
                     "flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] border text-xs font-medium transition-colors",
                     statusOpt.className,
+                    isTerminal && "cursor-default opacity-50",
                   )}
-                  onClick={() => void patchTrackerGoalStatus(deadline.goalId, nextStatus(deadline.status))}
+                  disabled={isTerminal}
+                  onClick={() => {
+                    if (isTerminal) {
+                      return;
+                    }
+                    void patchTrackerGoalStatus(deadline.goalId, nextStatusFor(deadline.deadlineDate, deadline.status));
+                  }}
                   title="Изменить статус"
                   type="button"
                 >
