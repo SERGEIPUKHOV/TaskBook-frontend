@@ -18,7 +18,7 @@ function getStatusCycle(deadlineDate: string, status: TrackerGoalStatus): Tracke
   if (deadlineDate >= today) {
     return [null, "done", "not_done"];
   }
-  if (status === "not_done") return ["not_done", "done_with_delay"];
+  if (status === "not_done" || status === null) return ["not_done", "done_with_delay"];
   if (status === "done_with_delay") return ["done_with_delay", "not_done"];
   return null;
 }
