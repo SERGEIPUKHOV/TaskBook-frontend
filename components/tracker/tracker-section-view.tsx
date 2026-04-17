@@ -87,7 +87,7 @@ function InlineText({
     return (
       <input
         autoFocus
-        className="w-full min-w-0 rounded-[10px] border border-accent bg-paper px-2 py-1 text-sm text-ink outline-none"
+        className="w-full min-w-0 rounded-xl border border-accent bg-paper px-2 py-1 text-sm text-ink outline-none"
         onBlur={commit}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
@@ -137,7 +137,7 @@ function MetricInput({
     return (
       <input
         autoFocus
-        className="w-full rounded-[10px] border border-accent bg-paper px-2 py-1 text-sm text-ink outline-none"
+        className="w-full rounded-xl border border-accent bg-paper px-2 py-1 text-sm text-ink outline-none"
         onBlur={commit}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
@@ -152,7 +152,7 @@ function MetricInput({
   return (
     <button
       className={cn(
-        "w-full truncate rounded-[10px] border px-2 py-1 text-left text-sm transition-colors hover:border-line",
+        "w-full truncate rounded-xl border px-2 py-1 text-left text-sm transition-colors hover:border-line",
         value ? "border-line/60 text-ink" : "border-dashed border-line/40 text-muted/40",
       )}
       onClick={() => setEditing(true)}
@@ -229,7 +229,7 @@ function GoalRowInner({
       {/* Дедлайн — hidden on mobile */}
       <div className="hidden md:block">
         <input
-          className="w-full rounded-[10px] border border-line/60 bg-paper px-2 py-1 text-sm text-ink outline-none transition-colors focus:border-accent"
+          className="w-full rounded-xl border border-line/60 bg-paper px-2 py-1 text-sm text-ink outline-none transition-colors focus:border-accent"
           onChange={(e) => void patchTrackerGoal(goal.id, { deadlineDate: e.target.value || null })}
           type="date"
           value={goal.deadlineDate ?? ""}
@@ -246,7 +246,7 @@ function GoalRowInner({
       <div className="flex shrink-0 items-center gap-1">
         {goal.level < 3 && (
           <button
-            className="rounded-[8px] border border-line px-1.5 py-1 text-xs text-muted transition-colors hover:border-accent hover:text-accent"
+            className="rounded-xl border border-line px-1.5 py-1 text-xs text-muted transition-colors hover:border-accent hover:text-accent"
             onClick={() =>
               void createTrackerGoal(sprintId, {
                 level: (goal.level + 1) as 2 | 3,
@@ -256,14 +256,14 @@ function GoalRowInner({
                 title: goal.level === 1 ? "Новая цель" : "Новая подцель",
               })
             }
-            title="Добавить дочернюю"
+            title={goal.level === 1 ? "Добавить цель" : "Добавить подцель"}
             type="button"
           >
             +
           </button>
         )}
         <button
-          className="rounded-[8px] border border-line px-1.5 py-1 text-xs text-muted transition-colors hover:border-danger hover:text-danger"
+          className="rounded-xl border border-line px-1.5 py-1 text-xs text-muted transition-colors hover:border-danger hover:text-danger"
           onClick={() => void deleteTrackerGoal(sprintId, goal.id)}
           type="button"
         >
@@ -302,7 +302,6 @@ function ChildList({
     setDragOverId(null);
   }
 
-  const levelLabel = depth === 1 ? "ЦЕЛЬ" : "ПОДЦЕЛЬ";
   const indentClass =
     depth === 1
       ? "ml-6 border-l border-line/40 pl-3"
@@ -323,11 +322,7 @@ function ChildList({
             }}
             goal={goal}
             isDragOver={dragOverId === goal.id}
-            prefix={
-              <span className="text-center text-[9px] uppercase leading-tight tracking-[0.12em] text-muted/70">
-                {levelLabel}
-              </span>
-            }
+            prefix={<div />}
             sprintId={sprintId}
           />
           {goal.children.length > 0 && (

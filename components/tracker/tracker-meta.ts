@@ -5,7 +5,7 @@ export const TRACKER_SECTION_ITEMS: Array<{ id: TrackerSection; icon: string; la
   { id: "health", icon: "♥", label: "Здоровье" },
   { id: "state", icon: "◎", label: "Состояние" },
   { id: "communications", icon: "🤝", label: "Коммуникации" },
-  { id: "relations", icon: "♡", label: "Отношения" },
+  { id: "relations", icon: "🌸", label: "Отношения" },
 ];
 
 export const TRACKER_SECTION_LABELS: Record<TrackerSection, string> = Object.fromEntries(
