@@ -3,11 +3,18 @@
 import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 
-import type { TrackerDeadline } from "@/lib/planner-types";
+import type { TrackerDeadline, TrackerGoalStatus } from "@/lib/planner-types";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store/app-store";
 
-import { TRACKER_SECTION_LABELS, TRACKER_STATUS_OPTIONS } from "./tracker-meta";
+import { TRACKER_SECTION_ITEMS, TRACKER_STATUS_OPTIONS } from "./tracker-meta";
+
+const STATUS_CYCLE: TrackerGoalStatus[] = [null, "done", "not_done", "done_with_delay"];
+
+function nextStatus(current: TrackerGoalStatus): TrackerGoalStatus {
+  const idx = STATUS_CYCLE.indexOf(current);
+  return STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length] ?? null;
+}
 
 export function TrackerDeadlinesPanel({ deadlines }: { deadlines: TrackerDeadline[] }) {
   const patchTrackerGoalStatus = useAppStore((state) => state.patchTrackerGoalStatus);
@@ -19,38 +26,35 @@ export function TrackerDeadlinesPanel({ deadlines }: { deadlines: TrackerDeadlin
   return (
     <section className="paper-panel rounded-[32px] p-5">
       <div className="text-xs uppercase tracking-[0.2em] text-muted">TaskTracker — дедлайны</div>
-      <div className="mt-4 space-y-3">
-        {deadlines.map((deadline) => (
-          <div key={deadline.goalId} className="rounded-[24px] border border-line bg-paper/80 p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div className="min-w-0 flex-1">
-                <div className="text-xs uppercase tracking-[0.14em] text-muted">{TRACKER_SECTION_LABELS[deadline.section]}</div>
-                <div className="mt-1 break-words text-sm font-semibold text-ink">{deadline.title}</div>
-                <div className="mt-1 text-xs leading-6 text-muted">{deadline.breadcrumb.join(" → ")}</div>
+      <div className="mt-3 divide-y divide-line">
+        {deadlines.map((deadline) => {
+          const sectionItem = TRACKER_SECTION_ITEMS.find((s) => s.id === deadline.section);
+          const statusOpt = TRACKER_STATUS_OPTIONS.find((o) => o.value === deadline.status) ?? TRACKER_STATUS_OPTIONS[3]!;
+
+          return (
+            <div key={deadline.goalId} className="py-2.5">
+              <div className="flex items-center gap-2">
+                <span className="shrink-0 text-base leading-none text-muted">{sectionItem?.icon}</span>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{deadline.title}</span>
+                <button
+                  className={cn(
+                    "flex h-7 w-7 shrink-0 items-center justify-center rounded-[8px] border text-xs font-medium transition-colors",
+                    statusOpt.className,
+                  )}
+                  onClick={() => void patchTrackerGoalStatus(deadline.goalId, nextStatus(deadline.status))}
+                  title="Изменить статус"
+                  type="button"
+                >
+                  {statusOpt.icon}
+                </button>
               </div>
-              <div className="shrink-0 text-sm font-medium text-ink">{format(parseISO(deadline.deadlineDate), "d MMM", { locale: ru })}</div>
+              <div className="mt-0.5 flex items-center gap-3 pl-6">
+                <span className="min-w-0 flex-1 truncate text-xs text-muted">{deadline.breadcrumb.join(" → ")}</span>
+                <span className="shrink-0 text-xs text-muted">{format(parseISO(deadline.deadlineDate), "d MMM", { locale: ru })}</span>
+              </div>
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {TRACKER_STATUS_OPTIONS.map((option) => {
-                const isActive = option.value === deadline.status;
-                return (
-                  <button
-                    key={`${deadline.goalId}-${option.icon}`}
-                    className={cn(
-                      "rounded-full border px-3 py-2 text-xs font-medium transition-colors",
-                      option.className,
-                      !isActive && "opacity-70 hover:opacity-100",
-                    )}
-                    onClick={() => void patchTrackerGoalStatus(deadline.goalId, option.value)}
-                    type="button"
-                  >
-                    {option.icon}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
