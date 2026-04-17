@@ -12,6 +12,14 @@ export const TRACKER_SECTION_LABELS: Record<TrackerSection, string> = Object.fro
   TRACKER_SECTION_ITEMS.map((item) => [item.id, item.label]),
 ) as Record<TrackerSection, string>;
 
+export const TRACKER_SECTION_COLORS: Record<TrackerSection, string> = {
+  money: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  health: "border-rose-200 bg-rose-50 text-rose-700",
+  state: "border-violet-200 bg-violet-50 text-violet-700",
+  communications: "border-sky-200 bg-sky-50 text-sky-700",
+  relations: "border-amber-200 bg-amber-50 text-amber-700",
+};
+
 export const TRACKER_STATUS_OPTIONS: Array<{ className: string; icon: string; value: TrackerGoalStatus }> = [
   { value: "done", icon: "✓", className: "border-emerald-300 bg-emerald-50 text-emerald-700" },
   { value: "not_done", icon: "✕", className: "border-rose-300 bg-rose-50 text-rose-700" },
