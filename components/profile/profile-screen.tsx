@@ -509,14 +509,6 @@ export function ProfileScreen({
       <header className="rounded-[32px] border border-line bg-paper/70 px-5 py-5 shadow-paper">
         <div className="text-xs uppercase tracking-[0.22em] text-muted">Профиль</div>
         <h1 className="mt-2 break-all text-3xl font-semibold text-ink">{user?.email ?? "Профиль пользователя"}</h1>
-        {user?.tasktrackerEnabled && !viewingAs ? (
-          <a
-            className="mt-3 inline-flex items-center text-sm font-medium text-accent hover:underline"
-            href="/tracker"
-          >
-            TaskTracker →
-          </a>
-        ) : null}
       </header>
 
       <Section title="Аккаунт">
