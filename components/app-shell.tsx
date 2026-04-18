@@ -128,9 +128,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <div className="text-lg font-semibold text-ink">{sectionTitle(pathname)}</div>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                {pathname === "/profile" && user?.tasktrackerEnabled && !viewingAs ? (
+                {user?.tasktrackerEnabled && !viewingAs ? (
                   <a
-                    className="rounded-[14px] border border-line bg-paper px-3 py-1.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
+                    className="rounded-[18px] border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
                     href="/tracker"
                   >
                     TaskTracker →
