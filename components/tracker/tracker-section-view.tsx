@@ -160,6 +160,7 @@ function InlineText({
         ref={textareaRef}
         className="min-h-[40px] w-full min-w-0 resize-none overflow-hidden rounded-[14px] border border-accent bg-paper px-3 py-2 text-sm leading-5 text-ink shadow-none outline-none focus:border-accent focus:shadow-none focus-visible:outline-none"
         onBlur={commit}
+        onFocus={(e) => e.currentTarget.select()}
         onChange={(e) => {
           setDraft(e.target.value);
           syncTextareaHeight(e.currentTarget, 40);
@@ -341,7 +342,7 @@ function GoalRowInner({
                     parentId: goal.id,
                     section: goal.section,
                     sortOrder: nextSortOrder(goal.children),
-                    title: "",
+                    title: "Новая цель",
                   })
                 }
                 title={goal.level === 1 ? "Добавить цель" : "Добавить подцель"}
@@ -414,7 +415,7 @@ function GoalRowInner({
                   parentId: goal.id,
                   section: goal.section,
                   sortOrder: nextSortOrder(goal.children),
-                  title: "",
+                  title: "Новая цель",
                 })
               }
               title={goal.level === 1 ? "Добавить цель" : "Добавить подцель"}
@@ -556,7 +557,7 @@ function AddMetaGoalPicker({ sprintId, allGoals }: { sprintId: string; allGoals:
       level: 1,
       section,
       sortOrder: nextSortOrder(sectionRoots),
-      title: "",
+      title: "Новая цель",
     });
     setOpen(false);
   }
