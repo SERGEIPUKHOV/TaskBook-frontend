@@ -64,7 +64,8 @@ function taskFeedLabel(bucket: TaskCalendarExportBucket): string {
 }
 
 function buildAbsoluteFeedUrl(feedPath: string): string {
-  return new URL(feedPath, API_BASE).toString();
+  const base = API_BASE.startsWith("http") ? API_BASE : window.location.origin + API_BASE;
+  return new URL(feedPath, base).toString();
 }
 
 function ConnectionColorSwatches({
