@@ -43,7 +43,7 @@ export function TrackerShell({ children }: { children: React.ReactNode }) {
               </div>
               <div className="flex items-center gap-2">
                 <Link
-                  className="rounded-[18px] border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
+                  className="whitespace-nowrap rounded-[18px] border border-line bg-paper px-4 py-2.5 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
                   href="/dashboard"
                 >
                   ← TaskBook
