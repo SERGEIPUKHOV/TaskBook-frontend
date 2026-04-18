@@ -272,7 +272,7 @@ export function ProfileSupervisionAccess() {
       <div className="rounded-[28px] border border-line bg-canvas/50 p-5">
         <div className="text-sm font-semibold text-ink">Добавить супервайзера</div>
         <p className="mt-1 text-sm leading-6 text-muted">
-          Человек войдёт в свой аккаунт и сможет смотреть только выбранные разделы в режиме чтения.
+          Предоставить доступ к просмотру выбранных разделов.
         </p>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">

@@ -526,6 +526,25 @@ export function ProfileScreen({
         </div>
       </Section>
 
+      {user?.tasktrackerEnabled && !viewingAs ? (
+        <Section title="TaskTracker">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-ink">Стратегическое планирование</p>
+              <p className="mt-1 text-sm leading-6 text-muted">
+                Спринты и планирование целей.
+              </p>
+            </div>
+            <a
+              className="inline-flex h-11 items-center justify-center rounded-[18px] border border-line bg-paper px-4 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
+              href="/tracker"
+            >
+              Открыть TaskTracker →
+            </a>
+          </div>
+        </Section>
+      ) : null}
+
       <Section title="Смена пароля">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -555,25 +574,6 @@ export function ProfileScreen({
           googleStatus={googleStatus}
         />
       </Section>
-
-      {user?.tasktrackerEnabled && !viewingAs ? (
-        <Section title="TaskTracker">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-medium text-ink">Стратегическое планирование</p>
-              <p className="mt-1 text-sm leading-6 text-muted">
-                Спринты, иерархия целей, дедлайны и обзор перекосов по нагрузке.
-              </p>
-            </div>
-            <a
-              className="inline-flex h-11 items-center justify-center rounded-[18px] border border-line bg-paper px-4 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
-              href="/tracker"
-            >
-              Открыть TaskTracker →
-            </a>
-          </div>
-        </Section>
-      ) : null}
 
       {(accessibleOwners.length > 0 || viewingAs) ? (
         <Section title="Наблюдение">
