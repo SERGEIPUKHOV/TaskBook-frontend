@@ -509,6 +509,14 @@ export function ProfileScreen({
       <header className="rounded-[32px] border border-line bg-paper/70 px-5 py-5 shadow-paper">
         <div className="text-xs uppercase tracking-[0.22em] text-muted">Профиль</div>
         <h1 className="mt-2 break-all text-3xl font-semibold text-ink">{user?.email ?? "Профиль пользователя"}</h1>
+        {user?.tasktrackerEnabled && !viewingAs ? (
+          <a
+            className="mt-3 inline-flex items-center text-sm font-medium text-accent hover:underline"
+            href="/tracker"
+          >
+            TaskTracker →
+          </a>
+        ) : null}
       </header>
 
       <Section title="Аккаунт">
@@ -526,26 +534,7 @@ export function ProfileScreen({
         </div>
       </Section>
 
-      {user?.tasktrackerEnabled && !viewingAs ? (
-        <Section title="TaskTracker">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-medium text-ink">Стратегическое планирование</p>
-              <p className="mt-1 text-sm leading-6 text-muted">
-                Спринты и планирование целей.
-              </p>
-            </div>
-            <a
-              className="inline-flex h-11 items-center justify-center rounded-[18px] border border-line bg-paper px-4 text-sm font-medium text-ink transition-colors hover:border-accent hover:text-accent"
-              href="/tracker"
-            >
-              Открыть TaskTracker →
-            </a>
-          </div>
-        </Section>
-      ) : null}
-
-      <Section title="Смена пароля">
+<Section title="Смена пароля">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-medium text-ink">Сменить пароль</p>
