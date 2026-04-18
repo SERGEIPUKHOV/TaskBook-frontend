@@ -317,7 +317,7 @@ function GoalRowInner({
 
           <div className="flex items-center">
             <input
-              className="field-base h-10 w-full rounded-xl px-2.5 py-2 text-sm leading-5 text-ink outline-none"
+              className="field-base h-10 w-full rounded-xl px-2.5 py-2 text-sm leading-5 text-ink outline-none [color-scheme:light] dark:[color-scheme:dark]"
               onBlur={(e) => commitDate(e.target.value)}
               onChange={(e) => setDateDraft(e.target.value)}
               type="date"
@@ -392,7 +392,7 @@ function GoalRowInner({
 
         <div>
           <input
-            className="field-base w-full rounded-xl px-2 py-1 text-sm text-ink outline-none"
+            className="field-base w-full rounded-xl px-2 py-1 text-sm text-ink outline-none [color-scheme:light] dark:[color-scheme:dark]"
             onBlur={(e) => commitDate(e.target.value)}
             onChange={(e) => setDateDraft(e.target.value)}
             type="date"
