@@ -10,6 +10,7 @@ import { useThemeStore } from "@/store/theme-store";
 type ThemeToggleProps = {
   className?: string;
   savedLabel?: string;
+  labelInFlow?: boolean;
 };
 
 const LABELS: Record<
@@ -33,7 +34,7 @@ const LABELS: Record<
   },
 };
 
-export function ThemeToggle({ className, savedLabel }: ThemeToggleProps) {
+export function ThemeToggle({ className, labelInFlow, savedLabel }: ThemeToggleProps) {
   const hideTimerRef = useRef<number | null>(null);
   const fadeTimerRef = useRef<number | null>(null);
   const [activeLabel, setActiveLabel] = useState<ThemePreference | null>(null);
@@ -88,7 +89,8 @@ export function ThemeToggle({ className, savedLabel }: ThemeToggleProps) {
       <div
         aria-hidden="true"
         className={cn(
-          "pointer-events-none absolute right-[calc(100%+0.625rem)] flex flex-col items-end whitespace-nowrap transition-all duration-200",
+          "pointer-events-none flex flex-col items-end whitespace-nowrap transition-all duration-200",
+          labelInFlow ? "mr-2.5" : "absolute right-[calc(100%+0.625rem)]",
           isLabelVisible || (!isLabelVisible && !labelInfo && savedLabel)
             ? "translate-x-0 opacity-100"
             : "translate-x-1 opacity-0",

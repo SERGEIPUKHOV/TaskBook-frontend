@@ -48,7 +48,7 @@ export function TrackerShell({ children }: { children: React.ReactNode }) {
                 >
                   ← TaskBook
                 </Link>
-                <ThemeToggle className="shrink-0" />
+                <ThemeToggle className="shrink-0" labelInFlow />
               </div>
             </div>
             {/* Mobile: sprint selector */}

@@ -293,7 +293,7 @@ function GoalRowInner({
             <InlineText
               bold={bold}
               onSave={(v) => void patchTrackerGoal(goal.id, { title: v })}
-              placeholder="Описание"
+              placeholder={goal.level === 1 ? "Мета-цель" : goal.level === 2 ? "Цель" : "Подцель"}
               value={goal.title}
             />
           </div>
@@ -341,7 +341,7 @@ function GoalRowInner({
                     parentId: goal.id,
                     section: goal.section,
                     sortOrder: nextSortOrder(goal.children),
-                    title: goal.level === 1 ? "Новая цель" : "Новая подцель",
+                    title: "",
                   })
                 }
                 title={goal.level === 1 ? "Добавить цель" : "Добавить подцель"}
@@ -414,7 +414,7 @@ function GoalRowInner({
                   parentId: goal.id,
                   section: goal.section,
                   sortOrder: nextSortOrder(goal.children),
-                  title: goal.level === 1 ? "Новая цель" : "Новая подцель",
+                  title: "",
                 })
               }
               title={goal.level === 1 ? "Добавить цель" : "Добавить подцель"}
@@ -556,7 +556,7 @@ function AddMetaGoalPicker({ sprintId, allGoals }: { sprintId: string; allGoals:
       level: 1,
       section,
       sortOrder: nextSortOrder(sectionRoots),
-      title: "Новая мета-цель",
+      title: "",
     });
     setOpen(false);
   }
