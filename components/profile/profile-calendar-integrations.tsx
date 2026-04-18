@@ -3,6 +3,7 @@
 import { format, parseISO } from "date-fns";
 import { ru } from "date-fns/locale";
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 import {
   TASK_CALENDAR_EXPORT_BUCKET_OPTIONS,
@@ -718,7 +719,7 @@ export function ProfileCalendarIntegrations({
         </div>
       </section>
 
-      {showApplePicker ? (
+      {showApplePicker ? createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 px-4 backdrop-blur-sm">
           <div className="paper-panel max-h-[80vh] w-full max-w-md overflow-y-auto rounded-[32px] p-6">
             <div className="text-lg font-semibold text-ink">
@@ -763,9 +764,9 @@ export function ProfileCalendarIntegrations({
             </div>
           </div>
         </div>
-      ) : null}
+      , document.body) : null}
 
-      {showCalendarPicker ? (
+      {showCalendarPicker ? createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/35 px-4 backdrop-blur-sm">
           <div className="paper-panel max-h-[80vh] w-full max-w-md overflow-y-auto rounded-[32px] p-6">
             <div className="text-lg font-semibold text-ink">Выбор календарей</div>
@@ -808,7 +809,7 @@ export function ProfileCalendarIntegrations({
             </div>
           </div>
         </div>
-      ) : null}
+      , document.body) : null}
     </div>
   );
 }
