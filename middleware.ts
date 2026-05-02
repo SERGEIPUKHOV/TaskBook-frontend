@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import {
-  AGREEMENT_INTERNAL_PATH,
   AGREEMENT_PATH,
+  LEGACY_AGREEMENT_PATH,
   SESSION_COOKIE_NAME,
   isGuestOnlyAuthPath,
   isPublicAuthPath,
@@ -23,10 +23,10 @@ export function middleware(request: NextRequest) {
   const isGuestOnlyPath = isGuestOnlyAuthPath(pathname);
   const normalizedPathname = normalizePathname(pathname);
 
-  if (normalizedPathname === AGREEMENT_PATH || normalizedPathname.startsWith(`${AGREEMENT_PATH}/`)) {
-    const suffix = normalizedPathname.slice(AGREEMENT_PATH.length);
+  if (normalizedPathname === LEGACY_AGREEMENT_PATH || normalizedPathname.startsWith(`${LEGACY_AGREEMENT_PATH}/`)) {
+    const suffix = normalizedPathname.slice(LEGACY_AGREEMENT_PATH.length);
 
-    return NextResponse.rewrite(new URL(`${AGREEMENT_INTERNAL_PATH}${suffix}`, request.url));
+    return NextResponse.redirect(new URL(`${AGREEMENT_PATH}${suffix}`, request.url));
   }
 
   if (!token && !isPublicPath) {

@@ -29,7 +29,7 @@ Route-entry слой пользовательского frontend на Next.js Ap
 | `forgot-password/page.tsx`, `reset-password/page.tsx` | Password recovery routes |
 | `profile/page.tsx` | User profile route |
 | `auth/impersonate/page.tsx` | Admin impersonation exchange route |
-| `agreement/page.tsx` | Public club resident agreement page, exposed as `/соглашение` via middleware rewrite |
+| `agreement/page.tsx` | Public club resident agreement page |
 | `globals.css` | Global styles |
 
 ## Зависимости
